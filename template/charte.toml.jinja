@@ -39,6 +39,13 @@ id = "STYLE-1"
 [interdictions.outils-interdits]
 id = "UV-PODMAN"
 
+# Les renvois à un rapport d'audit (« audit H36 », « (CART-06) ») pourrissent avec lui. Ajouter
+# à `prefixes` les préfixes des constats des audits du projet, à mesure qu'ils arrivent.
+[interdictions.renvois-audit]
+id = "RENVOIS-AUDIT"
+prefixes = "AUDIT"
+exclus = '(^docs/|^charte\.toml$|/migrations/|-lock\.yaml$|\.lock$)'
+
 [cliquets.taille-fichier]
 id = "TAILLE-FICHIER"
 fichiers = {{ (python_files + front_files) | tojson }}
@@ -56,6 +63,37 @@ decorateur = '\s*@\w*(app|router)\.(get|post|put|patch|delete)'
 fichiers = ["backend/app/**/*.py"]
 {%- endif %}
 budget = 0
+{%- endif %}
+{%- if backend in ['django', 'fastapi'] %}
+
+# Horloge réelle dans un test : il passe aujourd'hui et casse à minuit ou un dimanche.
+[cliquets.horloge-tests]
+regle = "occurrences"
+id = "HORLOGE"
+{%- if backend == 'django' %}
+fichiers = ["backend/tests/*.py", "backend/**/tests/*.py"]
+motif = "timezone.now()"
+{%- else %}
+fichiers = ["backend/tests/*.py", "backend/tests/**/*.py"]
+motif = "datetime.now("
+{%- endif %}
+budget = 0
+{%- endif %}
+{%- if front_files %}
+
+# Le front est là où les tests manquent d'abord : sa densité ne fait que monter.
+[planchers.densite-tests-front]
+regle = "densite-tests"
+id = "DENSITE-TESTS"
+fichiers = {{ front_files | tojson }}
+{%- if frontend == 'next' %}
+suffixes = [".ts", ".tsx", ".mjs"]
+suffixes_tests = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"]
+{%- elif frontend == 'astro' %}
+suffixes = [".ts", ".astro", ".mjs"]
+suffixes_tests = [".test.ts", ".spec.ts"]
+{%- endif %}
+plancher = 0
 {%- endif %}
 {%- if backend == 'django' %}
 
