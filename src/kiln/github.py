@@ -39,6 +39,7 @@ MAIN_RULESET = {
     "rules": [{"type": "deletion"}, {"type": "update"}],
 }
 
+
 def ensure_logged_in() -> None:
     """Vérifie la connexion de gh avant de générer quoi que ce soit ; au terminal, la propose."""
     if _is_logged_in():
