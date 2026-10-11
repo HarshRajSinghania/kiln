@@ -2,7 +2,7 @@
 # Briques d'un test de fumée après déploiement : chaque contrôle affiche ✓ ou ✗ sans arrêter
 # les suivants, et `fumee_bilan` sort en erreur si l'un a échoué.
 #
-# Usage : . "$DOTFILES_OUTILS/ops/lib/fumee.sh"
+# Usage : . scripts/ops/lib/fumee.sh
 #         controle "sonde en état ok" json_vrai "$API/health/" "data['status'] == 'ok'"
 #         fumee_bilan
 fumee_echecs=0

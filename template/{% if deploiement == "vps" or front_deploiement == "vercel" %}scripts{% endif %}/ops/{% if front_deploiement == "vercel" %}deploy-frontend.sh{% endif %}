@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Déploie le front sur Vercel depuis un commit poussé dont la CI est verte.
+#
+# `vercel --prod` envoie les fichiers du poste, pas un commit : le script refuse une copie de
+# travail modifiée dans le front, un commit absent du dépôt distant ou dont la CI n'est pas
+# verte.
+#
+# Usage   : scripts/ops/deploy-frontend.sh
+# Réglages: BRANCH (défaut develop), FRONT (défaut frontend), SAUTER_CI=1 (urgence), CI_WORKFLOW
+set -euo pipefail
+
+BRANCH="${BRANCH:-develop}"
+FRONT="${FRONT:-frontend}"
+cd "$(git rev-parse --show-toplevel)"
+# shellcheck source=lib/ci-verte.sh
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/ci-verte.sh"
+
+if [ "$(git branch --show-current)" != "$BRANCH" ]; then
+  echo "Se placer sur $BRANCH avant de déployer." >&2
+  exit 1
+fi
+git fetch -q origin "$BRANCH"
+TARGET="$(git rev-parse HEAD)"
+if [ "$TARGET" != "$(git rev-parse "origin/$BRANCH")" ]; then
+  echo "$BRANCH et origin/$BRANCH diffèrent : pousser (ou mettre à jour) $BRANCH avant de déployer." >&2
+  exit 1
+fi
+if [ -n "$(git status --porcelain -- "$FRONT")" ]; then
+  echo "$FRONT/ contient des modifications non commitées : vercel --prod les enverrait." >&2
+  exit 1
+fi
+ci_verte "$TARGET"
+
+echo "Déploiement du front : $(git log --oneline -1 "$TARGET")"
+vercel --prod   # projet lié à la racine (`vercel link`), dossier racine `frontend` côté Vercel

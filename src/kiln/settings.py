@@ -34,6 +34,7 @@ SETTABLE_KEYS = (
     "domaine_api",
     "url_site",
     "branche_deploiement",
+    "front_deploiement",
     "boussole",
     "statusline_ci",
     "url_sante_prod",

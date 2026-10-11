@@ -26,7 +26,7 @@ def test_vps_brings_server_files_scripts_and_docs(tmp_path: Path) -> None:
     assert descriptor == {
         "host": "root@203.0.113.7",
         "remotePath": "/opt/demo",
-        "branch": "main",
+        "branch": "develop",
         "apiUrl": "https://api.demo.fr",
         "siteUrl": "https://www.demo.fr",
     }
@@ -89,3 +89,14 @@ def test_backend_image_serves_gunicorn_without_migrating(tmp_path: Path) -> None
     assert "collectstatic" in containerfile
     command = yaml.safe_load((project_dir / "compose.yaml").read_text())["services"]["backend"]
     assert "runserver" in command["command"][-1]
+
+
+def test_vercel_brings_only_the_front_deployment(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", front_deploiement="vercel")
+
+    ops = project_dir / "scripts/ops"
+    assert sorted(path.name for path in ops.rglob("*.sh")) == ["ci-verte.sh", "deploy-frontend.sh"]
+    script = ops / "deploy-frontend.sh"
+    assert script.stat().st_mode & 0o111
+    subprocess.run(["bash", "-n", str(script)], check=True)
+    assert not (project_dir / "config/vps").exists()

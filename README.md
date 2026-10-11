@@ -26,7 +26,8 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
-  modifié ; MCP context7 ;
+  modifié ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
+  déclarer dans `statusLine` de `~/.claude/settings.json`) ;
 - `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish` ; MCP playwright) et `pile-django` (skills
   `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
   selon la stack ;
@@ -133,6 +134,13 @@ un backend Django avec podman, ajoute la production reprise d'AnnSki :
 Réglages : `vps_hote`, `domaine_api`, `url_site`, `branche_deploiement` (par `kiln set`). Quel
 que soit le déploiement, l'image du backend Django sert gunicorn et ses fichiers statiques
 (WhiteNoise) sans migrer au démarrage, et `/api/health` rend la version en service.
+
+## Front sur Vercel
+
+`front_deploiement=vercel` (front Nuxt, `kiln set front_deploiement=vercel`) ajoute
+`scripts/ops/deploy-frontend.sh` : `vercel --prod` envoie les fichiers du poste, le script ne
+l'autorise que depuis `develop` à jour avec `origin`, front sans modification locale et CI verte
+(`SAUTER_CI=1` en cas d'urgence). Le projet Vercel se lie une fois par `vercel link`.
 
 ## Mises à jour des dépendances
 
