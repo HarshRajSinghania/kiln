@@ -79,6 +79,17 @@ if sys.argv[1:2] == ["--scan"]:
     sys.exit()
 
 d = json.load(sys.stdin)
+# Antigravity CLI (agy) envoie le même format, sauf ses quotas : fraction restante par fenêtre
+# (gemini-5h, gemini-weekly), ramenée ici au rate_limits de Claude Code.
+if d.get("quota") and not d.get("rate_limits"):
+    d["rate_limits"] = {}
+    for src, k in (("gemini-5h", "five_hour"), ("gemini-weekly", "seven_day")):
+        q = d["quota"].get(src) or {}
+        if q.get("remaining_fraction") is not None:
+            d["rate_limits"][k] = {
+                "used_percentage": 100 * (1 - float(q["remaining_fraction"])),
+                "resets_at": time.time() + float(q.get("reset_in_seconds") or 0),
+            }
 try:  # dernière entrée reçue, pour voir les champs que fournit Claude Code
     json.dump(d, open(os.path.join(CACHE, "input.json"), "w"), indent=1)
 except OSError:
@@ -358,7 +369,7 @@ if pct is not None:
     bar = "▓" * round(pct / 20) + "░" * (5 - round(pct / 20))
     sess.append(f"{R if pct > 80 else Y if pct > 60 else G}{bar} {pct:.0f}%{X}")
 
-# limites d'abonnement (fenêtre de 5 h, semaine), si Claude Code les fournit
+# limites d'abonnement (fenêtre de 5 h, semaine), si Claude Code ou agy les fournit
 limits = []
 for k, label in (("five_hour", "5h"), ("seven_day", "sem")):
     used = ((d.get("rate_limits") or {}).get(k) or {}).get("used_percentage")
