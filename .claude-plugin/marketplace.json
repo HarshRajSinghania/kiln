@@ -1,0 +1,14 @@
+{
+  "name": "kiln",
+  "description": "Plugins Claude Code des repos kiln",
+  "owner": {
+    "name": "antoine-tena"
+  },
+  "plugins": [
+    {
+      "name": "base",
+      "source": "./plugins/base",
+      "description": "Pour tous les projets : worktrees, fusion, nettoyage, a-faire, garde de branche, fichiers protégés, contrôle du fichier modifié, context7"
+    }
+  ]
+}

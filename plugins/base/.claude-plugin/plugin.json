@@ -1,0 +1,8 @@
+{
+  "name": "base",
+  "version": "0.3.0",
+  "description": "Pour tous les projets : worktrees, fusion, nettoyage, garde de branche, fichiers protégés, context7",
+  "author": {
+    "name": "antoine-tena"
+  }
+}
