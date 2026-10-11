@@ -6,7 +6,7 @@
     "PROJET_FRONT": "{{ 'frontend' if frontend != 'aucun' else '' }}",
     "PROJET_ENV_TEST": "{{ 'backend/.env' if backend in ['django', 'fastapi'] else '' }}"
   },
-{%- set plugins = (['pile-django@antoine'] if backend == 'django' else []) + (['pile-nuxt@antoine'] if frontend == 'nuxt' else []) %}
+{%- set plugins = (['pile-django@kiln'] if backend == 'django' else []) + (['pile-nuxt@kiln'] if frontend == 'nuxt' else []) %}
 {%- if plugins %}
   "enabledPlugins": {
 {%- for plugin in plugins %}
