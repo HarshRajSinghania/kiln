@@ -151,3 +151,13 @@ def test_readme_sections_start_on_their_own_line(
     readme = (project_dir / "README.md").read_text()
     assert "\n\n## Suivi du travail\n" in readme
     assert all(line.startswith("## ") for line in readme.splitlines() if "## " in line)
+
+
+def test_ci_runs_for_main_and_develop(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo")
+
+    workflow = yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
+    # PyYAML lit la clé `on` comme le booléen True.
+    triggers = workflow[True]
+    assert triggers["push"]["branches"] == ["main", "develop"]
+    assert triggers["pull_request"]["branches"] == ["main", "develop"]

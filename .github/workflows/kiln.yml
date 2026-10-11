@@ -3,9 +3,9 @@ name: kiln
 # Contrôles de kiln lui-même : ruff, mypy, tests du modèle (génération de chaque combinaison).
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   kiln:

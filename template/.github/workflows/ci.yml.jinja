@@ -4,9 +4,9 @@ name: CI
 # tous les projets à la fois. Le projet ne garde ici que ses paramètres.
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
 {%- if backend == 'django' %}
