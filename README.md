@@ -17,8 +17,9 @@ Un projet généré contient :
   skill `base:a-faire`), que la status line de Claude Code compte ;
 - les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
   `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
-- en option : les conteneurs podman, le dépôt GitHub privé avec `main` et `develop` protégées et
-  les correctifs de sécurité Dependabot.
+- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` et `develop`
+  protégées, et les correctifs de sécurité Dependabot ;
+- en option : les conteneurs podman.
 
 Le modèle vit dans [`template/`](template/), servi par [Copier](https://copier.readthedocs.io) :
 chaque projet garde dans `.copier-answers.yml` ses réponses et la version du modèle dont il
@@ -28,7 +29,8 @@ part, ce qui permet de lui rapporter les évolutions sans écraser ses modificat
 
 Prérequis : [uv](https://docs.astral.sh/uv/) et git ; [pnpm](https://pnpm.io/) (Node 24) pour un
 front JavaScript ; [podman](https://podman.io/) pour les conteneurs ; [gh](https://cli.github.com)
-pour `--github`.
+pour le dépôt GitHub, que `kiln new` crée d'office (si `gh` n'est pas connecté, kiln lance la
+connexion et affiche le lien https://github.com/login/device).
 
 ```sh
 uv tool install git+https://github.com/antoine-tena/kiln
@@ -59,7 +61,7 @@ modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter,
 
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
 `--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
-`--github`,
+`--no-github` (pas de dépôt GitHub),
 `--no-install`, `--template <chemin ou URL>`. Les questions sans option sont posées dans le
 terminal.
 

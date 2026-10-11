@@ -2,10 +2,12 @@
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 from kiln.shell import KilnError, run, step
 
+LOGIN_URL = "https://github.com/login/device"
 RULESET_NAME = "Protection main et develop"
 REPOSITORY_ADMIN_ROLE_ID = 5
 REQUIRED_APPROVALS = 1
@@ -41,6 +43,26 @@ RULESET = {
         },
     ],
 }
+
+
+def ensure_logged_in() -> None:
+    """Vérifie la connexion de gh avant de générer quoi que ce soit ; au terminal, la propose."""
+    if _is_logged_in():
+        return
+    if not sys.stdin.isatty():
+        raise KilnError(
+            f"gh n'est pas connecté à GitHub : lancer `gh auth login --web` ({LOGIN_URL}), "
+            "ou `kiln new … --no-github`"
+        )
+    step(f"GitHub : connexion (ouvrir {LOGIN_URL} et saisir le code affiché)")
+    run(["gh", "auth", "login", "--web", "--git-protocol", "https"], Path.cwd())
+    if not _is_logged_in():
+        raise KilnError(f"connexion à GitHub non aboutie : réessayer sur {LOGIN_URL}")
+
+
+def _is_logged_in() -> bool:
+    status = subprocess.run(["gh", "auth", "status"], capture_output=True, check=False)
+    return status.returncode == 0
 
 
 def publish(root: Path, repository: str, team_logins: list[str]) -> None:
