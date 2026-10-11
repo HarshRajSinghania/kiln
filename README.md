@@ -17,8 +17,8 @@ Un projet généré contient :
   skill `base:a-faire`), que la status line de Claude Code compte ;
 - les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
   `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
-- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` et `develop`
-  protégées, et les correctifs de sécurité Dependabot ;
+- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` protégée (PR approuvée)
+  et `develop` protégée (ni suppression ni réécriture), et les correctifs de sécurité Dependabot ;
 - en option : les conteneurs podman.
 
 Le modèle vit dans [`template/`](template/), servi par [Copier](https://copier.readthedocs.io) :

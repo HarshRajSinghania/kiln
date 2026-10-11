@@ -3,21 +3,33 @@
 import json
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 from kiln.shell import KilnError, run, step
 
 LOGIN_URL = "https://github.com/login/device"
-RULESET_NAME = "Protection main et develop"
+MAIN_RULESET_NAME = "Protection main"
+DEVELOP_RULESET_NAME = "Protection develop"
 REPOSITORY_ADMIN_ROLE_ID = 5
 REQUIRED_APPROVALS = 1
 
-RULESET = {
-    "name": RULESET_NAME,
+# main n'avance que par PR approuvée ; develop, branche de travail, sans relecture obligatoire.
+# Ni l'une ni l'autre ne se supprime ni ne se réécrit.
+FIXED_HISTORY_RULES = [{"type": "deletion"}, {"type": "non_fast_forward"}]
+DEVELOP_RULESET = {
+    "name": DEVELOP_RULESET_NAME,
+    "target": "branch",
+    "enforcement": "active",
+    "conditions": {"ref_name": {"include": ["refs/heads/develop"], "exclude": []}},
+    "rules": FIXED_HISTORY_RULES,
+}
+MAIN_RULESET = {
+    "name": MAIN_RULESET_NAME,
     "target": "branch",
     "enforcement": "active",
     "conditions": {
-        "ref_name": {"include": ["refs/heads/main", "refs/heads/develop"], "exclude": []},
+        "ref_name": {"include": ["refs/heads/main"], "exclude": []},
     },
     # L'admin peut fusionner une PR sans approbation, jamais pousser directement.
     "bypass_actors": [
@@ -28,8 +40,7 @@ RULESET = {
         },
     ],
     "rules": [
-        {"type": "deletion"},
-        {"type": "non_fast_forward"},
+        *FIXED_HISTORY_RULES,
         {
             "type": "pull_request",
             "parameters": {
@@ -69,7 +80,8 @@ def publish(root: Path, repository: str, team_logins: list[str]) -> None:
     step(f"GitHub : dépôt privé {repository}")
     run(["gh", "repo", "create", repository, "--private", "--source", ".", "--push"], root)
     step("GitHub : protection de main et develop")
-    _post_ruleset(root, repository)
+    _post_ruleset(root, repository, MAIN_RULESET)
+    _post_ruleset(root, repository, DEVELOP_RULESET)
     step("GitHub : alertes et correctifs de sécurité (Dependabot)")
     _enable_security_updates(root, repository)
     owner = repository.split("/")[0]
@@ -90,11 +102,11 @@ def _enable_security_updates(root: Path, repository: str) -> None:
     _gh_put(root, f"repos/{repository}/automated-security-fixes")
 
 
-def _post_ruleset(root: Path, repository: str) -> None:
+def _post_ruleset(root: Path, repository: str, ruleset: Mapping[str, object]) -> None:
     completed = subprocess.run(
         ["gh", "api", "-X", "POST", f"repos/{repository}/rulesets", "--input", "-", "--silent"],
         cwd=root,
-        input=json.dumps(RULESET),
+        input=json.dumps(ruleset),
         text=True,
         check=False,
     )
