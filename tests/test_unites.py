@@ -6,7 +6,7 @@ from packaging.version import Version
 from kiln.deps import _major_bounds
 from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
-from kiln.settings import parse_assignments
+from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
 from kiln.stack import Stack, stack_from_answers
 from kiln.update import replace_legacy_source
@@ -79,3 +79,16 @@ def test_env_file_gets_a_local_secret_and_is_kept(tmp_path: Path) -> None:
     assert first.startswith("DJANGO_SECRET_KEY=") and len(first.splitlines()[0]) > 30
     assert "DJANGO_DEBUG=True" in first
     assert (tmp_path / ".env").read_text() == first
+
+
+def test_replaced_frontend_loses_its_lockfile(tmp_path: Path) -> None:
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend/pnpm-lock.yaml").write_text("lockfileVersion: '9.0'\n")
+
+    remove_replaced_artifacts(
+        tmp_path,
+        Stack(backend="data", frontend="nuxt", has_podman=False),
+        Stack(backend="data", frontend="streamlit", has_podman=False),
+    )
+
+    assert not (tmp_path / "frontend/pnpm-lock.yaml").exists()
