@@ -11,7 +11,7 @@ on:
 jobs:
 {%- if backend == 'django' %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@main
+    uses: antoine-tena/kiln/.github/workflows/django.yml@develop
     with:
       base: {{ nom | replace('-', '_') }}
       env: |
@@ -19,14 +19,14 @@ jobs:
         DJANGO_DEBUG=True
 {%- elif backend in ['fastapi', 'data'] %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    uses: antoine-tena/kiln/.github/workflows/python.yml@develop
     with:
       dossier: backend
 {%- endif %}
 {%- if frontend in ['nuxt', 'next', 'astro'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@main
+    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@develop
     with:
       scripts: |
 {%- if frontend != 'astro' %}
@@ -37,31 +37,31 @@ jobs:
 {%- elif frontend in ['streamlit', 'dash'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    uses: antoine-tena/kiln/.github/workflows/python.yml@develop
     with:
       dossier: frontend
 {%- endif %}
 {%- if backend == 'django' and frontend == 'nuxt' %}
 
   contrat:
-    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@main
+    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@develop
     with:
       env: |
         DJANGO_SECRET_KEY=ci-sans-valeur-secrete
 {%- endif %}
 
   charte:
-    uses: antoine-tena/kiln/.github/workflows/charte.yml@main
+    uses: antoine-tena/kiln/.github/workflows/charte.yml@develop
 
   securite:
-    uses: antoine-tena/kiln/.github/workflows/securite.yml@main
+    uses: antoine-tena/kiln/.github/workflows/securite.yml@develop
     with:
       uv: "{{ ((['backend'] if backend != 'aucun' else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else [])) | join(' ') }}"
       pnpm: "{{ 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' }}"
 {%- if podman %}
 
   conteneurs:
-    uses: antoine-tena/kiln/.github/workflows/infra.yml@main
+    uses: antoine-tena/kiln/.github/workflows/infra.yml@develop
     with:
       containerfiles: "{{ ((['backend/Containerfile'] if backend != 'aucun' else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
       compose: compose.yaml

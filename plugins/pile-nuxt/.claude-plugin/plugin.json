@@ -1,0 +1,6 @@
+{
+  "name": "pile-nuxt",
+  "version": "0.1.0",
+  "description": "Nuxt, Vue, Vitest et le serveur MCP playwright",
+  "author": { "name": "antoine-tena" }
+}

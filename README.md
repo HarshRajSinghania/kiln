@@ -17,9 +17,24 @@ Un projet généré contient :
   skill `base:a-faire`), que la status line de Claude Code compte ;
 - les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
   `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
-- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` protégée (PR approuvée)
+- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` verrouillée (seul le commit initial)
   et `develop` protégée (ni suppression ni réécriture), et les correctifs de sécurité Dependabot ;
 - en option : les conteneurs podman.
+
+Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
+([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) :
+
+- `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
+  `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  modifié ; MCP context7 ;
+- `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish` ; MCP playwright) et `pile-django` (skills
+  `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
+  selon la stack ;
+- `vps-podman` (skills `deployer`, `prod-logs`, `prod-dump`) et `stripe` (MCP en mode test),
+  activés à la main par le repo qui en a besoin.
+
+Installation : `claude plugin marketplace add antoine-tena/kiln`, puis
+`claude plugin install base@kiln`.
 
 Le modèle vit dans [`template/`](template/), servi par [Copier](https://copier.readthedocs.io) :
 chaque projet garde dans `.copier-answers.yml` ses réponses et la version du modèle dont il
@@ -135,7 +150,7 @@ avec `verifier(depot, params) -> list[str]`. La liste des règles non vérifiée
 ## Workflows réutilisables
 
 kiln est public : ses workflows servent à n'importe quel dépôt, quel que soit son compte
-(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@main`). Jamais pip ni docker : uv pour
+(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@develop`). Jamais pip ni docker : uv pour
 Python, podman pour les conteneurs (bases de test comprises), podman-compose installé par uv.
 
 | Workflow | Rôle |
