@@ -62,7 +62,9 @@ def _is_logged_in() -> bool:
 
 def publish(root: Path, repository: str, team_logins: list[str]) -> None:
     step(f"GitHub : dépôt privé {repository}")
-    run(["gh", "repo", "create", repository, "--private", "--source", ".", "--push"], root)
+    run(["gh", "repo", "create", repository, "--private", "--source", "."], root)
+    run(["git", "push", "-q", "-u", "origin", "main", "develop"], root)
+    run(["gh", "repo", "edit", repository, "--default-branch", "develop"], root)
     step("GitHub : protection de main et develop")
     _post_ruleset(root, repository, MAIN_RULESET)
     _post_ruleset(root, repository, DEVELOP_RULESET)
