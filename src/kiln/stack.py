@@ -45,17 +45,26 @@ PNPM_CHECK_SCRIPTS: Mapping[str, tuple[str, ...]] = {
     "astro": ("typecheck",),
 }
 # Produits de build et d'installation d'un framework, retirés quand on en change (`kiln set`).
-# Jamais de données ni de .env : seulement ce que l'outil régénère.
-PYTHON_ARTIFACTS = (".venv", ".pytest_cache", ".mypy_cache", ".ruff_cache", "htmlcov", ".coverage")
+# Jamais de données ni de .env : seulement ce que l'outil régénère. Le verrou en fait partie : il
+# n'est pas dans le modèle, Copier ne le retirerait pas, et kiln le recrée pour le nouveau.
+PYTHON_ARTIFACTS = (
+    "uv.lock",
+    ".venv",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "htmlcov",
+    ".coverage",
+)
 BUILD_ARTIFACTS: Mapping[str, tuple[str, ...]] = {
     "django": PYTHON_ARTIFACTS,
     "fastapi": PYTHON_ARTIFACTS,
     "data": (*PYTHON_ARTIFACTS, "__marimo__"),
     "streamlit": PYTHON_ARTIFACTS,
     "dash": PYTHON_ARTIFACTS,
-    "nuxt": ("node_modules", ".nuxt", ".output", ".data"),
-    "next": ("node_modules", ".next", "next-env.d.ts", "tsconfig.tsbuildinfo"),
-    "astro": ("node_modules", ".astro", "dist"),
+    "nuxt": ("pnpm-lock.yaml", "node_modules", ".nuxt", ".output", ".data"),
+    "next": ("pnpm-lock.yaml", "node_modules", ".next", "next-env.d.ts", "tsconfig.tsbuildinfo"),
+    "astro": ("pnpm-lock.yaml", "node_modules", ".astro", "dist"),
 }
 PYTHON_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("ruff", ("uv", "run", "ruff", "check", ".")),
