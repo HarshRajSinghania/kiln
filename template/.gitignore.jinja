@@ -39,6 +39,9 @@ htmlcov/
 {%- endif %}
 {%- if backend == 'django' %}
 backend/db.sqlite3
+# Fichiers statiques rassemblés et version écrite par le déploiement : engendrés.
+backend/staticfiles/
+backend/GIT_SHA
 {%- endif %}
 {%- if backend == 'data' %}
 

@@ -30,6 +30,8 @@ services:
     env_file:
       - backend/.env
 {%- if backend == 'django' %}
+    # L'image sert gunicorn sans migrer ; en local : migrations puis serveur de développement.
+    command: ["sh", "-c", "python manage.py migrate && exec python manage.py runserver 0.0.0.0:8000"]
     environment:
       DATABASE_URL: postgres://{{ base }}:{{ base }}_local@db:5432/{{ base }}
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend

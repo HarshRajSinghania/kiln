@@ -12,6 +12,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY: str = config("DJANGO_SECRET_KEY")
 DEBUG: bool = config("DJANGO_DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS: list[str] = config("DJANGO_ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
+# Origines HTTPS admises pour les formulaires (administration) derrière le proxy de production.
+CSRF_TRUSTED_ORIGINS: list[str] = config("DJANGO_CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+# Le proxy (Caddy) termine le TLS et le dit par X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Version en service (commit), écrite dans l'image par le déploiement et rendue par /api/health :
+# la bascule vérifie que c'est bien la nouvelle qui répond. « dev » hors image.
+GIT_SHA_FILE = BASE_DIR / "GIT_SHA"
+APP_VERSION: str = GIT_SHA_FILE.read_text().strip() if GIT_SHA_FILE.exists() else "dev"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -28,6 +37,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Fichiers statiques servis par l'application elle-même, compressés : pas de serveur à part.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -78,6 +89,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Rassemblés à la construction de l'image (collectstatic), servis par WhiteNoise.
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
 # [EN-TETES] : HSTS préchargé (posé sur les seules réponses HTTPS), nosniff, référent et COOP.
 HSTS_ONE_YEAR_SECONDS = 31_536_000
