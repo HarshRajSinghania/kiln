@@ -26,7 +26,8 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
-  modifié ; MCP context7 ;
+  modifié ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
+  déclarer dans `statusLine` de `~/.claude/settings.json`) ;
 - `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish` ; MCP playwright) et `pile-django` (skills
   `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
   selon la stack ;
