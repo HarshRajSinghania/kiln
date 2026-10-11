@@ -1,0 +1,10 @@
+[Unit]
+Description={{ titre }} : Sauvegarde de la base (minuterie)
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

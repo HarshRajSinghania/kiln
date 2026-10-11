@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Sauvegarde de la base, en root : quotidienne (timer {{ nom }}-backup) et avant chaque bascule.
+#
+#   {{ nom }}-backup [daily|pre-deploy]
+#
+# Vidage PostgreSQL au format custom (pg_restore), gardé dans /root/backups : les
+# DAILY_KEEP derniers quotidiens, les PRE_DEPLOY_KEEP derniers d'avant bascule. Copie hors du
+# serveur par restic si /root/.restic-env existe (RESTIC_REPOSITORY, RESTIC_PASSWORD et, pour un
+# seau S3, AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) : un serveur perdu emporte ses sauvegardes.
+set -euo pipefail
+
+NAME={{ nom }}
+DB_USER={{ nom | replace('-', '_') }}
+{% raw -%}
+KIND="${1:-daily}"
+DIR=/root/backups
+DAILY_KEEP=14
+PRE_DEPLOY_KEEP=10
+case "$KIND" in daily | pre-deploy) ;; *) echo "usage : $NAME-backup [daily|pre-deploy]" >&2; exit 2 ;; esac
+
+install -d -m 700 "$DIR"
+FILE="$DIR/$NAME-$KIND-$(date +%Y%m%d-%H%M%S).dump"
+podman exec "$NAME-db" pg_dump -U "$DB_USER" -d "$DB_USER" -Fc > "$FILE.partial"
+mv "$FILE.partial" "$FILE"
+chmod 600 "$FILE"
+echo "Sauvegarde : $FILE ($(du -h "$FILE" | cut -f1))."
+
+keep=$DAILY_KEEP
+[ "$KIND" = pre-deploy ] && keep=$PRE_DEPLOY_KEEP
+find "$DIR" -maxdepth 1 -name "$NAME-$KIND-*.dump" -printf '%T@ %p\n' | sort -rn \
+  | tail -n +"$((keep + 1))" | cut -d' ' -f2- | xargs -r rm -f
+
+if [ "$KIND" = daily ] && [ -f /root/.restic-env ]; then
+  set -a
+  # shellcheck source=/dev/null
+  . /root/.restic-env
+  set +a
+  restic snapshots > /dev/null 2>&1 || restic init
+  restic backup --quiet --tag "$NAME" "$FILE"
+  restic forget --quiet --tag "$NAME" --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+  echo "Copie hors du serveur (restic) : faite."
+fi
+{%- endraw %}

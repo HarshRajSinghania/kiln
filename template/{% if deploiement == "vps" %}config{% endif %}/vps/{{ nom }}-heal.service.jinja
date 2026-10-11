@@ -1,0 +1,7 @@
+[Unit]
+Description={{ titre }} : Relance des conteneurs de la pile en échec de sonde
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/{{ nom }}-heal
