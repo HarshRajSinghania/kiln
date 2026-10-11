@@ -79,6 +79,8 @@ def _initial_commit(root: Path) -> None:
     # Seul commit admis sur main : celui qui crée le dépôt ([PAS-SUR-MAIN]).
     commit_env = {**os.environ, "SKIP": "no-commit-to-branch"}
     run(["git", "commit", "-q", "-m", INITIAL_COMMIT_MESSAGE], root, env=commit_env)
+    # main garde ce seul commit ; tout le travail part de develop.
+    run(["git", "switch", "-q", "-c", "develop"], root)
 
 
 def _repository_name(root: Path) -> str:

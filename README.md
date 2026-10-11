@@ -61,7 +61,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 
 | Commande | Rôle |
 |---|---|
-| `kiln new [dossier]` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`. |
+| `kiln new [dossier]` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`, puis `develop` où tout le travail se fait. |
 | `kiln install` | Prépare un poste après un clone : outils (pre-commit avec pre-commit-uv, podman-compose), dépendances, `backend/.env`, migrations, pre-commit. Relançable. |
 | `kiln dev` | Lance les serveurs de la stack ; `--containers` : toute la pile dans podman. |
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
