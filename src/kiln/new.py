@@ -33,6 +33,8 @@ def create_project(request: NewProjectRequest) -> None:
     if request.destination.exists() and any(request.destination.iterdir()):
         raise KilnError(f"{request.destination} existe déjà et n'est pas vide")
     require_tools("git", "uv", *(["gh"] if request.should_publish else []))
+    if request.should_publish:
+        github.ensure_logged_in()
     step("Génération depuis le modèle")
     copier.run_copy(
         template_source(request.template),
