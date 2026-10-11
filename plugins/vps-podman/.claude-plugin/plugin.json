@@ -1,0 +1,6 @@
+{
+  "name": "vps-podman",
+  "version": "0.1.0",
+  "description": "Repos déployés sur un VPS en podman-compose : déploiement, diagnostic de la prod, copie locale de la base de prod",
+  "author": { "name": "antoine-tena" }
+}

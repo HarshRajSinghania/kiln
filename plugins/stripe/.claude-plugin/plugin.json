@@ -1,0 +1,6 @@
+{
+  "name": "stripe",
+  "version": "0.1.0",
+  "description": "MCP Stripe limité au mode test : toute clé live est refusée",
+  "author": { "name": "antoine-tena" }
+}
