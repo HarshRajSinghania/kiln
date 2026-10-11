@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Relance, en root, des conteneurs de la pile dont la sonde échoue (timer {{ nom }}-heal) :
+# podman ne redémarre seul qu'un conteneur arrêté, pas un conteneur « unhealthy ».
+set -euo pipefail
+
+NAME={{ nom }}
+{% raw -%}
+for name in $(podman ps --filter "name=^$NAME-" --filter health=unhealthy --format '{{.Names}}'); do
+  echo "Conteneur $name malade : relancé."
+  podman restart "$name" > /dev/null
+done
+{%- endraw %}

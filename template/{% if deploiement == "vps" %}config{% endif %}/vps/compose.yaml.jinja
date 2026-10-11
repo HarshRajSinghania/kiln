@@ -1,0 +1,54 @@
+{%- set base = nom | replace('-', '_') -%}
+# Pile de production, lancée sur le serveur dans /opt/{{ nom }} par podman-compose. Les secrets
+# n'y sont pas : /opt/{{ nom }}/.env (POSTGRES_PASSWORD) et /opt/{{ nom }}/backend/.env (Django),
+# créés à la main une fois, jamais versionnés ([SECRETS]). La pile locale est compose.yaml, à la
+# racine du dépôt.
+name: {{ nom }}
+
+services:
+  db:
+    container_name: {{ nom }}-db
+    image: docker.io/library/postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: {{ base }}
+      POSTGRES_DB: {{ base }}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data:Z
+    # Base jamais exposée : seuls le backend et les scripts du serveur y accèdent.
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ base }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    container_name: {{ nom }}-backend
+    # Construite et étiquetée par le script de bascule (deploy-remote.sh), une image par commit.
+    image: localhost/{{ base }}_backend:latest
+    restart: always
+    env_file:
+      - backend/.env
+    environment:
+      DATABASE_URL: postgres://{{ base }}:${POSTGRES_PASSWORD}@127.0.0.1:5432/{{ base }}
+    # Réseau de l'hôte : la base sur 127.0.0.1, l'API écoutée par Caddy sur 127.0.0.1:8000.
+    network_mode: host
+    # [CONTENEUR-DURCI] : système de fichiers en lecture seule, aucune capacité.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Sous le nom public : Django refuse un hôte absent de DJANGO_ALLOWED_HOSTS.
+      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen(r.Request('http://127.0.0.1:8000/api/ready', headers={'Host': '{{ domaine_api }}', 'X-Forwarded-Proto': 'https'}), timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

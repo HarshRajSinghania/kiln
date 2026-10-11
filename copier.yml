@@ -94,6 +94,44 @@ podman:
   help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
   default: "{{ envergure in ['flame', 'blaze'] }}"
 
+# Production sur un serveur à soi : `vps` ajoute config/vps/ (Caddy, pile de production, bascule
+# avec retour arrière, sauvegardes testées), scripts/ops/ et docs/exploitation/. Backend Django
+# seulement, servi par podman. Activable plus tard par `kiln set deploiement=vps`.
+deploiement:
+  type: str
+  help: Déploiement en production ?
+  choices:
+    Aucun pour l'instant: aucun
+    Serveur VPS (podman, Caddy, sauvegardes): vps
+  default: aucun
+  when: "{{ backend == 'django' }}"
+  validator: >-
+    {% if deploiement == 'vps' and backend != 'django' %}Le déploiement VPS est fait pour le backend Django.{% elif deploiement == 'vps' and not podman %}Le déploiement VPS demande les conteneurs : podman=true.{% endif %}
+
+vps_hote:
+  type: str
+  help: Connexion SSH du serveur (utilisateur@adresse)
+  default: root@203.0.113.10
+  when: "{{ deploiement == 'vps' }}"
+
+domaine_api:
+  type: str
+  help: Domaine public de l'API (Caddy en obtient le certificat TLS)
+  default: "api.{{ nom }}.fr"
+  when: "{{ deploiement == 'vps' }}"
+
+url_site:
+  type: str
+  help: Adresse publique du site, autorisée par CORS et visée par le test de fumée
+  default: "https://www.{{ nom }}.fr"
+  when: "{{ deploiement == 'vps' }}"
+
+branche_deploiement:
+  type: str
+  help: Branche déployée en production
+  default: main
+  when: "{{ deploiement == 'vps' }}"
+
 # Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
 boussole:
   type: str

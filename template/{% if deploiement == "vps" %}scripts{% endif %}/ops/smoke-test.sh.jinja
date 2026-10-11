@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Test de fumée après déploiement : la chaîne vue d'un visiteur, de l'extérieur.
+#
+# Usage   : scripts/ops/smoke-test.sh [version_attendue]
+# Réglages: API_URL et SITE_URL surchargent config/vps/project.json. Ajouter ici un contrôle par
+#           lecture publique importante du projet (controle, json_vrai, cors_ouvert, lire :
+#           scripts/ops/lib/fumee.sh).
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+{% raw -%}
+# shellcheck source=SCRIPTDIR/lib/cible-vps.sh
+. scripts/ops/lib/cible-vps.sh
+# shellcheck source=SCRIPTDIR/lib/fumee.sh
+. scripts/ops/lib/fumee.sh
+API="${API_URL:-$(cible_vps apiUrl)}"
+SITE="${SITE_URL:-$(cible_vps siteUrl)}"
+EXPECTED_VERSION="${1:-}"
+
+echo "Test de fumée : $API (site : $SITE)"
+controle "sonde de vivacité /api/health" json_vrai "$API/api/health" "data['status'] == 'ok'"
+controle "sonde de disponibilité /api/ready (base)" json_vrai "$API/api/ready" "data['status'] == 'ok'"
+if [ -n "$EXPECTED_VERSION" ]; then
+  controle "version déployée ${EXPECTED_VERSION:0:12}" json_vrai "$API/api/health" "data['version'] == '$EXPECTED_VERSION'"
+fi
+fumee_bilan
+{%- endraw %}

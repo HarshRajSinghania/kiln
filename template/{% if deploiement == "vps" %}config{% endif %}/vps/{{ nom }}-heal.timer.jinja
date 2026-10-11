@@ -1,0 +1,9 @@
+[Unit]
+Description={{ titre }} : Relance des conteneurs de la pile en échec de sonde (minuterie)
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -18,6 +18,7 @@
 **/.astro
 **/dist
 **/db.sqlite3
+**/staticfiles
 **/__marimo__
 backend/data/raw
 backend/data/interim

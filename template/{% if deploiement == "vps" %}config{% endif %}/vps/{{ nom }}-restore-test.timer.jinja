@@ -1,0 +1,10 @@
+[Unit]
+Description={{ titre }} : Test de restauration de la dernière sauvegarde (minuterie)
+
+[Timer]
+OnCalendar=Sun *-*-* 05:00:00
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

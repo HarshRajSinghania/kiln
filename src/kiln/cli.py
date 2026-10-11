@@ -50,6 +50,9 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument("--backend", choices=BACKENDS, help="backend (sinon conseillé)")
     new_parser.add_argument("--frontend", choices=FRONTENDS, help="frontend (sinon conseillé)")
     new_parser.add_argument("--podman", action="store_true", help="conteneurs podman")
+    new_parser.add_argument(
+        "--vps", metavar="UTILISATEUR@ADRESSE", help="déploiement sur ce serveur (Django + podman)"
+    )
     new_parser.add_argument("--goal", help="boussole du suivi docs/a-faire/")
     new_parser.add_argument("--prod-url", help="sonde de santé de la production (status line)")
     new_parser.add_argument(
@@ -86,6 +89,8 @@ def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest
             answers[key] = value
     if arguments.podman:
         answers["podman"] = True
+    if arguments.vps:
+        answers.update(deploiement="vps", vps_hote=arguments.vps)
     if arguments.goal:
         answers["boussole"] = arguments.goal
     if arguments.prod_url:

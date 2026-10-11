@@ -1,0 +1,7 @@
+[Unit]
+Description={{ titre }} : Test de restauration de la dernière sauvegarde
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/{{ nom }}-restore-test

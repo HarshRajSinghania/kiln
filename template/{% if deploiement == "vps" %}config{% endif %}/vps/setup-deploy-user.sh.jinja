@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Crée l'utilisateur `deploy` du serveur, pour ne plus déployer en root.
+#
+# À lancer une fois, en root, sur le serveur : bash setup-deploy-user.sh "<clé publique SSH>"
+# Le déploiement se fait ensuite avec DEPLOY_HOST=deploy@<serveur> (ou "host" de
+# config/vps/project.json). L'utilisateur n'a qu'un droit : lancer, en root, le script de bascule
+# installé par le déploiement (/usr/local/sbin/{{ nom }}-deploy-remote).
+set -euo pipefail
+
+KEY="${1:?clé publique SSH attendue}"
+id deploy > /dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
+install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
+printf '%s\n' "$KEY" > /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+install -d -m 750 -o deploy -g deploy /home/deploy/incoming
+echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/{{ nom }}-deploy-remote' > /etc/sudoers.d/{{ nom }}-deploy
+chmod 440 /etc/sudoers.d/{{ nom }}-deploy
+visudo -cf /etc/sudoers.d/{{ nom }}-deploy
+echo "Utilisateur deploy prêt : DEPLOY_HOST=deploy@$(hostname -I | awk '{print $1}')"
