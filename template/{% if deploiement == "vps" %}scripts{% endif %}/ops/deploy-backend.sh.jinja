@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Déploie l'API sur le serveur de production (pile podman-compose de /opt/{{ nom }}).
+#
+# Le serveur n'a pas d'accès au dépôt : le code part d'ici en bundle git. La bascule elle-même est
+# config/vps/deploy-remote.sh, exécuté en root sur le serveur :
+# - connexion en root (premier déploiement) : la version du commit déployé, envoyée avec le code ;
+# - connexion avec l'utilisateur `deploy` (config/vps/setup-deploy-user.sh) : la version installée
+#   par le déploiement précédent, seule commande que sudo lui permet.
+#
+# Usage   : scripts/ops/deploy-backend.sh [--dry-run | --rollback]
+#           --dry-run  : image et contrôles (check --deploy, compose, Caddyfile), sans bascule
+#           --rollback : revient à la version précédente
+# Réglages: DEPLOY_HOST=utilisateur@serveur et BRANCH surchargent config/vps/project.json
+#           SAUTER_CI=1 : déployer un commit dont la CI n'est pas verte (urgence seulement)
+# Procédure et retour arrière : docs/exploitation/production.md
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+NAME={{ nom }}
+{% raw -%}
+# shellcheck source=SCRIPTDIR/lib/cible-vps.sh
+. scripts/ops/lib/cible-vps.sh
+# shellcheck source=SCRIPTDIR/lib/ci-verte.sh
+. scripts/ops/lib/ci-verte.sh
+
+HOST="${DEPLOY_HOST:-$(cible_vps host)}"
+BRANCH="${BRANCH:-$(cible_vps branch)}"
+MODE=deploy
+DRY_RUN=0
+case "${1:-}" in
+  "") ;;
+  --dry-run) DRY_RUN=1 ;;
+  --rollback) MODE=rollback ;;
+  *) echo "Usage : scripts/ops/deploy-backend.sh [--dry-run | --rollback]" >&2; exit 2 ;;
+esac
+[[ "$HOST" == *@* ]] || { echo "DEPLOY_HOST doit être de la forme utilisateur@serveur." >&2; exit 2; }
+REMOTE_USER="${HOST%%@*}"
+if [ "$REMOTE_USER" = root ]; then INCOMING="/root/$NAME-incoming"; else INCOMING="/home/$REMOTE_USER/incoming"; fi
+SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 "$HOST")
+SCP=(scp -o BatchMode=yes -q)
+
+git fetch -q origin "$BRANCH"
+TARGET="$(git rev-parse "$BRANCH")"
+if [ "$TARGET" != "$(git rev-parse "origin/$BRANCH")" ]; then
+  echo "$BRANCH et origin/$BRANCH diffèrent : pousser (ou mettre à jour) $BRANCH avant de déployer." >&2
+  exit 1
+fi
+WORK="$(mktemp -d -t "$NAME-deploy.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+
+"${SSH[@]}" "mkdir -p $INCOMING /opt/$NAME"
+if [ "$REMOTE_USER" = root ]; then
+  git show "$TARGET:config/vps/deploy-remote.sh" > "$WORK/deploy-remote.sh"
+  "${SCP[@]}" "$WORK/deploy-remote.sh" "$HOST:$INCOMING/deploy-remote.sh"
+fi
+
+remote() {  # remote <sous-commande> [arguments…]
+  if [ "$REMOTE_USER" = root ]; then
+    "${SSH[@]}" "bash $INCOMING/deploy-remote.sh $(printf '%q ' "$@")"
+  else
+    "${SSH[@]}" "sudo /usr/local/sbin/$NAME-deploy-remote $(printf '%q ' "$@")"
+  fi
+}
+
+if [ "$MODE" = rollback ]; then
+  remote rollback
+  exit 0
+fi
+
+echo "Cible : $(git log --oneline -1 "$TARGET")"
+ci_verte "$TARGET"
+
+# Premier déploiement : le serveur n'a pas encore de dépôt où recevoir le code.
+"${SSH[@]}" "[ -d /opt/$NAME/.git ] || git init -q /opt/$NAME"
+BASE="$(remote base "$BRANCH")"
+SEND=1
+if [ "$BASE" = "$TARGET" ]; then
+  SEND=0
+  echo "Le serveur a déjà ce commit : pas de code à envoyer."
+elif [ -n "$BASE" ] && git merge-base --is-ancestor "$BASE" "$TARGET" 2> /dev/null; then
+  git bundle create -q "$WORK/code.bundle" "$BASE..$BRANCH"
+else
+  git bundle create -q "$WORK/code.bundle" "$BRANCH"
+fi
+[ "$SEND" = 1 ] && "${SCP[@]}" "$WORK/code.bundle" "$HOST:$INCOMING/code.bundle"
+
+remote deploy "branch=$BRANCH" "target=$TARGET" "send=$SEND" "dry_run=$DRY_RUN" "incoming=$INCOMING"
+[ "$DRY_RUN" = 1 ] && exit 0
+
+# Chaîne vue de l'extérieur, une fois la bascule faite. Un échec ici n'annule pas la bascule
+# (l'API répond déjà), mais le script sort en erreur.
+if ! DEPLOY_HOST="$HOST" scripts/ops/smoke-test.sh "$TARGET"; then
+  echo "ÉCHEC : test de fumée en échec après la bascule (voir ci-dessus)." >&2
+  exit 1
+fi
+echo "Déploiement de l'API terminé."
+{%- endraw %}
