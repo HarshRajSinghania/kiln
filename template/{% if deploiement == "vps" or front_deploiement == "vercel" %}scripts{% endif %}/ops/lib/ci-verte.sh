@@ -2,7 +2,7 @@
 # Refuse de déployer un commit dont la CI n'est pas verte : un commit aux tests en échec pouvait
 # partir en production. SAUTER_CI=1 passe outre, en cas d'urgence.
 #
-# Usage : . "$DOTFILES_OUTILS/ops/lib/ci-verte.sh" ; ci_verte <sha>
+# Usage : . scripts/ops/lib/ci-verte.sh ; ci_verte <sha>
 # Réglages : CI_WORKFLOW (défaut ci.yml), SAUTER_CI=1
 ci_verte() {
   local sha="$1" runs conclusion

@@ -134,6 +134,13 @@ Réglages : `vps_hote`, `domaine_api`, `url_site`, `branche_deploiement` (par `k
 que soit le déploiement, l'image du backend Django sert gunicorn et ses fichiers statiques
 (WhiteNoise) sans migrer au démarrage, et `/api/health` rend la version en service.
 
+## Front sur Vercel
+
+`front_deploiement=vercel` (front Nuxt, `kiln set front_deploiement=vercel`) ajoute
+`scripts/ops/deploy-frontend.sh` : `vercel --prod` envoie les fichiers du poste, le script ne
+l'autorise que depuis `develop` à jour avec `origin`, front sans modification locale et CI verte
+(`SAUTER_CI=1` en cas d'urgence). Le projet Vercel se lie une fois par `vercel link`.
+
 ## Mises à jour des dépendances
 
 `kiln update` fait des mises à jour compatibles : uv reste dans les bornes du `pyproject.toml`

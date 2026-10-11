@@ -129,8 +129,19 @@ url_site:
 branche_deploiement:
   type: str
   help: Branche déployée en production
-  default: main
+  default: develop
   when: "{{ deploiement == 'vps' }}"
+
+# Front Nuxt sur Vercel : `vercel` ajoute scripts/ops/deploy-frontend.sh, qui ne déploie qu'un
+# commit poussé dont la CI est verte. Activable plus tard par `kiln set front_deploiement=vercel`.
+front_deploiement:
+  type: str
+  help: Déploiement du front ?
+  choices:
+    Aucun pour l'instant: aucun
+    Vercel: vercel
+  default: aucun
+  when: "{{ frontend == 'nuxt' }}"
 
 # Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
 boussole:
