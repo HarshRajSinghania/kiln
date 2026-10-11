@@ -74,12 +74,9 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
 modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
 
-<<<<<<< HEAD
 Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
-Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
-=======
-Options de `new` : `--type`, `--backend`, `--frontend`, `--podman`, `--vps <utilisateur@adresse>`, `--name`, `--title`,
->>>>>>> 10963d9 (docs: exploitation d'un serveur à soi)
+Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`,
+`--vps <utilisateur@adresse>`, `--name`, `--title`,
 `--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
 `--no-github` (pas de dépôt GitHub),
 `--no-install`, `--template <chemin ou URL>`. Les questions sans option sont posées dans le
