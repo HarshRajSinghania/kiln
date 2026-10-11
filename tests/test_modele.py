@@ -122,7 +122,7 @@ def test_django_and_nuxt_share_a_typed_api_contract(tmp_path: Path) -> None:
     assert (project_dir / "frontend/app/composables/useApi.ts").is_file()
     assert "openapi.json linguist-generated" in (project_dir / ".gitattributes").read_text()
     workflow = yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
-    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@main")
+    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@develop")
 
 
 def test_fastapi_front_keeps_its_plain_fetch(tmp_path: Path) -> None:

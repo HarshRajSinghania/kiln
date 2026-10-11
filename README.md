@@ -150,7 +150,7 @@ avec `verifier(depot, params) -> list[str]`. La liste des règles non vérifiée
 ## Workflows réutilisables
 
 kiln est public : ses workflows servent à n'importe quel dépôt, quel que soit son compte
-(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@main`). Jamais pip ni docker : uv pour
+(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@develop`). Jamais pip ni docker : uv pour
 Python, podman pour les conteneurs (bases de test comprises), podman-compose installé par uv.
 
 | Workflow | Rôle |
