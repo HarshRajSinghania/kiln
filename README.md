@@ -21,6 +21,12 @@ Un projet généré contient :
   et `develop` protégée (ni suppression ni réécriture), et les correctifs de sécurité Dependabot ;
 - en option : les conteneurs podman.
 
+Le plugin Claude Code `base` vit dans [`plugins/base/`](plugins/base/), catalogue `kiln`
+([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) : skills `worktree`,
+`fusion`, `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
+modifié ; MCP context7. Il s'installe au niveau utilisateur (`claude plugin marketplace add
+antoine-tena/kiln`, puis `claude plugin install base@kiln`).
+
 Le modèle vit dans [`template/`](template/), servi par [Copier](https://copier.readthedocs.io) :
 chaque projet garde dans `.copier-answers.yml` ses réponses et la version du modèle dont il
 part, ce qui permet de lui rapporter les évolutions sans écraser ses modifications locales.
