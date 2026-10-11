@@ -12,17 +12,15 @@ LOGIN_URL = "https://github.com/login/device"
 MAIN_RULESET_NAME = "Protection main"
 DEVELOP_RULESET_NAME = "Protection develop"
 REPOSITORY_ADMIN_ROLE_ID = 5
-REQUIRED_APPROVALS = 1
 
-# main n'avance que par PR approuvée ; develop, branche de travail, sans relecture obligatoire.
-# Ni l'une ni l'autre ne se supprime ni ne se réécrit.
-FIXED_HISTORY_RULES = [{"type": "deletion"}, {"type": "non_fast_forward"}]
+# main garde le seul commit initial : verrouillée, personne n'y pousse, sauf l'admin qui peut la
+# réécrire. develop, branche de travail et d'intégration, ne se supprime ni ne se réécrit.
 DEVELOP_RULESET = {
     "name": DEVELOP_RULESET_NAME,
     "target": "branch",
     "enforcement": "active",
     "conditions": {"ref_name": {"include": ["refs/heads/develop"], "exclude": []}},
-    "rules": FIXED_HISTORY_RULES,
+    "rules": [{"type": "deletion"}, {"type": "non_fast_forward"}],
 }
 MAIN_RULESET = {
     "name": MAIN_RULESET_NAME,
@@ -31,30 +29,15 @@ MAIN_RULESET = {
     "conditions": {
         "ref_name": {"include": ["refs/heads/main"], "exclude": []},
     },
-    # L'admin peut fusionner une PR sans approbation, jamais pousser directement.
     "bypass_actors": [
         {
             "actor_id": REPOSITORY_ADMIN_ROLE_ID,
             "actor_type": "RepositoryRole",
-            "bypass_mode": "pull_request",
+            "bypass_mode": "always",
         },
     ],
-    "rules": [
-        *FIXED_HISTORY_RULES,
-        {
-            "type": "pull_request",
-            "parameters": {
-                "required_approving_review_count": REQUIRED_APPROVALS,
-                "dismiss_stale_reviews_on_push": True,
-                "require_code_owner_review": False,
-                "require_last_push_approval": False,
-                "required_review_thread_resolution": True,
-                "allowed_merge_methods": ["merge"],
-            },
-        },
-    ],
+    "rules": [{"type": "deletion"}, {"type": "update"}],
 }
-
 
 def ensure_logged_in() -> None:
     """Vérifie la connexion de gh avant de générer quoi que ce soit ; au terminal, la propose."""

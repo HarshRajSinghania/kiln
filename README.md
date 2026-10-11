@@ -17,7 +17,7 @@ Un projet généré contient :
   skill `base:a-faire`), que la status line de Claude Code compte ;
 - les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
   `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
-- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` protégée (PR approuvée)
+- d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` verrouillée (seul le commit initial)
   et `develop` protégée (ni suppression ni réécriture), et les correctifs de sécurité Dependabot ;
 - en option : les conteneurs podman.
 
