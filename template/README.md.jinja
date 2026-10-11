@@ -38,6 +38,10 @@ Puis ouvrir {{ front_url or ('http://localhost:2718' if backend == 'data' else '
 {%- if podman %}
 - `compose.yaml` et les `Containerfile` : la pile en conteneurs podman.
 {%- endif %}
+{%- if deploiement == 'vps' %}
+- `config/vps/` et `scripts/ops/` : la production sur `{{ vps_hote }}` (pile, Caddy, bascule,
+  sauvegardes) ; procédure dans [`docs/exploitation/production.md`](docs/exploitation/production.md).
+{%- endif %}
 
 Le projet est généré et tenu à jour par [kiln](https://github.com/antoine-tena/kiln) (réponses
 dans `.copier-answers.yml`). Changer un paramètre (équipe, frameworks, podman…) :

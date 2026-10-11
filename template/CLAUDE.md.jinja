@@ -39,6 +39,10 @@ La charte tient en {{ 'trois' if back_label and front_label else 'deux' }} fichi
   [`ecarte.md`](docs/a-faire/ecarte.md), ce qui a été refusé, et
   [`urgent.md`](docs/a-faire/urgent.md), ce que seul un humain de l'équipe peut faire (une case
   par action). Skill `base:a-faire` ; la status line de Claude Code les compte.
+{%- if deploiement == 'vps' %}
+- L'exploitation (déploiement, retour arrière, sauvegardes) est dans
+  [`docs/exploitation/production.md`](docs/exploitation/production.md).
+{%- endif %}
 
 ---
 

@@ -74,8 +74,12 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
 modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
 
+<<<<<<< HEAD
 Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
+=======
+Options de `new` : `--type`, `--backend`, `--frontend`, `--podman`, `--vps <utilisateur@adresse>`, `--name`, `--title`,
+>>>>>>> 10963d9 (docs: exploitation d'un serveur à soi)
 `--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
 `--no-github` (pas de dépôt GitHub),
 `--no-install`, `--template <chemin ou URL>`. Les questions sans option sont posées dans le
@@ -112,6 +116,26 @@ Le type de projet précoche une stack, que l'on change à la question suivante o
 
 Backends : `django`, `fastapi`, `data`, `aucun`. Frontends : `nuxt`, `next`, `astro`,
 `streamlit`, `dash`, `aucun`. Toutes les combinaisons sont générées et vérifiées par les tests.
+
+## Déploiement sur un serveur à soi
+
+`deploiement=vps` (`kiln new --vps root@<adresse>`, ou `kiln set deploiement=vps` plus tard), pour
+un backend Django avec podman, ajoute la production reprise d'AnnSki :
+
+- `config/vps/` : pile de production (PostgreSQL et gunicorn, système de fichiers en lecture
+  seule), Caddyfile (TLS automatique), script de bascule exécuté en root sur le serveur (une image
+  par commit, migrations, retour arrière automatique si la nouvelle version ne répond pas),
+  utilisateur `deploy` limité à cette commande, sauvegardes quotidiennes et d'avant bascule (copie
+  restic hors du serveur en option), test de restauration hebdomadaire, relance des conteneurs
+  malades (unités systemd) ;
+- `scripts/ops/` : `deploy-backend.sh` (`--dry-run`, `--rollback`) et `smoke-test.sh`, depuis le
+  poste ; le serveur reçoit le code en bundle git, sans accès au dépôt ;
+- `docs/exploitation/production.md` : préparation du serveur, déploiement, retour arrière,
+  sauvegardes.
+
+Réglages : `vps_hote`, `domaine_api`, `url_site`, `branche_deploiement` (par `kiln set`). Quel
+que soit le déploiement, l'image du backend Django sert gunicorn et ses fichiers statiques
+(WhiteNoise) sans migrer au démarrage, et `/api/health` rend la version en service.
 
 ## Mises à jour des dépendances
 
