@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse (Bash) : refuse un `git commit` sur une branche principale (main, master, develop).
 
-Un repo où l'on commite directement sur la branche principale (dotfiles…) s'en exempte par
+Un repo où l'on commite directement sur la branche principale s'en exempte par
 `git config garde-branche.desactive true`.
 """
 
