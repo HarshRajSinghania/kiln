@@ -45,7 +45,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 
 | Commande | Rôle |
 |---|---|
-| `kiln new <directory>` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`. |
+| `kiln new [dossier]` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`. |
 | `kiln install` | Prépare un poste après un clone : outils (pre-commit avec pre-commit-uv, podman-compose), dépendances, `backend/.env`, migrations, pre-commit. Relançable. |
 | `kiln dev` | Lance les serveurs de la stack ; `--containers` : toute la pile dans podman. |
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
@@ -59,6 +59,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
 modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
 
+Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
 `--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
 `--no-github` (pas de dépôt GitHub),

@@ -1,6 +1,7 @@
 """kiln : orchestrateur de repos. Génère un projet, règle ses paramètres et le tient à jour."""
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
 
 EXIT_FAILURE = 1
+PROJECT_NAME = re.compile(r"[a-z][a-z0-9-]*")
 SIZES = ("spark", "ember", "flame", "blaze")
 PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse")
 BACKENDS = ("django", "fastapi", "data", "aucun")
@@ -18,7 +20,7 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kiln", description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
+    commands = parser.add_subparsers(dest="command")
     _add_new_command(commands)
     commands.add_parser("install", help="préparer le poste après un clone")
     _add_update_command(commands)
@@ -35,7 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     new_parser = commands.add_parser("new", help="générer un nouveau projet complet")
-    new_parser.add_argument("directory", type=Path, help="dossier du projet à créer")
+    new_parser.add_argument(
+        "directory", type=Path, nargs="?", help="dossier du projet (sinon demandé : nom du projet)"
+    )
     new_parser.add_argument("--name", help="nom court (par défaut : nom du dossier)")
     new_parser.add_argument("--title", help="titre affiché")
     new_parser.add_argument("--description", help="une phrase sur le projet")
@@ -66,7 +70,8 @@ def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentPa
 
 
 def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest:
-    answers: dict[str, object] = {"nom": arguments.name or arguments.directory.name}
+    directory = arguments.directory or Path(arguments.name or _ask_project_name())
+    answers: dict[str, object] = {"nom": arguments.name or directory.name}
     if arguments.title:
         answers["titre"] = arguments.title
     if arguments.description:
@@ -90,12 +95,23 @@ def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest
     if arguments.team:
         answers["equipe"] = [login.strip() for login in arguments.team.split(",")]
     return new.NewProjectRequest(
-        destination=arguments.directory,
+        destination=directory,
         answers=answers,
         template=arguments.template,
         should_install=not arguments.no_install,
         should_publish=not arguments.no_github,
     )
+
+
+def _ask_project_name() -> str:
+    """`kiln new` sans dossier : le nom est demandé, le projet est créé dans le dossier courant."""
+    if not sys.stdin.isatty():
+        raise KilnError("kiln new <dossier> : le dossier du projet est requis hors terminal")
+    while True:
+        name = input("Nom du projet (minuscules, chiffres, tirets) : ").strip()
+        if PROJECT_NAME.fullmatch(name):
+            return name
+        print("Minuscules, chiffres et tirets seulement, en commençant par une lettre.")
 
 
 def dispatch(arguments: argparse.Namespace) -> None:
@@ -138,7 +154,12 @@ def _dispatch_fleet(arguments: argparse.Namespace) -> None:
 
 def main() -> None:
     try:
-        dispatch(build_parser().parse_args())
+        parser = build_parser()
+        arguments = parser.parse_args()
+        if arguments.command is None:
+            parser.print_help()
+            return
+        dispatch(arguments)
     except KilnError as error:
         print(f"kiln : {error}", file=sys.stderr)
         sys.exit(EXIT_FAILURE)
