@@ -112,8 +112,9 @@ Le type de projet précoche une stack, que l'on change à la question suivante o
 | Site de contenu (`site`) | aucun | Astro |
 | Tableau de bord de données (`tableau`) | Données Python (polars, marimo, Plotly) | Streamlit |
 | Analyse de données (`analyse`) | Données Python | aucun |
+| Outil en ligne de commande (`outil`) | Outil Python (`cli` : argparse, commande installable) | aucun |
 
-Backends : `django`, `fastapi`, `data`, `aucun`. Frontends : `nuxt`, `next`, `astro`,
+Backends : `django`, `fastapi`, `data`, `cli`, `aucun`. Frontends : `nuxt`, `next`, `astro`,
 `streamlit`, `dash`, `aucun`. Toutes les combinaisons sont générées et vérifiées par les tests.
 
 ## Déploiement sur un serveur à soi

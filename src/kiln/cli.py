@@ -13,8 +13,8 @@ from kiln.stack import load_stack
 EXIT_FAILURE = 1
 PROJECT_NAME = re.compile(r"[a-z][a-z0-9-]*")
 SIZES = ("spark", "ember", "flame", "blaze")
-PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse")
-BACKENDS = ("django", "fastapi", "data", "aucun")
+PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse", "outil")
+BACKENDS = ("django", "fastapi", "data", "cli", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 

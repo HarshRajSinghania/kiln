@@ -18,6 +18,8 @@ def run_dev_servers(root: Path, *, in_containers: bool = False) -> None:
         _run_containers(root, has_podman=stack.has_podman)
         return
     commands = stack.dev_commands()
+    if not commands:
+        raise KilnError("rien à lancer : un outil en ligne de commande se lance par uv run")
     step(" · ".join(f"{command.label} ({command.directory}/)" for command in commands))
     processes = [
         subprocess.Popen(list(command.argv), cwd=root / command.directory) for command in commands

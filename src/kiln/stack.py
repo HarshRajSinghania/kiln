@@ -17,7 +17,7 @@ ANSWERS_FILE = ".copier-answers.yml"
 BACKEND_DIR = "backend"
 FRONTEND_DIR = "frontend"
 
-PYTHON_BACKENDS = frozenset({"django", "fastapi", "data"})
+PYTHON_BACKENDS = frozenset({"django", "fastapi", "data", "cli"})
 API_BACKENDS = frozenset({"django", "fastapi"})
 PYTHON_FRONTENDS = frozenset({"streamlit", "dash"})
 PNPM_FRONTENDS = frozenset({"nuxt", "next", "astro"})
@@ -60,6 +60,7 @@ BUILD_ARTIFACTS: Mapping[str, tuple[str, ...]] = {
     "django": PYTHON_ARTIFACTS,
     "fastapi": PYTHON_ARTIFACTS,
     "data": (*PYTHON_ARTIFACTS, "__marimo__"),
+    "cli": PYTHON_ARTIFACTS,
     "streamlit": PYTHON_ARTIFACTS,
     "dash": PYTHON_ARTIFACTS,
     "nuxt": ("pnpm-lock.yaml", "node_modules", ".nuxt", ".output", ".data"),
