@@ -1,0 +1,42 @@
+{%- set paquet = nom | replace('-', '_') -%}
+[project]
+name = "{{ nom }}"
+version = "0.1.0"
+description = {{ description | tojson }}
+requires-python = ">=3.14"
+dependencies = []
+
+# La commande installée : `uv run {{ nom }}` dans backend/, ou `uv tool install --editable backend`.
+[project.scripts]
+{{ nom }} = "{{ paquet }}.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["{{ paquet }}"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0,<3.0.0",
+    "pytest>=9.1.1,<10.0.0",
+    "pytest-cov>=7.1.0,<8.0.0",
+    "ruff>=0.16.10,<0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
+
+[tool.mypy]
+strict = true
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["{{ paquet }}"]
