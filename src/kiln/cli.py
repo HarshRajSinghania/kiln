@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from kiln import check, contract, dev, fleet, install, new, settings, update
+from kiln import check, ci, contract, dev, fleet, install, new, settings, update
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
@@ -27,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     dev_parser = commands.add_parser("dev", help="lancer le projet en local")
     dev_parser.add_argument("--containers", action="store_true", help="toute la pile dans podman")
     commands.add_parser("check", help="lancer les contrôles du projet")
+    _add_ci_command(commands)
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
@@ -60,6 +61,17 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     )
     new_parser.add_argument("--no-install", action="store_true", help="ne rien installer")
     new_parser.add_argument("--template", help="source du modèle (chemin ou URL git)")
+
+
+def _add_ci_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    ci_parser = commands.add_parser("ci", help="rejouer la CI d'un commit sur le poste")
+    ci_parser.add_argument("revision", nargs="?", default="HEAD", help="commit (défaut : HEAD)")
+    ci_parser.add_argument(
+        "--sauter", action="append", default=[], metavar="JOB", help="job du ci.yml à écarter"
+    )
+    ci_parser.add_argument("--sans-pousser", action="store_true", help="note gardée en local")
+    ci_parser.add_argument("--garder", action="store_true", help="garder le worktree du commit")
+    ci_parser.add_argument("--statut", action="store_true", help="verdict seul, sans rejouer")
 
 
 def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -140,6 +152,8 @@ def dispatch(arguments: argparse.Namespace) -> None:
         dev.run_dev_servers(root, in_containers=arguments.containers)
     elif arguments.command == "check":
         check.check_project(root)
+    elif arguments.command == "ci":
+        _dispatch_ci(root, arguments)
     elif arguments.command == "contrat":
         contract.generate_api_contract(root, load_stack(root))
     elif arguments.command == "set":
@@ -147,6 +161,25 @@ def dispatch(arguments: argparse.Namespace) -> None:
             settings.apply_settings(root, arguments.assignments)
         else:
             settings.show_settings(root)
+
+
+def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
+    if arguments.statut:
+        if not ci.show_verdict(root, arguments.revision):
+            sys.exit(EXIT_FAILURE)
+        return
+    skipped_jobs = frozenset(arguments.sauter)
+    ci.require_known_jobs(root, skipped_jobs)
+    verdict = ci.run_local_ci(
+        root,
+        arguments.revision,
+        skipped_jobs,
+        should_push=not arguments.sans_pousser,
+        should_keep=arguments.garder,
+    )
+    print("\n" + verdict.render(), end="")
+    if not verdict.is_success:
+        sys.exit(EXIT_FAILURE)
 
 
 def _dispatch_fleet(arguments: argparse.Namespace) -> None:
