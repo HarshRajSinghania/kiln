@@ -364,6 +364,18 @@ if others > 0:
 if stopped:
     sess.append(f"{D}⏸{stopped} suspendue{'s' if stopped > 1 else ''}{X}")
 
+# mémoire du poste (Linux, WSL) : alerte quand la RAM manque, ou que le swap est plein alors
+# qu'elle se remplit (un swap plein sur une RAM libre ne gêne plus) ; `sweep` désigne quoi tuer
+try:
+    meminfo = {k: int(v.split()[0]) for k, v in (l.split(":", 1) for l in open("/proc/meminfo"))}
+    ram_pct = 100 * (1 - meminfo["MemAvailable"] / meminfo["MemTotal"])
+    swap_pct = 100 * (1 - meminfo["SwapFree"] / meminfo["SwapTotal"]) if meminfo.get("SwapTotal") else 0
+    if ram_pct >= 90 or (swap_pct >= 80 and ram_pct >= 70):
+        hint = f" {D}→ sweep{X}" if os.path.exists(os.path.expanduser("~/.local/bin/sweep")) else ""
+        sess.append(f"{R}RAM {ram_pct:.0f}% · swap {swap_pct:.0f}%{X}{hint}")
+except (OSError, KeyError, ValueError, ZeroDivisionError):
+    pass
+
 # contexte
 cw = d.get("context_window") or {}
 pct = cw.get("used_percentage")
