@@ -49,6 +49,14 @@ jobs:
 """
 
 
+@pytest.fixture(autouse=True)
+def git_identity(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`git notes` exige une identité, absente des runners de CI."""
+    for role in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{role}_NAME", "kiln")
+        monkeypatch.setenv(f"GIT_{role}_EMAIL", "kiln@example.invalid")
+
+
 def _git(directory: Path, *arguments: str) -> str:
     return subprocess.run(
         ["git", *arguments], cwd=directory, capture_output=True, text=True, check=True
