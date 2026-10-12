@@ -12,8 +12,10 @@ Scripts disponibles : !`ls scripts/ops/ 2>/dev/null | tr '\n' ' '`
 **Particularités du projet** (options, pièges, étapes en plus) : la section « Particularités »
 de `$PROJET_DOC_PROD`, à lire en entier avant de commencer ; elle prime sur ce qui suit.
 
-1. La branche d'intégration est poussée et la CI de son dernier commit est verte
-   (`gh run list -b <intégration> -L 3`). Rouge : montrer le job en échec et s'arrêter.
+1. La branche d'intégration est poussée et la CI de son dernier commit est verte : verdict de
+   `kiln ci` (`kiln ci --statut <intégration>`, pour un repo dont la CI GitHub ne tourne pas) ou
+   CI GitHub (`gh run list -b <intégration> -L 3`). Jamais rejoué : lancer `kiln ci <intégration>`
+   (une vingtaine de minutes) et attendre son verdict. Rouge : montrer le job en échec et s'arrêter.
 2. **Back** : `scripts/ops/deploy-backend.sh`. Les déploiements **migrent** et gardent les
    données ; une reconstruction de la base seulement si l'argument `rebuild` est donné.
    Ensuite `scripts/ops/smoke-test.sh` s'il existe.

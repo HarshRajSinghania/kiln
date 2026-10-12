@@ -65,6 +65,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln install` | Prépare un poste après un clone : outils (pre-commit avec pre-commit-uv, podman-compose), dépendances, `backend/.env`, migrations, pre-commit. Relançable. |
 | `kiln dev` | Lance les serveurs de la stack ; `--containers` : toute la pile dans podman. |
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
+| `kiln ci [commit]` | Rejoue sur le poste la CI du `ci.yml` pour ce commit (défaut `HEAD`) et pose le verdict en note git sur origin, que le script de déploiement accepte comme une CI verte. `--statut` : le verdict seul. Voir « CI rejouée sur le poste ». |
 | `kiln contrat` | Django + Nuxt : exporte `openapi.json` depuis le code, puis régénère les types du front (`app/types/api.d.ts`). `kiln update` le fait aussi. |
 | `kiln set` | Sans argument, affiche les paramètres du repo. `kiln set clé=valeur…` les change (équipe, frameworks, podman, a-faire…) : le repo est régénéré, un framework retiré emporte ses fichiers. |
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
@@ -197,3 +198,23 @@ Python, podman pour les conteneurs (bases de test comprises), podman-compose ins
 
 Actions : `actions/charte` (installe kiln et `charte`), `actions/services` (PostgreSQL et Redis
 par podman, `DATABASE_URL` et `REDIS_URL` posées).
+
+## CI rejouée sur le poste
+
+Pour un dépôt dont la CI GitHub ne tourne pas (forfait épuisé, Actions coupées), `kiln ci <commit>`
+la rejoue sur le poste, depuis le même `ci.yml` :
+
+- le commit est extrait dans un worktree détaché hors du dépôt (`~/.cache/kiln/ci/`), les
+  dépendances installées depuis les verrous (`uv sync --locked`, `pnpm install --frozen-lockfile`) ;
+- chaque job qui appelle un workflow de kiln (`django`, `contrat-api`, `charte`, `pnpm`,
+  `securite`) est rejoué avec ses paramètres `with:`, contre un PostgreSQL et un Redis jetables
+  (podman, ports libres) ; un job écrit dans le projet l'est s'il ne fait que des `run:` ;
+- le back (pytest) tourne à côté du reste ; un journal par job dans `~/.cache/kiln/ci/journaux/` ;
+- le verdict part en note git (`refs/notes/ci`) poussée sur origin. Sa première ligne,
+  `kiln ci : succès`, est ce que `scripts/ops/lib/ci-verte.sh` accepte avant un déploiement ; la
+  note liste aussi les jobs **non rejoués** (services propres au job, `infra`, `sbom`…).
+
+`--sauter <job>` écarte un job (noté dans le verdict), `--sans-pousser` garde la note en local,
+`--garder` laisse le worktree pour enquêter. Avec `git config statusline.ci locale`, la status
+line affiche ce verdict pour la branche d'intégration et la skill `base:fusion` lance `kiln ci`
+en arrière-plan après chaque fusion.

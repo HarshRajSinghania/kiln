@@ -20,5 +20,9 @@ Branche : `$ARGUMENTS`, sinon la branche courante. Branche d'intégration : cell
 4. `git push origin <intégration>`.
 5. Si la branche avait un worktree : `git worktree remove .claude/worktrees/<nom>` ; puis
    `git branch -d <branche>`.
-6. Résumer : commit de fusion, fichiers touchés, CI déclenchée (`gh run list -b <intégration> -L 1`
-   si le repo est sur GitHub).
+6. Si le repo rejoue sa CI sur le poste (`git config statusline.ci` vaut `locale`) : lancer
+   `kiln ci <intégration>` **en arrière-plan** (une vingtaine de minutes ; le verdict part en note
+   git sur origin, et le script de déploiement le lit), puis donner son verdict quand il arrive.
+   Ne pas attendre devant : la fusion est faite.
+7. Résumer : commit de fusion, fichiers touchés, CI déclenchée (`kiln ci` lancé, ou
+   `gh run list -b <intégration> -L 1` si le repo est sur GitHub).
