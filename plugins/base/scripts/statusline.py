@@ -365,14 +365,33 @@ if stopped:
     sess.append(f"{D}⏸{stopped} suspendue{'s' if stopped > 1 else ''}{X}")
 
 # mémoire du poste (Linux, WSL) : alerte quand la RAM manque, ou que le swap est plein alors
-# qu'elle se remplit (un swap plein sur une RAM libre ne gêne plus) ; `sweep` désigne quoi tuer
+# qu'elle se remplit (un swap plein sur une RAM libre ne gêne plus) ; avec l'alerte, le verdict de
+# `sweep --json` (lancé en fond, en cache) : ce que `sweep --kill` arrêterait, ou rien à tuer
+def sweep_hint():
+    sweep = os.path.expanduser("~/.local/bin/sweep")
+    if not os.path.exists(sweep):
+        return ""
+    try:
+        report = json.loads(cached("sweep", 30, f"{shlex.quote(sweep)} --json", os.path.expanduser("~")) or "null")
+        candidates = report["candidates"]
+    except (ValueError, TypeError, KeyError):
+        return f" {D}→ sweep{X}"  # pas encore de verdict : le premier passage tourne en fond
+    certain = [c for c in candidates if c.get("is_certain")]
+    if certain:
+        size = sum(c.get("rss_bytes", 0) for c in certain) / 2**20
+        size_text = f"{size / 1024:.1f} Go".replace(".", ",") if size >= 1024 else f"{size:.0f} Mo"
+        return f" {Y}→ sweep --kill : {len(certain)} sûr{'s' if len(certain) > 1 else ''}, {size_text}{X}"
+    if candidates:
+        return f" {D}→ sweep : {len(candidates)} à vérifier{X}"
+    return f" {D}rien à tuer{X}"
+
+
 try:
     meminfo = {k: int(v.split()[0]) for k, v in (l.split(":", 1) for l in open("/proc/meminfo"))}
     ram_pct = 100 * (1 - meminfo["MemAvailable"] / meminfo["MemTotal"])
     swap_pct = 100 * (1 - meminfo["SwapFree"] / meminfo["SwapTotal"]) if meminfo.get("SwapTotal") else 0
     if ram_pct >= 90 or (swap_pct >= 80 and ram_pct >= 70):
-        hint = f" {D}→ sweep{X}" if os.path.exists(os.path.expanduser("~/.local/bin/sweep")) else ""
-        sess.append(f"{R}RAM {ram_pct:.0f}% · swap {swap_pct:.0f}%{X}{hint}")
+        sess.append(f"{R}RAM {ram_pct:.0f}% · swap {swap_pct:.0f}%{X}{sweep_hint()}")
 except (OSError, KeyError, ValueError, ZeroDivisionError):
     pass
 
