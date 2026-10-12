@@ -166,7 +166,11 @@ def test_ci_runs_for_main_and_develop(tmp_path: Path) -> None:
 
 
 def test_tool_project_gets_a_command_line_package(tmp_path: Path) -> None:
-    project_dir = generate(tmp_path / "demo", type_projet="outil", envergure="flame")
+    # Une description longue ne doit pas déborder dans le code (E501 au premier commit).
+    long_description = "Un outil dont la description dépasse largement cent caractères. " * 3
+    project_dir = generate(
+        tmp_path / "demo", type_projet="outil", envergure="flame", description=long_description
+    )
 
     answers = yaml.safe_load((project_dir / ".copier-answers.yml").read_text())
     assert (answers["backend"], answers["frontend"], answers["podman"]) == ("cli", "aucun", False)
@@ -175,3 +179,9 @@ def test_tool_project_gets_a_command_line_package(tmp_path: Path) -> None:
     assert (project_dir / "backend/demo/cli.py").is_file()
     assert "[CLI-MINCE]" in (project_dir / "backend/CLAUDE.md").read_text()
     assert not (project_dir / "compose.yaml").exists()
+    python_lines = [
+        line
+        for path in (project_dir / "backend").rglob("*.py")
+        for line in path.read_text().splitlines()
+    ]
+    assert all(len(line) <= 100 for line in python_lines)
