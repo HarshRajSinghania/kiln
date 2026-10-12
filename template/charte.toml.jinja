@@ -2,7 +2,7 @@
 # après chaque édition (hook Claude), avant chaque commit (pre-commit) et en CI.
 # Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
 # baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
-{%- set python_files = (['backend/*.py', 'backend/**/*.py'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend/*.py', 'frontend/**/*.py'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set python_files = (['backend/*.py', 'backend/**/*.py'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend/*.py', 'frontend/**/*.py'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- set front_files = {'nuxt': ['frontend/app/**'], 'next': ['frontend/app/**', 'frontend/components/**', 'frontend/lib/**'], 'astro': ['frontend/src/**']}.get(frontend, []) %}
 
 exclus = ["/migrations/", "/notebooks/"]

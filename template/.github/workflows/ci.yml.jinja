@@ -17,7 +17,7 @@ jobs:
       env: |
         DJANGO_SECRET_KEY=ci-sans-valeur-secrete
         DJANGO_DEBUG=True
-{%- elif backend in ['fastapi', 'data'] %}
+{%- elif backend in ['fastapi', 'data', 'cli'] %}
   backend:
     uses: antoine-tena/kiln/.github/workflows/python.yml@develop
     with:
@@ -63,7 +63,7 @@ jobs:
   conteneurs:
     uses: antoine-tena/kiln/.github/workflows/infra.yml@develop
     with:
-      containerfiles: "{{ ((['backend/Containerfile'] if backend != 'aucun' else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
+      containerfiles: "{{ ((['backend/Containerfile'] if backend not in ['aucun', 'cli'] else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
       compose: compose.yaml
 {%- if backend in ['django', 'fastapi'] %}
       preparation: cp backend/.env.example backend/.env

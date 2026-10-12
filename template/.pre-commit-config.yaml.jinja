@@ -27,7 +27,7 @@ repos:
 
   - repo: local
     hooks:
-{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- for dossier in python_dirs %}
       - id: ruff-check-{{ dossier }}
         name: ruff check ({{ dossier }})

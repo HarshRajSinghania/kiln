@@ -8,7 +8,7 @@
 *.npz binary
 
 # Fichiers générés, exemptés de [TAILLE-FICHIER] (CLAUDE.md).
-{%- if backend in ['django', 'fastapi', 'data'] %}
+{%- if backend in ['django', 'fastapi', 'data', 'cli'] %}
 backend/uv.lock linguist-generated=true
 {%- endif %}
 {%- if frontend in ['streamlit', 'dash'] %}

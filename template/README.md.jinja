@@ -1,5 +1,5 @@
-{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) -%}
-{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars ou NumPy, Plotly) et les notebooks marimo"}.get(backend) -%}
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) -%}
+{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars ou NumPy, Plotly) et les notebooks marimo", 'cli': "l'outil en ligne de commande `" ~ nom ~ "`"}.get(backend) -%}
 {%- set front_text = {'nuxt': "l'interface, en Nuxt 4 + Vue 3", 'next': "l'interface, en Next.js 16 + React 19", 'astro': "le site, en Astro 7", 'streamlit': "le tableau de bord, en Streamlit", 'dash': "le tableau de bord, en Dash"}.get(frontend) -%}
 {%- set front_url = {'nuxt': 'http://localhost:3000', 'next': 'http://localhost:3000', 'astro': 'http://localhost:4321', 'streamlit': 'http://localhost:8501', 'dash': 'http://localhost:8050'}.get(frontend) -%}
 # {{ titre }}
@@ -15,10 +15,17 @@ Après le clone, depuis la racine du dépôt (prérequis : [uv](https://docs.ast
 ```sh
 uv tool install git+https://github.com/antoine-tena/kiln   # une fois par poste
 kiln install
+{%- if front_url or backend != 'cli' %}
 kiln dev
+{%- endif %}
 ```
 
+{% if backend == 'cli' and not front_url -%}
+Puis lancer l'outil : `cd backend && uv run {{ nom }} --help`, ou l'installer sur le poste par
+`uv tool install --editable backend`. Détail de chaque commande ci-dessous.
+{%- else -%}
 Puis ouvrir {{ front_url or ('http://localhost:2718' if backend == 'data' else 'http://localhost:8000/api/docs') }}. Détail de chaque commande ci-dessous.
+{%- endif %}
 
 ## Équipe
 
@@ -69,17 +76,25 @@ commit (pre-commit, dont le refus de commiter sur `main` ou `develop`). On peut 
 risque.
 
 ## Lancer le projet
-
+{% if backend == 'cli' and not front_url %}
+```sh
+cd backend && uv run {{ nom }} --help
+uv tool install --editable backend   # depuis la racine : la commande sur tout le poste
+```
+{%- else %}
 ```sh
 kiln dev
 ```
-{% if backend == 'django' or backend == 'fastapi' %}
+{% endif %}
+{%- if backend == 'django' or backend == 'fastapi' %}
 - Backend : http://localhost:8000/api/ (documentation de l'API sur `/api/docs`).
 {%- if backend == 'django' %}
   Sondes : `/api/health` (vivacité), `/api/ready` (disponibilité, vérifie la base).
 {%- endif %}
 {%- elif backend == 'data' %}
 - Notebooks marimo : http://localhost:2718.
+{%- elif backend == 'cli' and front_url %}
+- Outil en ligne de commande : `cd backend && uv run {{ nom }} --help`.
 {%- endif %}
 {%- if front_url %}
 - Frontend : {{ front_url }}

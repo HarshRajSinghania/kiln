@@ -10,7 +10,7 @@
   "search.exclude": {
     ".claude/worktrees": true
   },
-{%- if backend in ['django', 'fastapi', 'data'] or frontend in ['streamlit', 'dash'] %}
+{%- if backend in ['django', 'fastapi', 'data', 'cli'] or frontend in ['streamlit', 'dash'] %}
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff"
   },

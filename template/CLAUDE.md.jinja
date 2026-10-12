@@ -1,8 +1,8 @@
-{%- set back_py = backend in ['django', 'fastapi', 'data'] %}
+{%- set back_py = backend in ['django', 'fastapi', 'data', 'cli'] %}
 {%- set front_py = frontend in ['streamlit', 'dash'] %}
 {%- set front_js = frontend in ['nuxt', 'next', 'astro'] %}
 {%- set api = backend in ['django', 'fastapi'] %}
-{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly'}.get(backend) %}
+{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly', 'cli': 'outil en ligne de commande Python'}.get(backend) %}
 {%- set envergure_label = {'spark': 'un script, un outil perso, une analyse ponctuelle', 'ember': "une petite app ou un site, une ou deux personnes, peu d'enjeu", 'flame': 'une app en production, de vrais utilisateurs, plusieurs contributeurs', 'blaze': 'plusieurs équipes ou services, de gros enjeux'}[envergure] %}
 {%- set front_label = {'nuxt': 'Nuxt 4 + Vue 3', 'next': 'Next.js 16 + React 19', 'astro': 'Astro 7', 'streamlit': 'Streamlit', 'dash': 'Dash'}.get(frontend) -%}
 # {{ titre }} — consignes et charte de développement
@@ -144,7 +144,7 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
   dans les logs, les messages d'erreur, les URL, les clés de cache ou les figures : on
   journalise l'identifiant (`user_id`), pas la personne. Toute nouvelle donnée personnelle
   stockée est couverte par l'export et l'anonymisation RGPD dans le même lot.
-{%- set secrets_back = {'django': '`python-decouple` côté backend', 'fastapi': '`pydantic-settings` côté backend', 'data': '`python-decouple` côté backend'}.get(backend) %}
+{%- set secrets_back = {'django': '`python-decouple` côté backend', 'fastapi': '`pydantic-settings` côté backend', 'data': '`python-decouple` côté backend', 'cli': '`os.environ` lu à la frontière côté backend'}.get(backend) %}
 {%- set secrets_front = {'nuxt': '`runtimeConfig` côté frontend', 'next': 'variables serveur côté frontend (jamais `NEXT_PUBLIC_` pour un secret)', 'astro': '`astro:env` côté frontend', 'streamlit': '`st.secrets` côté frontend', 'dash': '`python-decouple` côté frontend'}.get(frontend) %}
 - **[SECRETS]** Aucun secret dans le code ni dans le dépôt : tout passe par l'environnement
   ({{ [secrets_back, secrets_front] | select | join(', ') }}). Un secret commis par erreur
