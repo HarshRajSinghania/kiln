@@ -1,0 +1,28 @@
+"""Interface en ligne de commande : lit les arguments, appelle le cœur, écrit le résultat.
+
+Aucun calcul ici ([CLI-MINCE]) : le travail vit dans des modules purs, testés sans terminal.
+"""
+
+import argparse
+import sys
+from collections.abc import Sequence
+from importlib.metadata import version
+from typing import TextIO
+
+from {{ nom | replace('-', '_') }}.greeting import build_greeting
+
+PROGRAM = "{{ nom }}"
+EXIT_OK = 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=PROGRAM, description=__doc__)
+    parser.add_argument("--version", action="version", version=f"%(prog)s {version(PROGRAM)}")
+    parser.add_argument("name", nargs="?", default="monde", help="à qui dire bonjour")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None, out: TextIO = sys.stdout) -> int:
+    args = build_parser().parse_args(argv)
+    out.write(build_greeting(args.name) + "\n")
+    return EXIT_OK

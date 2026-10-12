@@ -14,11 +14,13 @@ ANSWERS = {
     "proprietaire": "antoine-tena",
     "equipe": ["antoine-tena", "NathanBarrachin"],
 }
-BACKENDS = ("django", "fastapi", "data", "aucun")
+BACKENDS = ("django", "fastapi", "data", "cli", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 STACKS = [
     (back, front) for back in BACKENDS for front in FRONTENDS if (back, front) != ("aucun",) * 2
 ]
+# Un outil en ligne de commande seul n'a rien à conteneuriser : copier refuse podman.
+PODMAN_STACKS = [stack for stack in STACKS if stack != ("cli", "aucun")]
 JSON_FILES = (".vscode/settings.json", ".vscode/extensions.json", ".claude/settings.json")
 
 
@@ -64,7 +66,7 @@ def test_every_stack_renders_valid_files(tmp_path: Path, backend: str, frontend:
     assert (project_dir / "frontend").is_dir() == (frontend != "aucun")
 
 
-@pytest.mark.parametrize(("backend", "frontend"), STACKS)
+@pytest.mark.parametrize(("backend", "frontend"), PODMAN_STACKS)
 def test_podman_adds_containers_for_every_stack(
     tmp_path: Path, backend: str, frontend: str
 ) -> None:
@@ -72,7 +74,7 @@ def test_podman_adds_containers_for_every_stack(
 
     compose = yaml.safe_load((project_dir / "compose.yaml").read_text())
     for directory in ("backend", "frontend"):
-        if (project_dir / directory).is_dir():
+        if (project_dir / directory / "Containerfile").is_file():
             containerfile = (project_dir / directory / "Containerfile").read_text()
             instructions = [line for line in containerfile.splitlines() if not line.startswith("#")]
             # Outil interdit : la règle [UV-PODMAN] est justement vérifiée ici.
@@ -161,3 +163,15 @@ def test_ci_runs_for_main_and_develop(tmp_path: Path) -> None:
     triggers = workflow[True]
     assert triggers["push"]["branches"] == ["main", "develop"]
     assert triggers["pull_request"]["branches"] == ["main", "develop"]
+
+
+def test_tool_project_gets_a_command_line_package(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", type_projet="outil", envergure="flame")
+
+    answers = yaml.safe_load((project_dir / ".copier-answers.yml").read_text())
+    assert (answers["backend"], answers["frontend"], answers["podman"]) == ("cli", "aucun", False)
+    pyproject = tomllib.loads((project_dir / "backend/pyproject.toml").read_text())
+    assert pyproject["project"]["scripts"] == {"demo": "demo.cli:main"}
+    assert (project_dir / "backend/demo/cli.py").is_file()
+    assert "[CLI-MINCE]" in (project_dir / "backend/CLAUDE.md").read_text()
+    assert not (project_dir / "compose.yaml").exists()

@@ -24,7 +24,7 @@ logs/
 Thumbs.db
 *:Zone.Identifier
 
-{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- if python_dirs %}
 # --- Python ({{ python_dirs | join(', ') }}) ---
 __pycache__/

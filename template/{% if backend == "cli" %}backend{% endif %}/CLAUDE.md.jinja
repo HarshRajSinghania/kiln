@@ -1,0 +1,50 @@
+{%- set paquet = nom | replace('-', '_') -%}
+# Backend — charte
+
+Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 3. Backend (outil en ligne de commande Python)
+
+Lancer : `uv run {{ nom }} --help`. Installer sur le poste : `uv tool install --editable backend`
+(depuis la racine). Vérifier : `kiln check`.
+
+### Architecture
+- **[CLI-MINCE]** `{{ paquet }}/cli.py` est la seule porte d'entrée : il lit les arguments,
+  appelle le cœur et écrit le résultat. Aucun calcul, aucune décision métier : au-delà d'un
+  aiguillage sur la sous-commande, le code part dans un module du cœur.
+- **[COEUR-PUR]** Le cœur (`{{ paquet }}/<domaine>.py`) reçoit des valeurs et renvoie des
+  valeurs, souvent des `dataclass(frozen=True)` : pas d'`argparse`, pas d'écriture sur le
+  terminal, pas de `sys.exit`. Il se teste sans terminal.
+- **[SYSTEME-A-LA-FRONTIERE]** Ce qui touche la machine (process, fichiers, réseau, commandes
+  externes) vit dans des modules d'accès dédiés, appelés par `cli.py` ou injectés dans le cœur
+  (paramètre ou `Protocol`), pour que les tests les remplacent. Une commande externe se lance
+  par `subprocess.run([...], check=..., timeout=...)`, en liste d'arguments, jamais par
+  `shell=True`.
+- **[MULTI-PLATEFORME]** Ce qui dépend du système (Linux, macOS, Windows, WSL) passe par une
+  fonction de détection unique et un module par plateforme ; jamais de `if sys.platform` épars
+  dans le cœur.
+
+### Interface
+- **[SORTIE]** Le résultat s'écrit sur le flux reçu en paramètre (`out: TextIO`, par défaut
+  `sys.stdout`), les erreurs sur `sys.stderr`. `print()` est banni ([JOURNALISATION]).
+- **[CODES-RETOUR]** `main()` renvoie un code de sortie nommé (`EXIT_OK`, `EXIT_FAILURE`…) :
+  0 pour un succès, non nul pour un échec. Une erreur attendue donne un message d'une ligne, en
+  français, sans trace Python ; une erreur imprévue garde sa trace.
+- **[SORTIE-MACHINE]** Toute commande qui rend des données propose `--json` : sortie stable,
+  documentée, sans texte décoratif, pour être lue par un script ou un agent.
+- **[DESTRUCTIF]** Une action irréversible (supprimer, tuer, écraser) montre ce qu'elle va faire
+  et demande confirmation ; `--yes` la saute, `--dry-run` la simule sans rien toucher. Jamais
+  d'action destructive par défaut.
+
+### Socle
+- **[TYPAGE]** Annotations de type sur toutes les signatures, vérifiées par mypy strict.
+- **[DEPENDANCES-MINIMALES]** La bibliothèque standard d'abord (`argparse`, `pathlib`,
+  `subprocess`) ; une dépendance s'ajoute quand elle évite du code fragile (lecture des process,
+  formats complexes), justifiée dans le commit ([NOUVELLE-DEPENDANCE]).
+- **[TESTS]** Toute fonction du cœur a ses tests ; `main()` est testé en lui passant ses
+  arguments et un `io.StringIO`, jamais en lançant un sous-process.
+- **[RESEAU]** Aucun test n'émet de requête réseau ni ne touche aux process réels de la
+  machine : les accès système sont simulés.
+- **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
