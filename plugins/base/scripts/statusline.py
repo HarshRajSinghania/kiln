@@ -215,8 +215,15 @@ if top:
     if prod:
         state.append(f" {D}·{X} ".join(prod))
 
-    # CI de l'intégration (sauf `statusline.ci false`)
-    if os.path.isdir(os.path.join(main, ".github", "workflows")) and opt(main, "ci") != "false":
+    # CI de l'intégration : rejouée sur le poste par `kiln ci` (`statusline.ci locale`, verdict en
+    # note git refs/notes/ci, ⏳ tant que son worktree existe), sinon GitHub (sauf `statusline.ci false`)
+    if opt(main, "ci") == "locale":
+        sha = sh("git", "-C", main, "rev-parse", "-q", "--verify", f"origin/{integ}")
+        note = sh("git", "-C", main, "notes", "--ref=ci", "show", sha).split("\n", 1)[0] if sha else ""
+        running = sha and os.path.isdir(os.path.expanduser(f"~/.cache/kiln/ci/{os.path.basename(main)}-{sha[:12]}"))
+        state.append(f"{B}CI{X} {integ} " + (f"{Y}⏳{X}" if running else {"kiln ci : succès": f"{G}✔{X}",
+                     "kiln ci : échec": f"{R}✘{X}"}.get(note, f"{D}à rejouer (kiln ci){X}")))
+    elif os.path.isdir(os.path.join(main, ".github", "workflows")) and opt(main, "ci") != "false":
         ci = cached(f"{key}-ci", 60, f"gh run list -b {integ} -L 1 --json status,conclusion"
                                      " -q '.[0] | .conclusion // .status'", main)
         state.append(f"{B}CI{X} {integ} " + {"success": f"{G}✔{X}", "failure": f"{R}✘{X}", "cancelled": "⊘"}
