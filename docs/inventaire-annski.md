@@ -1,7 +1,7 @@
 # Inventaire d'AnnSki (liste de contrôle pour un nouveau projet)
 
 Inventaire de ce qu'AnnSki a fini par réunir, à reprendre dès le premier jour du prochain
-projet. Repéré le 2026-10-01 dans `~/code/association/annski`. **Aucun secret ici** : seulement les noms et
+projet. Repéré le 2026-10-01, revu le 2026-10-13, dans `~/code/association/annski`. **Aucun secret ici** : seulement les noms et
 les emplacements. Les jetons se recréent, ils ne se copient pas.
 
 ## 1. Consignes pour Claude
@@ -24,7 +24,8 @@ Presque tout vient désormais de kiln : `kiln new` génère le
   Status line : `~/.claude/statusline.py`.
 - Propre à AnnSki, à réécrire pour un autre projet : `annonce`, `design-system`, `dev`
   (lancement du front branché sur l'API de prod), `ci-local` (liste des contrôles de sa CI),
-  `nouvelle-route` (conventions de sa charte back).
+  `nouvelle-route` (conventions de sa charte back), `google` (Search Console par compte de
+  service), `sauvegarde-medias` (rushs et vidéos vers R2), `squashmigrations`.
 - `worktrees/` : une branche = un worktree (exclu de git).
 
 ## 3. Serveurs MCP et connecteurs
@@ -43,12 +44,22 @@ Convention à garder : un dossier caché par service à la racine, `token` + `co
 | `.infomaniak/` | Registrar + mail |
 | `.stripe/` | Paiements |
 | `.sentry/` | Erreurs |
+| `.brevo/` | E-mails transactionnels |
+| `.helloasso/` | Paiements (alternative à Stripe) |
+| `.healthchecks/` | Sondes de tâches planifiées |
+| `.google/` | Search Console (compte de service) |
+| `.vps/` | Accès au VPS |
+| `.annski/`, `.playwright/` | Comptes de test de Claude sur le site |
 | `.backup/` | restic → R2 (`restic.password`, `token`) |
 | `.env.local` | Variables locales |
 | `~/.ssh/id_ed25519` | Clé SSH (VPS, GitHub) — personnelle, hors repo |
 
 ## 5. Qualité et CI
-- `.github/workflows/` : `ci.yml`, `deploy.yml`, `mutation.yml`.
+- `.github/workflows/` : `ci.yml`, `deploy.yml`, `mutation.yml`, mais GitHub Actions est
+  coupé depuis le 12/10 : `kiln ci develop` rejoue la CI sur le poste et pose son verdict en
+  note git, que le déploiement exige.
+- annski n'a pas été généré par kiln : `kiln check`, `dev`, `install` et `contrat` y marchent
+  (pile déduite des fichiers), `kiln status` le marque « adopté », `update` ne s'y applique pas.
 - `.pre-commit-config.yaml`, `.gitattributes` (marque les fichiers générés), `.gitignore`, `.vercelignore`.
 - `scripts/ci/check_charter.py` + `charter_*.py` : la charte vérifiée par la CI, budgets « cliquet ».
 - Lockfiles commités (`uv.lock`, `pnpm-lock.yaml`), images Docker épinglées par `@sha256`.
@@ -61,7 +72,6 @@ Convention à garder : un dossier caché par service à la racine, `token` + `co
 ## 7. Suivi du travail
 - `docs/a-faire/` : `a-faire.md` (seule liste), `ecarte.md` (refusé), `README.md` (index) — modèle `a-faire`.
 - `docs/_archive/` : campagnes closes, un dossier `AAAA-MM-JJ-sujet`.
-- `passation.md` : reprise d'un chantier entre deux sessions.
 - `openapi.json` + types générés : contrat front/back.
 
 ## 8. Leçons à appliquer dès le jour 1

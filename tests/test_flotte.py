@@ -1,7 +1,13 @@
 import subprocess
 from pathlib import Path
 
-from kiln.fleet import MAX_FILES_PER_COMMIT, commit_in_batches, conflicted_files, find_repos
+from kiln.fleet import (
+    MAX_FILES_PER_COMMIT,
+    commit_in_batches,
+    conflicted_files,
+    find_adopted,
+    find_repos,
+)
 
 
 def make_repo(root: Path, source: str) -> Path:
@@ -19,6 +25,16 @@ def test_only_kiln_repos_are_found(tmp_path: Path) -> None:
     found = sorted(repo.root.name for repo in find_repos(tmp_path))
 
     assert found == ["ancien", "projet"]
+
+
+def test_adopted_repo_has_a_charter_but_no_answers(tmp_path: Path) -> None:
+    generated = make_repo(tmp_path / "genere", "https://github.com/antoine-tena/kiln.git")
+    (generated / "charte.toml").touch()
+    adopted = tmp_path / "association" / "adopte"
+    (adopted / ".git").mkdir(parents=True)
+    (adopted / "charte.toml").touch()
+
+    assert find_adopted(tmp_path) == [adopted]
 
 
 def test_commits_hold_at_most_ten_files(tmp_path: Path) -> None:
