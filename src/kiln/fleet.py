@@ -14,7 +14,7 @@ from pathlib import Path
 from kiln.check import run_checks
 from kiln.install import install_project
 from kiln.shell import KilnError, capture, require_tools, run, step
-from kiln.stack import ANSWERS_FILE, answers_if_any, load_stack, read_answers
+from kiln.stack import ANSWERS_FILE, CHARTER_FILE, answers_if_any, load_stack, read_answers
 from kiln.update import update_project
 
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
@@ -24,7 +24,7 @@ TEMPLATE_PATHS = ("template/", "copier.yml", "macros.jinja")
 SEARCH_DEPTH = 3
 # Un dépôt adopté (que kiln n'a pas généré) se reconnaît à sa charte : `status` le montre,
 # `update --all` l'ignore, car appliquer le modèle écraserait ses fichiers écrits à la main.
-ADOPTED_MARKER = "charte.toml"
+ADOPTED_MARKER = CHARTER_FILE
 SKIPPED_DIRS = frozenset({"node_modules", ".venv", ".git", ".claude", "_archives"})
 WORKTREES_DIR = Path(".claude") / "worktrees"
 UPDATE_BRANCH_PREFIX = "chore/kiln-update"
