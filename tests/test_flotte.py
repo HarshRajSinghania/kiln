@@ -8,6 +8,7 @@ from kiln.fleet import (
     find_adopted,
     find_repos,
     integration_branch,
+    is_template_change,
 )
 
 
@@ -85,3 +86,8 @@ def test_develop_wins_without_origin_head(tmp_path: Path) -> None:
     )
 
     assert integration_branch(repo) == "develop"
+
+
+def test_only_template_files_make_a_repo_late() -> None:
+    assert not is_template_change(["src/kiln/fleet.py", "tests/test_flotte.py"])
+    assert is_template_change(["src/kiln/fleet.py", "template/README.md.jinja"])

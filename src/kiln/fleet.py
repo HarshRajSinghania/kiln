@@ -18,7 +18,9 @@ from kiln.stack import ANSWERS_FILE, answers_if_any, load_stack, read_answers
 from kiln.update import update_project
 
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
-KILN_REMOTE = "https://github.com/antoine-tena/kiln.git"
+KILN_GITHUB_REPO = "antoine-tena/kiln"
+# Ce qui fait le modèle : un commit qui n'y touche pas ne met aucun repo en retard.
+TEMPLATE_PATHS = ("template/", "copier.yml", "macros.jinja")
 SEARCH_DEPTH = 3
 # Un dépôt adopté (que kiln n'a pas généré) se reconnaît à sa charte : `status` le montre,
 # `update --all` l'ignore, car appliquer le modèle écraserait ses fichiers écrits à la main.
@@ -75,14 +77,28 @@ def _marker_files(directory: Path, name: str, depth: int) -> list[Path]:
     return found
 
 
-def latest_template_commit() -> str:
-    return capture(["git", "ls-remote", KILN_REMOTE, "HEAD"], Path.cwd()).split()[0]
+def template_changed_since(commit: str) -> bool:
+    """Le modèle a-t-il changé sur kiln depuis `commit` ? Seuls ses fichiers comptent."""
+    changed = capture(
+        [
+            "gh",
+            "api",
+            f"repos/{KILN_GITHUB_REPO}/compare/{commit}...HEAD",
+            "-q",
+            ".files[].filename",
+        ],
+        Path.cwd(),
+    ).split()
+    return is_template_change(changed)
+
+
+def is_template_change(changed_paths: list[str]) -> bool:
+    return any(path.startswith(TEMPLATE_PATHS) for path in changed_paths)
 
 
 def show_status(code_dir: Path) -> None:
-    latest = latest_template_commit()
     for repo in find_repos(code_dir):
-        is_current = bool(repo.template_commit) and latest.startswith(repo.template_commit)
+        is_current = bool(repo.template_commit) and not template_changed_since(repo.template_commit)
         _print_status(code_dir, repo.root, "modèle à jour" if is_current else "modèle en retard")
     for root in find_adopted(code_dir):
         _print_status(code_dir, root, "adopté")
