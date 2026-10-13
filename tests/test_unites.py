@@ -8,7 +8,7 @@ from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
-from kiln.stack import Stack, stack_from_answers
+from kiln.stack import Stack, load_stack, stack_from_answers
 from kiln.update import replace_legacy_source
 
 
@@ -92,3 +92,11 @@ def test_replaced_frontend_loses_its_lockfile(tmp_path: Path) -> None:
     )
 
     assert not (tmp_path / "frontend/pnpm-lock.yaml").exists()
+
+
+def test_adopted_repo_stack_comes_from_its_files(tmp_path: Path) -> None:
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "manage.py").touch()
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend" / "nuxt.config.ts").touch()
+    assert load_stack(tmp_path) == Stack(backend="django", frontend="nuxt", has_podman=False)

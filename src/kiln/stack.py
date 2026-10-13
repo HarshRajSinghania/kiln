@@ -1,5 +1,9 @@
 """La stack d'un projet (backend, frontend, podman), lue dans ses réponses Copier.
 
+Un dépôt adopté, que kiln n'a pas généré, n'a pas de réponses : sa stack se déduit alors de
+fichiers marqueurs (`detect_stack`), pour que `check`, `dev`, `install` et `contrat` y servent.
+`update` et `set`, qui appliquent le modèle, restent réservés aux dépôts générés.
+
 Tout ce qui dépend des frameworks choisis passe par ici : dossiers Python et pnpm, serveurs de
 développement, contrôles. Les commandes (`install`, `dev`, `check`, `update`, `set`) ne
 connaissent pas les frameworks, seulement une `Stack`.
@@ -26,6 +30,20 @@ NO_FRAMEWORK = "aucun"
 # Projets générés avant le choix des frameworks : Django et Nuxt, seule stack d'alors.
 LEGACY_BACKEND = "django"
 LEGACY_FRONTEND = "nuxt"
+
+# Fichier dont la présence désigne un framework, dans l'ordre de recherche.
+BACKEND_MARKERS: tuple[tuple[str, str], ...] = (
+    ("manage.py", "django"),
+    ("app/main.py", "fastapi"),
+    ("notebooks", "data"),
+)
+FRONTEND_MARKERS: tuple[tuple[str, str], ...] = (
+    ("nuxt.config.ts", "nuxt"),
+    ("next.config.ts", "next"),
+    ("next.config.mjs", "next"),
+    ("astro.config.mjs", "astro"),
+)
+PODMAN_MARKERS = ("compose.yml", "docker-compose.yml", "config/local/compose.yml")
 
 BACKEND_DEV_COMMANDS: Mapping[str, tuple[str, ...]] = {
     "django": ("uv", "run", "python", "manage.py", "runserver"),
@@ -130,9 +148,17 @@ class Stack:
 def read_answers(root: Path) -> dict[str, object]:
     answers_path = root / ANSWERS_FILE
     if not answers_path.exists():
-        raise KilnError(f"pas de {ANSWERS_FILE} : ce dépôt n'a pas été généré par kiln")
+        raise KilnError(
+            f"pas de {ANSWERS_FILE} : ce dépôt n'a pas été généré par kiln "
+            "(check, dev, install et contrat marchent quand même, pile déduite des fichiers)"
+        )
     loaded = yaml.safe_load(answers_path.read_text())
     return dict(loaded) if isinstance(loaded, dict) else {}
+
+
+def answers_if_any(root: Path) -> dict[str, object]:
+    """Réponses Copier, vides pour un dépôt adopté."""
+    return read_answers(root) if (root / ANSWERS_FILE).exists() else {}
 
 
 def stack_from_answers(answers: Mapping[str, object]) -> Stack:
@@ -143,5 +169,20 @@ def stack_from_answers(answers: Mapping[str, object]) -> Stack:
     )
 
 
+def _first_marker(directory: Path, markers: tuple[tuple[str, str], ...]) -> str:
+    return next((name for marker, name in markers if (directory / marker).exists()), NO_FRAMEWORK)
+
+
+def detect_stack(root: Path) -> Stack:
+    """Stack d'un dépôt adopté, déduite de ses fichiers marqueurs."""
+    return Stack(
+        backend=_first_marker(root / BACKEND_DIR, BACKEND_MARKERS),
+        frontend=_first_marker(root / FRONTEND_DIR, FRONTEND_MARKERS),
+        has_podman=any((root / marker).exists() for marker in PODMAN_MARKERS),
+    )
+
+
 def load_stack(root: Path) -> Stack:
+    if not (root / ANSWERS_FILE).exists():
+        return detect_stack(root)
     return stack_from_answers(read_answers(root))

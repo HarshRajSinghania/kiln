@@ -8,11 +8,11 @@ l'équipe, et sont posés en `git config statusline.*` à chaque `kiln install`,
 from pathlib import Path
 
 from kiln.shell import run
-from kiln.stack import read_answers
+from kiln.stack import answers_if_any
 
 
 def apply_statusline_settings(root: Path) -> None:
-    answers = read_answers(root)
+    answers = answers_if_any(root)
     show_ci = answers.get("statusline_ci", True) is not False
     run(["git", "config", "statusline.ci", "true" if show_ci else "false"], root)
     prod_url = str(answers.get("url_sante_prod") or "")
