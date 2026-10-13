@@ -27,6 +27,9 @@ SKIPPED_DIRS = frozenset({"node_modules", ".venv", ".git", ".claude", "_archives
 WORKTREES_DIR = Path(".claude") / "worktrees"
 UPDATE_BRANCH_PREFIX = "chore/kiln-update"
 DEFAULT_INTEGRATION_BRANCH = "main"
+# Préférée quand origin l'a : un clone n'a pas toujours `origin/HEAD`, et `main` y est alors
+# souvent figée par une règle GitHub.
+PREFERRED_INTEGRATION_BRANCH = "develop"
 MAX_FILES_PER_COMMIT = 10
 # pre-commit refuse de tourner tant que sa configuration modifiée n'est pas commitée.
 FIRST_COMMITTED = ".pre-commit-config.yaml"
@@ -159,6 +162,20 @@ def conflicted_files(worktree: Path) -> list[str]:
 
 
 def integration_branch(root: Path) -> str:
+    preferred = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "-q",
+            f"refs/remotes/origin/{PREFERRED_INTEGRATION_BRANCH}",
+        ],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    if preferred.returncode == 0:
+        return PREFERRED_INTEGRATION_BRANCH
     completed = subprocess.run(
         ["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
         cwd=root,
