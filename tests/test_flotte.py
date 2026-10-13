@@ -7,6 +7,7 @@ from kiln.fleet import (
     conflicted_files,
     find_adopted,
     find_repos,
+    integration_branch,
 )
 
 
@@ -73,3 +74,14 @@ def test_conflicts_left_by_copier_are_found(tmp_path: Path) -> None:
     assert conflicted_files(repo) == ["README.md"]
     (repo / "README.md").write_text("nouveau\n")
     assert conflicted_files(repo) == []
+
+
+def test_develop_wins_without_origin_head(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "projet", "https://github.com/antoine-tena/kiln.git")
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t"]
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "init"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "update-ref", "refs/remotes/origin/develop", "HEAD"], cwd=repo, check=True
+    )
+
+    assert integration_branch(repo) == "develop"
