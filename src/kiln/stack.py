@@ -9,6 +9,7 @@ développement, contrôles. Les commandes (`install`, `dev`, `check`, `update`, 
 connaissent pas les frameworks, seulement une `Stack`.
 """
 
+import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,9 @@ import yaml  # fourni par copier
 from kiln.shell import KilnError
 
 ANSWERS_FILE = ".copier-answers.yml"
+# Un dépôt adopté n'a pas de réponses : ses paramètres (l'envergure) vivent dans sa charte.
+CHARTER_FILE = "charte.toml"
+ADOPTED_KEYS = ("envergure",)
 BACKEND_DIR = "backend"
 FRONTEND_DIR = "frontend"
 
@@ -157,8 +161,14 @@ def read_answers(root: Path) -> dict[str, object]:
 
 
 def answers_if_any(root: Path) -> dict[str, object]:
-    """Réponses Copier, vides pour un dépôt adopté."""
-    return read_answers(root) if (root / ANSWERS_FILE).exists() else {}
+    """Réponses Copier ; pour un dépôt adopté, les paramètres déclarés dans sa charte."""
+    if (root / ANSWERS_FILE).exists():
+        return read_answers(root)
+    charter_path = root / CHARTER_FILE
+    if not charter_path.exists():
+        return {}
+    charter = tomllib.loads(charter_path.read_text())
+    return {key: charter[key] for key in ADOPTED_KEYS if key in charter}
 
 
 def stack_from_answers(answers: Mapping[str, object]) -> Stack:
