@@ -14,12 +14,15 @@ from pathlib import Path
 from kiln.check import run_checks
 from kiln.install import install_project
 from kiln.shell import KilnError, capture, require_tools, run, step
-from kiln.stack import ANSWERS_FILE, load_stack, read_answers
+from kiln.stack import ANSWERS_FILE, answers_if_any, load_stack, read_answers
 from kiln.update import update_project
 
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
 KILN_REMOTE = "https://github.com/antoine-tena/kiln.git"
 SEARCH_DEPTH = 3
+# Un dépôt adopté (que kiln n'a pas généré) se reconnaît à sa charte : `status` le montre,
+# `update --all` l'ignore, car appliquer le modèle écraserait ses fichiers écrits à la main.
+ADOPTED_MARKER = "charte.toml"
 SKIPPED_DIRS = frozenset({"node_modules", ".venv", ".git", ".claude", "_archives"})
 WORKTREES_DIR = Path(".claude") / "worktrees"
 UPDATE_BRANCH_PREFIX = "chore/kiln-update"
@@ -40,7 +43,7 @@ class ManagedRepo:
 def find_repos(code_dir: Path) -> list[ManagedRepo]:
     """Repos du dossier de code générés par kiln (ou par init-repo, son ancien nom)."""
     repos = []
-    for answers_path in _answer_files(code_dir, SEARCH_DEPTH):
+    for answers_path in _marker_files(code_dir, ANSWERS_FILE, SEARCH_DEPTH):
         root = answers_path.parent
         answers = read_answers(root)
         if (root / ".git").is_dir() and any(
@@ -50,13 +53,22 @@ def find_repos(code_dir: Path) -> list[ManagedRepo]:
     return repos
 
 
-def _answer_files(directory: Path, depth: int) -> list[Path]:
-    found = [directory / ANSWERS_FILE] if (directory / ANSWERS_FILE).is_file() else []
+def find_adopted(code_dir: Path) -> list[Path]:
+    """Repos du dossier de code qui suivent une charte kiln sans avoir été générés par kiln."""
+    return [
+        marker.parent
+        for marker in _marker_files(code_dir, ADOPTED_MARKER, SEARCH_DEPTH)
+        if (marker.parent / ".git").is_dir() and not (marker.parent / ANSWERS_FILE).exists()
+    ]
+
+
+def _marker_files(directory: Path, name: str, depth: int) -> list[Path]:
+    found = [directory / name] if (directory / name).is_file() else []
     if depth == 0:
         return found
     for child in sorted(directory.iterdir()):
         if child.is_dir() and child.name not in SKIPPED_DIRS:
-            found += _answer_files(child, depth - 1)
+            found += _marker_files(child, name, depth - 1)
     return found
 
 
@@ -67,17 +79,22 @@ def latest_template_commit() -> str:
 def show_status(code_dir: Path) -> None:
     latest = latest_template_commit()
     for repo in find_repos(code_dir):
-        branch = capture(["git", "branch", "--show-current"], repo.root)
-        is_dirty = bool(capture(["git", "status", "--porcelain"], repo.root))
         is_current = bool(repo.template_commit) and latest.startswith(repo.template_commit)
-        stack = load_stack(repo.root)
-        size = read_answers(repo.root).get("envergure", "?")
-        print(
-            f"{repo.root.relative_to(code_dir)!s:<30} {branch:<22} "
-            f"{'modifié' if is_dirty else 'propre':<8} "
-            f"{'modèle à jour' if is_current else 'modèle en retard':<17} {size!s:<6} "
-            f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}"
-        )
+        _print_status(code_dir, repo.root, "modèle à jour" if is_current else "modèle en retard")
+    for root in find_adopted(code_dir):
+        _print_status(code_dir, root, "adopté")
+
+
+def _print_status(code_dir: Path, root: Path, template_state: str) -> None:
+    branch = capture(["git", "branch", "--show-current"], root)
+    is_dirty = bool(capture(["git", "status", "--porcelain"], root))
+    stack = load_stack(root)
+    size = answers_if_any(root).get("envergure", "?")
+    print(
+        f"{root.relative_to(code_dir)!s:<30} {branch:<22} "
+        f"{'modifié' if is_dirty else 'propre':<8} {template_state:<17} {size!s:<6} "
+        f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}"
+    )
 
 
 def update_all(code_dir: Path, *, allow_major: bool) -> None:
