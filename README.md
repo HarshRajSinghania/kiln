@@ -25,7 +25,7 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 ([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) :
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
-  `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
   modifié, sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
   est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
   déclarer dans `statusLine` de `~/.claude/settings.json`) ;
@@ -221,5 +221,7 @@ la rejoue sur le poste, depuis le même `ci.yml` :
 
 `--sauter <job>` écarte un job (noté dans le verdict), `--sans-pousser` garde la note en local,
 `--garder` laisse le worktree pour enquêter. Avec `git config statusline.ci locale`, la status
-line affiche ce verdict pour la branche d'intégration et la skill `base:fusion` lance `kiln ci`
-en arrière-plan après chaque fusion.
+line affiche ce verdict pour la branche d'intégration. `kiln ci` ne tourne plus à chaque fusion
+dans `develop` : seulement sur la branche `release/vN` d'une version (skill `base:version`), dont
+le verdict vaut pour le commit de fusion dans `main` (mêmes fichiers). Entre deux versions, le
+typage se joue avant chaque push (crochet pre-push de `.pre-commit-config.yaml`).

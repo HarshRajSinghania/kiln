@@ -1,6 +1,6 @@
 ---
 name: fusion
-description: Terminer un chantier - fusionner la branche dans la branche d'intégration, pousser, supprimer la branche (et son worktree).
+description: Terminer un chantier - fusionner la branche dans la branche d'intégration (develop), pousser, supprimer la branche (et son worktree). Sans CI : elle ne tourne qu'à la mise en version (base:version).
 argument-hint: "[branche]"
 ---
 
@@ -20,9 +20,8 @@ Branche : `$ARGUMENTS`, sinon la branche courante. Branche d'intégration : cell
 4. `git push origin <intégration>`.
 5. Si la branche avait un worktree : `git worktree remove .claude/worktrees/<nom>` ; puis
    `git branch -d <branche>`.
-6. Si le repo rejoue sa CI sur le poste (`git config statusline.ci` vaut `locale`) : lancer
-   `kiln ci <intégration>` **en arrière-plan** (une vingtaine de minutes ; le verdict part en note
-   git sur origin, et le script de déploiement le lit), puis donner son verdict quand il arrive.
-   Ne pas attendre devant : la fusion est faite.
-7. Résumer : commit de fusion, fichiers touchés, CI déclenchée (`kiln ci` lancé, ou
-   `gh run list -b <intégration> -L 1` si le repo est sur GitHub).
+6. Pas de CI après la fusion : `kiln ci` ne tourne qu'au passage d'une version dans `main`
+   (`base:version`), seul état qui se déploie. Sur un repo sans `main` de production (la
+   branche d'intégration se déploie elle-même), la CI de GitHub suit le push. Le typage a
+   tourné avant le push (crochet pre-push) : s'il échoue, corriger sur la branche.
+7. Résumer : commit de fusion, fichiers touchés.

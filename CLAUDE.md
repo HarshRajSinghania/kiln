@@ -21,7 +21,7 @@ un dossier ou un module.
 - `copier.yml` : questions du modèle ; `template/` : le modèle (`CLAUDE.md.jinja`, chartes de
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
-  (skills `worktree`, `fusion`, `nettoyage`, `a-faire` ; `hooks/` ; `scripts/statusline.py`),
+  (skills `worktree`, `fusion`, `version`, `nettoyage`, `a-faire` ; `hooks/` ; `scripts/statusline.py`),
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
   actions composites (`charte`, `services`).
