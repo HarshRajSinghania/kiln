@@ -29,6 +29,7 @@ SETTABLE_KEYS = (
     "backend",
     "frontend",
     "podman",
+    "serena",
     "deploiement",
     "vps_hote",
     "domaine_api",

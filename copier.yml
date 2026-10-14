@@ -99,6 +99,14 @@ podman:
   validator: >-
     {% if podman and backend == 'cli' and frontend == 'aucun' %}Un outil en ligne de commande seul n'a rien à mettre dans podman.{% endif %}
 
+# Serena (plugin serena@kiln) : navigation par symboles en lecture seule, pour que Claude Code
+# lise une fonction plutôt qu'un fichier entier. Rentable sur un gros code (des milliers de
+# fichiers) ; son index et ses définitions d'outils coûtent plus qu'ils ne rapportent ailleurs.
+serena:
+  type: bool
+  help: Serena pour Claude Code (navigation par symboles, gros code) ? Activable plus tard par `kiln set serena=true`.
+  default: false
+
 # Production sur un serveur à soi : `vps` ajoute config/vps/ (Caddy, pile de production, bascule
 # avec retour arrière, sauvegardes testées), scripts/ops/ et docs/exploitation/. Backend Django
 # seulement, servi par podman. Activable plus tard par `kiln set deploiement=vps`.

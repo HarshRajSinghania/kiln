@@ -34,6 +34,9 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
   selon la stack ;
 - `vps-podman` (skills `deployer`, `prod-logs`, `prod-dump`) et `stripe` (MCP en mode test),
   activés à la main par le repo qui en a besoin.
+- `serena` (MCP [Serena](https://github.com/oraios/serena) en lecture seule : plan d'un
+  fichier, définition et références d'un symbole), activé par `kiln set serena=true` sur un gros
+  repo ; les éditions restent aux outils de Claude Code, où sont branchés les hooks de `base`.
 
 Installation : `claude plugin marketplace add antoine-tena/kiln`, puis
 `claude plugin install base@kiln`.
