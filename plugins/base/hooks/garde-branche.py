@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """PreToolUse (Bash) : refuse un `git commit` sur une branche principale (main, master, develop).
 
+Seule exception : le commit qui conclut une fusion en cours (MERGE_HEAD présent), par exemple
+après la résolution d'un conflit de `git merge --no-ff`.
+
 Un repo où l'on commite directement sur la branche principale s'en exempte par
 `git config garde-branche.desactive true`.
 """
@@ -51,7 +54,15 @@ for target in targets:
         ).stdout.strip()
         == "true"
     )
-    if branch in PROTECTED_BRANCHES and not is_disabled:
+    is_merging = (
+        subprocess.run(
+            ["git", "-C", target, "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+            capture_output=True,
+            timeout=5,
+        ).returncode
+        == 0
+    )
+    if branch in PROTECTED_BRANCHES and not is_disabled and not is_merging:
         print(
             f"Commit refusé : on ne commite jamais sur {branch}. "
             "Créer une branche (worktree) d'abord.",
