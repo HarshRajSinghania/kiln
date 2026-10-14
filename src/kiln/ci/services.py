@@ -49,14 +49,14 @@ def remove_orphan_containers() -> int:
     orphans = [
         name
         for name, _, owner in (line.partition(" ") for line in listing.stdout.splitlines())
-        if owner.isdigit() and not _is_alive(int(owner))
+        if owner.isdigit() and not is_alive(int(owner))
     ]
     for container in orphans:
         subprocess.run(["podman", "rm", "-f", container], capture_output=True, check=False)
     return len(orphans)
 
 
-def _is_alive(pid: int) -> bool:
+def is_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
