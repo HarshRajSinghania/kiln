@@ -4,17 +4,23 @@
 # - celui de `kiln ci <sha>`, la CI du ci.yml rejouée sur un poste (note git refs/notes/ci,
 #   poussée sur origin) : seul verdict d'un repo dont la CI GitHub ne tourne pas ;
 # - celui de la CI GitHub (workflow CI_WORKFLOW).
+# Le commit de version de `main` (fusion --no-ff de `release/vN`, skill `base:version`) porte
+# exactement les fichiers de la release : le verdict vert de celle-ci vaut pour lui.
 # SAUTER_CI=1 passe outre, en cas d'urgence.
 #
 # Usage : . scripts/ops/lib/ci-verte.sh ; ci_verte <sha>
 # Réglages : CI_WORKFLOW (défaut ci.yml), SAUTER_CI=1
 ci_verte() {
-  local sha="$1" note runs conclusion
+  local sha="$1" note runs conclusion release
   if [ "${SAUTER_CI:-0}" = 1 ]; then
     echo "ATTENTION : vérification de la CI ignorée (SAUTER_CI=1)." >&2
     return 0
   fi
   note="$(verdict_kiln_ci "$sha")"
+  if [ "${note%%$'\n'*}" != "kiln ci : succès" ] && release="$(release_identique "$sha")"; then
+    note="$(verdict_kiln_ci "$release")"
+    [ "${note%%$'\n'*}" = "kiln ci : succès" ] && echo "Fusion de version : mêmes fichiers que la release ${release:0:8}."
+  fi
   if [ "${note%%$'\n'*}" = "kiln ci : succès" ]; then
     echo "CI rejouée par kiln ci, verte pour ${sha:0:8} :"
     sed -n '2,$s/^/  /p' <<< "$note"
@@ -54,4 +60,13 @@ verdict_kiln_ci() {
   done
   note="$(git notes --ref=ci show "$sha" 2> /dev/null || git notes --ref=ci-origin show "$sha" 2> /dev/null || echo "jamais rejoué")"
   printf '%s\n' "$note"
+}
+
+# Second parent d'un commit de fusion qui n'apporte rien d'autre que lui (même arbre) ; échoue
+# sinon. C'est la fusion d'une release dans `main`.
+release_identique() {
+  local sha="$1" parent
+  parent="$(git rev-parse -q --verify "$sha^2" 2> /dev/null)" || return 1
+  [ "$(git rev-parse "$sha^{tree}")" = "$(git rev-parse "$parent^{tree}")" ] || return 1
+  printf '%s\n' "$parent"
 }
