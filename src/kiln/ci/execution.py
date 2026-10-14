@@ -7,6 +7,7 @@ mêmes fichiers (types générés, build du front).
 """
 
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -22,6 +23,10 @@ from kiln.ci.verdict import JobOutcome
 LOG_TAIL_LINES = 40
 # Variables du poste qui feraient lancer les outils du worktree avec l'environnement d'un autre.
 INHERITED_TO_DROP = ("VIRTUAL_ENV", "DATABASE_URL", "REDIS_URL", "PYTHONPATH")
+# Chrome pour Lighthouse (CHROME_PATH) : celui du poste, sinon le Chromium de Playwright. Sur
+# GitHub, l'image du runner en fournit un ; sur le poste, lhci échoue sans lui.
+CHROME_NAMES = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")
+PLAYWRIGHT_BROWSERS = Path.home() / ".cache" / "ms-playwright"
 _print_lock = threading.Lock()
 
 
@@ -41,7 +46,21 @@ def say(message: str) -> None:
 
 def base_env(extra: Mapping[str, str]) -> dict[str, str]:
     env = {key: value for key, value in os.environ.items() if key not in INHERITED_TO_DROP}
+    if "CHROME_PATH" not in env and (chrome := find_chrome()):
+        env["CHROME_PATH"] = chrome
     return {**env, "CI": "true", **extra}
+
+
+def find_chrome() -> str | None:
+    """Chrome du poste, sinon le Chromium de Playwright le plus récent ; None s'il n'y en a pas."""
+    for name in CHROME_NAMES:
+        if path := shutil.which(name):
+            return path
+    builds = sorted(
+        PLAYWRIGHT_BROWSERS.glob("chromium-*/chrome-linux*/chrome"),
+        key=lambda chrome: int(chrome.parts[-3].removeprefix("chromium-")),
+    )
+    return str(builds[-1]) if builds else None
 
 
 def run_lanes(plans: list[Plan], workspace: Workspace) -> list[JobOutcome]:
