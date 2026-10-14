@@ -1,5 +1,6 @@
 """`kiln ci` : lecture du ci.yml, plans des jobs, exécution et verdict en note git."""
 
+import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from kiln.ci import execution
 from kiln.ci.execution import Workspace, run_job
 from kiln.ci.jobs import BACK_LANE, DEFAULTS, plan_job
 from kiln.ci.verdict import (
@@ -172,3 +174,24 @@ def test_deploy_gate_accepts_a_kiln_ci_success_only(tmp_path: Path) -> None:
     accepted = _ci_green(clone, fake_bin, sha)
     assert accepted.returncode == 0, accepted.stderr
     assert "CI rejouée par kiln ci, verte" in accepted.stdout
+
+
+@pytest.mark.skipif(shutil.which("wslpath") is None, reason="WSL seulement")
+def test_wsl_chrome_launcher_translates_the_windows_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_chrome = tmp_path / "chrome"
+    fake_chrome.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$@"\n')
+    fake_chrome.chmod(0o755)
+    monkeypatch.setattr(execution, "WSL_CHROME", tmp_path / "chrome-wsl")
+
+    launcher = execution.wsl_chrome_launcher(str(fake_chrome))
+    printed = subprocess.run(
+        [launcher, "--headless", "--user-data-dir=C:\\Users\\a\\AppData\\Local\\lighthouse.1"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+
+    assert printed[0] == "--headless"
+    assert printed[1].startswith("--user-data-dir=/")
