@@ -3,9 +3,11 @@
 Pour un repo dont la CI GitHub ne tourne pas (forfait épuisé, dépôt sans Actions) : le commit est
 extrait dans un worktree détaché, hors du repo, ses dépendances installées comme sur GitHub
 (verrous figés), puis les jobs du `ci.yml` rejoués. Le verdict part en note git sur origin, où le
-script de déploiement le lit.
+script de déploiement le lit. Le worktree d'un `kiln ci` tué (SIGKILL, fenêtre fermée) garde le
+fichier PID de son lanceur, et le suivant le retire.
 """
 
+import os
 import shutil
 import subprocess
 import time
@@ -14,6 +16,7 @@ from pathlib import Path
 
 from kiln.ci.execution import Workspace, base_env, run_lanes, run_step, say
 from kiln.ci.jobs import Plan, Step, plan_job
+from kiln.ci.services import is_alive, remove_orphan_containers
 from kiln.ci.verdict import JobOutcome, Verdict, read_verdict, record_verdict
 from kiln.ci.workflow import load_jobs
 from kiln.shell import KilnError, capture, require_tools
@@ -27,6 +30,10 @@ def run_local_ci(
     root: Path, revision: str, skipped_jobs: frozenset[str], should_push: bool, should_keep: bool
 ) -> Verdict:
     require_tools("git", "uv", "podman")
+    if orphan_count := remove_orphan_containers():
+        say(f"{orphan_count} conteneurs d'un kiln ci interrompu retirés")
+    if orphan_count := _remove_orphan_workspaces(root):
+        say(f"{orphan_count} worktrees d'un kiln ci interrompu retirés")
     sha = capture(["git", "rev-parse", "--verify", f"{revision}^{{commit}}"], root)
     started_at, started = datetime.now().astimezone(), time.monotonic()
     workspace = _create_workspace(root, sha)
@@ -39,6 +46,7 @@ def run_local_ci(
         say(f"kiln ci {sha[:SHORT_SHA]} : {len(plans)} jobs rejoués, {len(skipped)} non rejoués")
         outcomes = _prepare(plans, workspace) or run_lanes(plans, workspace)
     finally:
+        _owner_file(workspace.root).unlink(missing_ok=True)
         if not should_keep:
             _remove_workspace(root, workspace.root)
     verdict = Verdict(sha, tuple(outcomes), tuple(skipped), started_at, time.monotonic() - started)
@@ -58,15 +66,41 @@ def show_verdict(root: Path, revision: str) -> bool:
 
 
 def _create_workspace(root: Path, sha: str) -> Workspace:
-    # Nom de l'arbre principal, même lancé depuis un worktree : la status line le cherche ainsi.
-    common_dir = capture(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], root)
-    name = f"{Path(common_dir).parent.name}-{sha[:SHORT_SHA]}"
+    name = f"{_repo_name(root)}-{sha[:SHORT_SHA]}"
     worktree, log_dir = CACHE_DIR / name, CACHE_DIR / "journaux" / name
     _remove_workspace(root, worktree)
     shutil.rmtree(log_dir, ignore_errors=True)
     log_dir.mkdir(parents=True)
     capture(["git", "worktree", "add", "--detach", str(worktree), sha], root)
+    _owner_file(worktree).write_text(str(os.getpid()))
     return Workspace(worktree, log_dir, f"kiln-ci-{name}")
+
+
+def _repo_name(root: Path) -> str:
+    # Nom de l'arbre principal, même lancé depuis un worktree : la status line le cherche ainsi.
+    common_dir = capture(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], root)
+    return Path(common_dir).parent.name
+
+
+def _owner_file(worktree: Path) -> Path:
+    """PID du `kiln ci` qui utilise le worktree, à côté de lui ; absent une fois le run fini."""
+    return worktree.with_name(f"{worktree.name}.pid")
+
+
+def _remove_orphan_workspaces(root: Path) -> int:
+    """Retire les worktrees du repo dont le `kiln ci` lanceur est mort ; renvoie leur nombre.
+
+    Un worktree sans fichier PID (gardé par --garder) n'est jamais touché.
+    """
+    orphans = [
+        owner.with_suffix("")
+        for owner in CACHE_DIR.glob(f"{_repo_name(root)}-*.pid")
+        if not owner.read_text().strip().isdigit() or not is_alive(int(owner.read_text()))
+    ]
+    for worktree in orphans:
+        _remove_workspace(root, worktree)
+        _owner_file(worktree).unlink(missing_ok=True)
+    return len(orphans)
 
 
 def _remove_workspace(root: Path, worktree: Path) -> None:
