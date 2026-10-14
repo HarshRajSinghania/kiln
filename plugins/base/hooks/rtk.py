@@ -19,7 +19,8 @@ if not shutil.which("rtk"):
     sys.exit(0)
 disabled = subprocess.run(
     ["git", "-C", cwd, "config", "--get", "--type=bool", "rtk.desactive"],
-    capture_output=True, text=True,
+    capture_output=True,
+    text=True,
 )
 if disabled.stdout.strip() == "true":
     sys.exit(0)
@@ -32,7 +33,13 @@ except json.JSONDecodeError:
 specific = output.get("hookSpecificOutput") or {}
 if "updatedInput" not in specific:
     sys.exit(0)
-print(json.dumps({"hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "updatedInput": specific["updatedInput"],
-}}))
+print(
+    json.dumps(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "updatedInput": specific["updatedInput"],
+            }
+        }
+    )
+)
