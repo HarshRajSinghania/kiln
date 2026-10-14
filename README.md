@@ -29,7 +29,7 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
   modifié, sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
   est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
   déclarer dans `statusLine` de `~/.claude/settings.json`) ;
-- `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish` ; MCP playwright) et `pile-django` (skills
+- `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish`, `apercu` — captures sur trois téléphones et un ordinateur ; MCP playwright) et `pile-django` (skills
   `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
   selon la stack ;
 - `vps-podman` (skills `deployer`, `prod-logs`, `prod-dump`) et `stripe` (MCP en mode test),
