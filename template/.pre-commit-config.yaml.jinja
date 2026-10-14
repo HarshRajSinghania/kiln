@@ -5,6 +5,10 @@
 # Le crochet vaut pour l'arbre principal et tous les worktrees. Tout rejouer :
 #   pre-commit run --all-files
 # Les crochets locaux appellent les outils du projet (uv) et `charte`, installée avec kiln.
+# Le typage, trop lent pour chaque commit, se joue avant chaque push : `develop` ne reçoit plus
+# la CI complète, qui ne tourne qu'au passage d'une version (skill `base:version`).
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -49,6 +53,24 @@ repos:
         entry: bash -c 'cd frontend && pnpm exec eslint --fix "${@#frontend/}"' --
         language: system
         files: ^frontend/.*\.(vue|ts|tsx|mjs)$
+{% endif %}
+{%- if backend in ['django', 'fastapi', 'data', 'cli'] %}
+      - id: typage-backend
+        name: typage mypy (backend, avant push)
+        entry: {% if backend == 'django' %}charte types{% else %}bash -c 'cd backend && uv run mypy .'{% endif %}
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+{% endif %}
+{%- if frontend in ['nuxt', 'next', 'astro'] %}
+      - id: typage-frontend
+        name: typage TypeScript (frontend, avant push)
+        entry: pnpm --dir frontend typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
 {% endif %}
       - id: charte
         name: charte (charte.toml)
