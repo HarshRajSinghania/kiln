@@ -29,6 +29,11 @@
       "name": "stripe",
       "source": "./plugins/stripe",
       "description": "MCP Stripe en mode test seulement"
+    },
+    {
+      "name": "serena",
+      "source": "./plugins/serena",
+      "description": "MCP Serena en lecture seule : navigation par symboles pour les gros repos"
     }
   ]
 }

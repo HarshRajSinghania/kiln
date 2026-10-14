@@ -26,13 +26,17 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
-  modifié ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
+  modifié, sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
+  est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
   déclarer dans `statusLine` de `~/.claude/settings.json`) ;
 - `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish` ; MCP playwright) et `pile-django` (skills
   `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
   selon la stack ;
 - `vps-podman` (skills `deployer`, `prod-logs`, `prod-dump`) et `stripe` (MCP en mode test),
   activés à la main par le repo qui en a besoin.
+- `serena` (MCP [Serena](https://github.com/oraios/serena) en lecture seule : plan d'un
+  fichier, définition et références d'un symbole), activé par `kiln set serena=true` sur un gros
+  repo ; les éditions restent aux outils de Claude Code, où sont branchés les hooks de `base`.
 
 Installation : `claude plugin marketplace add antoine-tena/kiln`, puis
 `claude plugin install base@kiln`.

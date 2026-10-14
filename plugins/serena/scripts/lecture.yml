@@ -1,0 +1,18 @@
+# Contexte Serena de kiln : navigation par symboles seulement. Les éditions restent aux outils
+# Edit et Write de Claude Code, sur lesquels sont branchés les hooks de kiln (contrôle de la
+# charte, fichiers protégés) ; le contexte « claude-code » de Serena les interdit, d'où celui-ci.
+description: Claude Code, navigation par symboles en lecture seule (kiln)
+prompt: |
+  Serena's tools give symbol-level code navigation backed by a language server. Before reading
+  a whole source file to find something, prefer get_symbols_overview (outline of a file) and
+  find_symbol with include_body (one symbol's code); use find_referencing_symbols to find
+  callers, find_declaration and find_implementations to jump to definitions. Keep using your
+  own Read, Grep and Edit tools for everything else, and always edit with Edit or Write.
+fixed_tools:
+  - get_symbols_overview
+  - find_symbol
+  - find_referencing_symbols
+  - find_declaration
+  - find_implementations
+single_project: true
+structured_tool_output: false

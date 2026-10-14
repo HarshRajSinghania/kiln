@@ -27,6 +27,47 @@ La charte tient en {{ 'trois' if back_label and front_label else 'deux' }} fichi
 {%- if back_label %} et [`backend/CLAUDE.md`](backend/CLAUDE.md)
 (§3){% endif %}, chargés par Claude Code dès qu'il travaille dans le dossier.
 
+## Carte du repo
+
+Où chercher, pour ne pas explorer : à lire avant d'ouvrir des fichiers, à tenir à jour dans le
+commit qui ajoute, déplace ou retire un dossier, un domaine ou un point d'entrée. Une ligne par
+endroit, ce qu'on y trouve ; pas de copie du code.
+
+{% if backend == 'django' -%}
+- `backend/config/` : réglages (`settings.py`), routes (`urls.py`), API Ninja (`api.py`),
+  middlewares, sondes de santé (`health.py`), commandes d'administration (`management/`).
+- `backend/<app>/` : une app Django par domaine métier ; `backend/tests/` : tests transverses.
+{% elif backend == 'fastapi' -%}
+- `backend/app/` : point d'entrée (`main.py`), réglages (`settings.py`), sondes de santé
+  (`health.py`) ; un module par domaine. `backend/tests/` : tests.
+{% elif backend == 'data' -%}
+- `backend/pipeline/` : chargement (`sources.py`), transformations (`transforms.py`), figures
+  (`figures.py`) ; `backend/notebooks/` : carnets marimo ; `backend/data/` : données (`sample/`
+  commité). `backend/tests/` : tests.
+{% elif backend == 'cli' -%}
+- `backend/{{ nom | replace('-', '_') }}/` : commandes (`cli.py`, point d'entrée `__main__.py`) et
+  logique métier ; `backend/tests/` : tests.
+{% endif -%}
+{% if frontend == 'nuxt' -%}
+- `frontend/app/` : pages, composants (`components/`), composables, styles (`assets/`) ; types
+  de l'API générés dans `app/types/api.d.ts` (`kiln contrat`), constantes dans
+  `app/utils/constants.ts`.
+{% elif frontend == 'next' -%}
+- `frontend/app/` : routes (App Router) ; `frontend/components/` : composants ;
+  `frontend/lib/` : client d'API et constantes (`constants.ts`).
+{% elif frontend == 'astro' -%}
+- `frontend/src/` : pages (`pages/`), gabarits (`layouts/`), styles, constantes
+  (`constants.ts`).
+{% elif frontend in ['streamlit', 'dash'] -%}
+- `frontend/app.py` : point d'entrée ; `frontend/dashboard/` : pages, mise en page et
+  constantes ; `frontend/tests/` : tests.
+{% endif -%}
+{% if deploiement == 'vps' -%}
+- `config/`, `scripts/` : déploiement et exploitation ; procédure dans
+  [`docs/exploitation/production.md`](docs/exploitation/production.md).
+{% endif -%}
+- `docs/a-faire/` : suivi du travail ; `charte.toml` : règles contrôlées par `charte`.
+
 ## Langue
 
 - Échanges, documentation et messages de commit en français ; code en anglais.
