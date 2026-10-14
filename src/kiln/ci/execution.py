@@ -7,6 +7,8 @@ mêmes fichiers (types générés, build du front).
 """
 
 import os
+import platform
+import shlex
 import shutil
 import subprocess
 import threading
@@ -27,6 +29,22 @@ INHERITED_TO_DROP = ("VIRTUAL_ENV", "DATABASE_URL", "REDIS_URL", "PYTHONPATH")
 # GitHub, l'image du runner en fournit un ; sur le poste, lhci échoue sans lui.
 CHROME_NAMES = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")
 PLAYWRIGHT_BROWSERS = Path.home() / ".cache" / "ms-playwright"
+# Sous WSL, chrome-launcher (Lighthouse) croit lancer le Chrome de Windows et lui passe un
+# `--user-data-dir` au format Windows : un Chromium Linux en fait un dossier
+# « C:\Users\…\lighthouse.N » dans le dossier courant. Ce lanceur retraduit le chemin.
+WSL_CHROME = Path.home() / ".cache" / "kiln" / "chrome-wsl"
+WSL_CHROME_SCRIPT = """#!/usr/bin/env bash
+# Écrit par kiln ci : Chromium Linux lancé par chrome-launcher sous WSL (voir execution.py).
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    --user-data-dir=[A-Za-z]:\\\\*)
+      args+=("--user-data-dir=$(wslpath -u "${arg#--user-data-dir=}")") ;;
+    *) args+=("$arg") ;;
+  esac
+done
+exec @CHROME@ "${args[@]}"
+"""
 _print_lock = threading.Lock()
 
 
@@ -47,7 +65,7 @@ def say(message: str) -> None:
 def base_env(extra: Mapping[str, str]) -> dict[str, str]:
     env = {key: value for key, value in os.environ.items() if key not in INHERITED_TO_DROP}
     if "CHROME_PATH" not in env and (chrome := find_chrome()):
-        env["CHROME_PATH"] = chrome
+        env["CHROME_PATH"] = wsl_chrome_launcher(chrome) if is_wsl() else chrome
     return {**env, "CI": "true", **extra}
 
 
@@ -61,6 +79,20 @@ def find_chrome() -> str | None:
         key=lambda chrome: int(chrome.parts[-3].removeprefix("chromium-")),
     )
     return str(builds[-1]) if builds else None
+
+
+def is_wsl() -> bool:
+    return "microsoft" in platform.release().lower()
+
+
+def wsl_chrome_launcher(chrome: str) -> str:
+    """Chemin du lanceur qui retraduit pour `chrome` le profil au format Windows."""
+    script = WSL_CHROME_SCRIPT.replace("@CHROME@", shlex.quote(chrome))
+    if not WSL_CHROME.exists() or WSL_CHROME.read_text() != script:
+        WSL_CHROME.parent.mkdir(parents=True, exist_ok=True)
+        WSL_CHROME.write_text(script)
+        WSL_CHROME.chmod(0o755)
+    return str(WSL_CHROME)
 
 
 def run_lanes(plans: list[Plan], workspace: Workspace) -> list[JobOutcome]:
