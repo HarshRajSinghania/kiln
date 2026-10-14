@@ -14,6 +14,7 @@ from pathlib import Path
 
 from kiln.ci.execution import Workspace, base_env, run_lanes, run_step, say
 from kiln.ci.jobs import Plan, Step, plan_job
+from kiln.ci.services import remove_orphan_containers
 from kiln.ci.verdict import JobOutcome, Verdict, read_verdict, record_verdict
 from kiln.ci.workflow import load_jobs
 from kiln.shell import KilnError, capture, require_tools
@@ -27,6 +28,8 @@ def run_local_ci(
     root: Path, revision: str, skipped_jobs: frozenset[str], should_push: bool, should_keep: bool
 ) -> Verdict:
     require_tools("git", "uv", "podman")
+    if orphan_count := remove_orphan_containers():
+        say(f"{orphan_count} conteneurs d'un kiln ci interrompu retirés")
     sha = capture(["git", "rev-parse", "--verify", f"{revision}^{{commit}}"], root)
     started_at, started = datetime.now().astimezone(), time.monotonic()
     workspace = _create_workspace(root, sha)
