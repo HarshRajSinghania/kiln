@@ -7,12 +7,12 @@ capturées restent lisibles.
 """
 
 from collections.abc import Sequence
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from kiln import ui
 from kiln.shell import KilnError
 from kiln.stack import NO_FRAMEWORK, answers_if_any, load_stack
+from kiln.versions import installed_version
 
 # Un caractère = deux pixels superposés. L pierre éclairée, B pierre, b pierre dans l'ombre,
 # d socle et chapeau de brique, W/K yeux, P joues, R/F/Y flamme (bord, corps, cœur), . vide.
@@ -49,7 +49,7 @@ CommandGroup = tuple[str, Sequence[tuple[str, str]]]
 
 def show_banner(action: str, root: Path | None = None) -> None:
     """Affiche la bannière ; `root` : le repo concerné, sinon le dossier courant sans projet."""
-    kiln_version = f"v{_kiln_version()}"
+    kiln_version = installed_version()
     details = [action, *([_project_summary(root)] if root is not None else [])]
     location = _home_relative(root or Path.cwd())
     if not ui.is_styled():
@@ -116,13 +116,6 @@ def _project_summary(root: Path) -> str:
     pile = " + ".join(frameworks) + (", podman" if stack.has_podman else "")
     parts = [str(answers.get("nom", root.name)), str(answers.get("envergure", "")), pile]
     return " · ".join(part for part in parts if part)
-
-
-def _kiln_version() -> str:
-    try:
-        return version("kiln")
-    except PackageNotFoundError:
-        return "?"
 
 
 def _home_relative(path: Path) -> str:
