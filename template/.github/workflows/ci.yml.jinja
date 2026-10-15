@@ -1,7 +1,12 @@
+{# Version de kiln dont part le projet : ses workflows sont cités à ce tag, et `kiln update`
+    le fait avancer. Un modèle pris hors version (développement de kiln) cite develop. #}
+{%- set kiln_commit = _copier_answers._commit | default('') | string %}
+{%- set kiln_ref = kiln_commit if (kiln_commit.startswith('v') and '-g' not in kiln_commit) else 'develop' -%}
 name: CI
 
-# Les workflows réutilisables vivent dans kiln (antoine-tena/kiln, public) : ils évoluent pour
-# tous les projets à la fois. Le projet ne garde ici que ses paramètres.
+# Les workflows réutilisables vivent dans kiln (antoine-tena/kiln, public), cités à la version
+# de kiln dont part le projet ({{ kiln_ref }}) : `kiln update` les fait passer à la suivante. Le
+# projet ne garde ici que ses paramètres.
 on:
   push:
     branches: [ main, develop ]
@@ -11,7 +16,7 @@ on:
 jobs:
 {%- if backend == 'django' %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@main
+    uses: antoine-tena/kiln/.github/workflows/django.yml@{{ kiln_ref }}
     with:
       base: {{ nom | replace('-', '_') }}
       env: |
@@ -19,19 +24,19 @@ jobs:
         DJANGO_DEBUG=True
 {%- elif backend in ['fastapi', 'data', 'cli'] %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    uses: antoine-tena/kiln/.github/workflows/python.yml@{{ kiln_ref }}
     with:
       dossier: backend
 {%- elif backend == 'java' %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/maven.yml@main
+    uses: antoine-tena/kiln/.github/workflows/maven.yml@{{ kiln_ref }}
     with:
       dossier: backend
 {%- endif %}
 {%- if frontend in ['nuxt', 'next', 'astro'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@main
+    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@{{ kiln_ref }}
     with:
       scripts: |
 {%- if frontend != 'astro' %}
@@ -42,28 +47,28 @@ jobs:
 {%- elif frontend in ['streamlit', 'dash'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    uses: antoine-tena/kiln/.github/workflows/python.yml@{{ kiln_ref }}
     with:
       dossier: frontend
 {%- endif %}
 {%- if backend == 'django' and frontend == 'nuxt' %}
 
   contrat:
-    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@main
+    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@{{ kiln_ref }}
     with:
       env: |
         DJANGO_SECRET_KEY=ci-sans-valeur-secrete
 {%- endif %}
 
   charte:
-    uses: antoine-tena/kiln/.github/workflows/charte.yml@main
+    uses: antoine-tena/kiln/.github/workflows/charte.yml@{{ kiln_ref }}
 
 {%- set uv_dirs = (['backend'] if backend not in ['aucun', 'java'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- set pnpm_dir = 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' %}
 {%- if uv_dirs or pnpm_dir %}
 
   securite:
-    uses: antoine-tena/kiln/.github/workflows/securite.yml@main
+    uses: antoine-tena/kiln/.github/workflows/securite.yml@{{ kiln_ref }}
     with:
       uv: "{{ uv_dirs | join(' ') }}"
       pnpm: "{{ pnpm_dir }}"
@@ -71,7 +76,7 @@ jobs:
 {%- if podman %}
 
   conteneurs:
-    uses: antoine-tena/kiln/.github/workflows/infra.yml@main
+    uses: antoine-tena/kiln/.github/workflows/infra.yml@{{ kiln_ref }}
     with:
       containerfiles: "{{ ((['backend/Containerfile'] if backend not in ['aucun', 'cli', 'java'] else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
       compose: compose.yaml

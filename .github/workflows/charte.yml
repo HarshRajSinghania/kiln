@@ -13,6 +13,17 @@ jobs:
         with:
           # La règle des migrations compare à la branche d'intégration.
           fetch-depth: 0
-      - uses: antoine-tena/kiln/actions/charte@develop
+      # kiln à la version exacte de ce workflow : ses actions et la commande charte en viennent
+      # (retiré aussitôt, pour que les contrôles du projet ne le voient pas).
+      - uses: actions/checkout@v7
+        with:
+          repository: antoine-tena/kiln
+          ref: ${{ job.workflow_sha || 'develop' }}
+          path: .kiln
+      - uses: ./.kiln/actions/charte
+        with:
+          ref: ${{ job.workflow_sha || 'develop' }}
+      - name: Retrait de kiln du dossier du projet
+        run: rm -rf .kiln
       - name: Charte
         run: charte

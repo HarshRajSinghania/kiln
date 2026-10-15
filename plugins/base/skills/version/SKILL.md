@@ -21,8 +21,9 @@ Ne jamais changer la branche de l'arbre principal : chaque branche dans
 - `git fetch origin --tags`. Version précédente : `git describe --tags --abbrev=0 origin/main`.
 - Commit candidat : l'argument, sinon `origin/develop`. Pour un correctif urgent : le dernier
   tag, plus les seuls commits du correctif (`git cherry-pick`).
-- Numéro : l'argument, sinon `vN+1` s'il y a des nouveautés (`feat`), `vN.M+1` si ce ne sont
-  que des correctifs.
+- Numéro : l'argument, sinon celui que fixe le `CLAUDE.md` du projet (kiln : semver et
+  candidates, `kiln version` le propose), sinon `vN+1` s'il y a des nouveautés (`feat`),
+  `vN.M+1` si ce ne sont que des correctifs.
 - Changements : `git log --first-parent --format='%h %s' <précédente>..<candidat>`. Si
   l'utilisateur écarte un chantier, prendre un candidat plus ancien plutôt que de défaire du
   code sur la release.

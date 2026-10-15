@@ -16,6 +16,7 @@ from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import load_stack, read_answers
 from kiln.statusline import apply_statusline_settings
 from kiln.template import template_revision, template_source
+from kiln.versions import follows_candidates
 
 INITIAL_COMMIT_MESSAGE = "chore: projet généré par kiln"
 
@@ -43,6 +44,7 @@ def create_project(request: NewProjectRequest) -> None:
         data=request.answers,
         user_defaults=_user_defaults(),
         vcs_ref=template_revision(source),
+        use_prereleases=follows_candidates(),
         unsafe=False,
         # Hors terminal (CI, agent), les questions sans réponse prennent leur valeur par défaut.
         defaults=not sys.stdin.isatty(),

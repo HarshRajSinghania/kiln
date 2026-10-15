@@ -13,7 +13,7 @@ un dossier ou un module.
 
 - `src/kiln/` : la commande. `cli.py` (arguments) ; une commande par module : `new.py`,
   `install.py`, `dev.py`, `check.py`, `settings.py` (`kiln set`, clés réglables), `update.py`,
-  `contract.py`, `doctor.py` (diagnostic du poste et du repo), `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
+  `contract.py`, `release.py` (`kiln version`), `doctor.py` (diagnostic du poste et du repo), `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
   `.copier-answers.yml`), `template.py`, `deps.py`, `github.py`, `rules.py` (règles non
   vérifiées), `statusline.py`, `versions.py` (tags, journal des versions), `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
   roue animée, bilan, succès, erreurs), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
@@ -37,16 +37,30 @@ un dossier ou un module.
 
 ## Versions
 
-`main` ne reçoit que des versions, taguées `vN` ou `vN.M` (skill `base:version`, pas de
-déploiement : le tag poussé sur `main` publie la version). Annonce : une entrée `## vN — date`
-en tête de `CHANGELOG.md` (une ligne `- …` par changement visible), et `version = "N"` dans
-`pyproject.toml`, sur la branche `release/vN`. Contrôle complet : les trois commandes
-ci-dessous, ou la CI GitHub de la branche. Déploiement : chaque version, `vN` comme `vN.M`, se
-termine par `kiln update --all` (tous les repos générés passent à la version, fusionnés dans leur
-`develop` si leurs contrôles passent) ; un repo dont les contrôles échouent se reprend à la main
-avant de clore la version. Les dépôts adoptés (annski) n'en reçoivent pas : ils ne dépendent que
-des workflows et actions en `@develop`. Les workflows et actions réutilisables se citent
-`@main`. Module : `src/kiln/versions.py` (tags, journal, version de l'outil).
+Semver à trois chiffres, `vMAJEUR.MINEUR.CORRECTIF` ; en 0.x (aujourd'hui), un changement cassant
+monte la mineure, tout le reste le correctif. Est cassant ce qui touche l'API publique de kiln :
+commandes et options de la CLI, questions de `copier.yml`, arborescence générée, entrées des
+workflows et actions réutilisables, noms des skills et hooks, identifiants de règles de la charte
+(commit `feat!:` ou `BREAKING CHANGE`). `kiln version` (module `release.py`) propose le numéro et
+dit quelles candidates sont prêtes.
+
+Deux temps, par la skill `base:version` (pas de déploiement : le tag publie) :
+1. **Candidate** : branche `release/vX.Y.Z` tirée de `develop`, entrée `## vX.Y.Z — date` en tête
+   de `CHANGELOG.md`, `version = "X.Y.Z"` dans `pyproject.toml`, contrôle complet (les trois
+   commandes ci-dessous), tag `vX.Y.Z-rc.1` poussé. Les postes au canal `interne` (`kiln set
+   canal=interne`, celui d'antoine) la suivent : `kiln update --all` y fait passer tous les repos
+   générés. Un correctif de la candidate : commit `fix:` sur sa branche, tag `-rc.N+1`.
+2. **Promotion**, quand `kiln version` la dit prête (une candidate plus récente existe, et elle a
+   tenu 3 jours en 0.x, 7 ensuite, sans nouvelle `-rc`) : tag `vX.Y.Z` sur le commit exact de sa
+   dernière candidate, fusion dans `main`, reversement dans `develop`, puis `kiln update --all`.
+   Le canal `public` (par défaut) ne voit que ces versions.
+
+Chaque version, correctif compris, finit par `kiln update --all` : les repos générés citent leurs
+workflows au tag exact dont ils partent (`ci.yml`), et `kiln update` le fait avancer. Les
+workflows de kiln prennent leurs actions et la commande `charte` à leur propre commit
+(`job.workflow_sha`). Les dépôts adoptés (annski) citent les workflows en `@develop` et ne
+reçoivent pas de `kiln update`. Modules : `versions.py` (tags, canaux, journal, version de
+l'outil), `release.py` (`kiln version`).
 
 ## Contrôles
 

@@ -84,7 +84,8 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
 | `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, puis la fusion directe dans l'intégration (commit de fusion poussé) ; contrôles en échec, la branche est poussée sans être fusionnée. L'arbre principal ne change jamais de branche. |
 | `kiln doctor` | Diagnostic du poste (git, uv, gh connecté, pnpm, podman, Java, pre-commit, version de kiln, plugin Claude, configuration) et du repo courant (version du modèle, crochet pre-commit, dépendances, `backend/.env`) : ✓, ! à regarder ou ✗ bloquant, chaque fois avec la commande qui corrige. Ne modifie rien. |
-| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, modèle à jour ou en retard, stack. |
+| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.4.0` en retard), stack. |
+| `kiln version` | Dans le dépôt de kiln : dernière version publique, candidates (âge, repos qui les ont adoptées, prêtes à promouvoir) et numéro de la prochaine. |
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
@@ -185,22 +186,23 @@ sécurité.
 
 ## Versions
 
-kiln suit le même chemin que les projets en production : le travail s'intègre dans `develop`,
-et `main` ne reçoit que des versions.
+kiln suit le semver à trois chiffres (`vMAJEUR.MINEUR.CORRECTIF`). En 0.x, le développement
+initial, un changement cassant monte la mineure (`0.3.4 → 0.4.0`) et tout le reste le correctif.
+Le travail s'intègre dans `develop` ; `main` ne reçoit que des versions.
 
-- **Version** `vN` (nouveautés) ou `vN.M` (correctifs seuls) : skill `base:version`. Branche
-  `release/vN` tirée de `develop`, qui ne reçoit plus que des correctifs ; entrée en tête de
-  [`CHANGELOG.md`](CHANGELOG.md) et `version` de `pyproject.toml` ; CI complète ; fusion dans
-  `main` taguée `vN` ; reversement dans `develop`.
-- **Déploiement** : chaque version, `vN` comme `vN.M`, se termine par `kiln update --all` :
-  tous les repos générés passent à la version.
-- **Correctif urgent** d'une version publiée : branche `hotfix/vN.M` tirée du dernier tag, même
-  chemin, tag `vN.M`.
-- **Utilisateurs** : l'outil s'installe depuis `main` ; les projets se génèrent et se mettent à
-  jour depuis le tag le plus récent (`_commit: vN` dans `.copier-answers.yml`), jamais depuis
-  `develop`. `kiln update` ouvre sur les nouveautés de chaque version passée, `kiln status` dit
-  de quelle version part chaque repo (`v2 → v3`), et la bannière la version de l'outil
-  (`v3 +4 · abc1234` : quatre commits après v3, outil installé depuis un dossier).
+- **Candidate** (`v0.4.0-rc.1`) : tirée de `develop` sur une branche `release/v0.4.0`, avec son
+  entrée en tête de [`CHANGELOG.md`](CHANGELOG.md). Seuls les postes au canal `interne` la
+  suivent (`kiln set canal=interne`).
+- **Promotion** (`v0.4.0`) : quand une candidate plus récente est prête et que celle-ci a tenu
+  3 jours (7 après la 1.0) dans les repos du canal interne, le même commit est tagué et fusionné
+  dans `main`. `kiln version` montre les candidates, leur âge, qui les a adoptées, lesquelles
+  sont prêtes et le numéro de la prochaine.
+- **Clients** : ils se mettent à jour à chaque version, correctif compris. Le hook de début de
+  session propose l'outil puis le repo ; `kiln update` applique la version, montre ses
+  nouveautés et fait avancer le tag auquel le `ci.yml` du repo cite les workflows de kiln.
+- **Outil** : `uv tool install git+https://github.com/antoine-tena/kiln` suit `main` ;
+  `kiln status` dit de quelle version part chaque repo (`v0.3.2 → v0.4.0`), la bannière celle
+  de l'outil (`v0.4.0 +3 · abc1234` : trois commits après v0.4.0, installé depuis un dossier).
 
 ## Faire évoluer le modèle
 

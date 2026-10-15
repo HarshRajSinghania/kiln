@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from kiln.deps import _major_bounds
 from kiln.dev import service_prefix
 from kiln.doctor import Level, workstation_findings
 from kiln.install import ensure_env_file
+from kiln.release import Tag, latest_candidates, next_version, promotion_verdict
 from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
@@ -184,28 +186,35 @@ def test_poste_settings_are_parsed_and_checked() -> None:
 
 CHANGELOG = """# Nouveautés de kiln
 
-## v3 — 2026-12-01
+## v0.5.0 — 2026-12-01
 - kiln doctor
 
-## v2.1 — 2026-11-10
+## v0.4.1 — 2026-11-10
 - correctif de la bannière
 
-## v2 — 2026-11-01
+## v0.4.0 — 2026-11-01
 - bannière
 """
 
 
-def test_release_versions_come_from_tags_and_describe() -> None:
-    assert release_version("v2.1") == Version("2.1")
-    assert str(release_version("v3-4-gabc1234")) == "3"
+def test_release_versions_come_from_semver_tags_and_describe() -> None:
+    assert release_version("v0.4.1") == Version("0.4.1")
+    assert release_version("v0.5.0-rc.2") == Version("0.5.0rc2")
+    assert str(release_version("v0.5.0-3-gabc1234")) == "0.5.0"
+    assert release_version("v2") is None
     assert release_version("f611f82") is None
 
 
 def test_update_shows_the_releases_it_crosses() -> None:
-    assert [n.tag for n in notes_between("v2", "v3", CHANGELOG)] == ["v3", "v2.1"]
-    assert [n.tag for n in notes_between("f611f82", "v2", CHANGELOG)] == ["v2"]
-    assert notes_between("v3", "v3", CHANGELOG) == []
-    assert notes_between("v2", "v3", CHANGELOG)[0].lines == ["- kiln doctor"]
+    assert [n.tag for n in notes_between("v0.4.0", "v0.5.0", CHANGELOG)] == ["v0.5.0", "v0.4.1"]
+    assert [n.tag for n in notes_between("f611f82", "v0.4.0", CHANGELOG)] == ["v0.4.0"]
+    assert notes_between("v0.5.0", "v0.5.0", CHANGELOG) == []
+    assert notes_between("v0.4.0", "v0.5.0", CHANGELOG)[0].lines == ["- kiln doctor"]
+
+
+def test_a_candidate_already_carries_its_release_notes() -> None:
+    assert [n.tag for n in notes_between("v0.4.1", "v0.5.0-rc.1", CHANGELOG)] == ["v0.5.0"]
+    assert notes_between("v0.5.0-rc.1", "v0.5.0", CHANGELOG) == []
 
 
 def test_doctor_blocks_on_a_tool_the_repo_needs(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -222,3 +231,22 @@ def test_doctor_blocks_on_a_tool_the_repo_needs(monkeypatch: pytest.MonkeyPatch)
 
 def test_dev_prefixes_line_up_outside_a_terminal() -> None:
     assert service_prefix("nuxt", 6, ui.FIRE) == "nuxt   │ "
+
+
+def test_next_version_follows_semver_with_breaking_changes_on_minor_in_0x() -> None:
+    assert next_version(Version("0.3.0"), ["fix: bannière"]) == "0.3.1"
+    assert next_version(Version("0.3.0"), ["feat: doctor"]) == "0.3.1"
+    assert next_version(Version("0.3.1rc2"), ["feat(cli)!: renomme set"]) == "0.4.0"
+    assert next_version(Version("1.2.3"), ["feat: doctor"]) == "1.3.0"
+    assert next_version(Version("1.2.3"), ["fix: x\n\nBREAKING CHANGE: y"]) == "2.0.0"
+
+
+def test_a_candidate_is_promoted_once_the_next_is_ready_and_it_held() -> None:
+    now = datetime.datetime(2026, 11, 10, tzinfo=datetime.UTC)
+    old = Tag("v0.3.0-rc.2", Version("0.3.0rc2"), now - datetime.timedelta(days=4))
+    young = Tag("v0.3.1-rc.1", Version("0.3.1rc1"), now - datetime.timedelta(days=1))
+
+    assert promotion_verdict(old, [old, young], now)[1]
+    assert not promotion_verdict(young, [old, young], now)[1]
+    assert not promotion_verdict(old, [old], now)[1]
+    assert latest_candidates([old, young]) == [old, young]

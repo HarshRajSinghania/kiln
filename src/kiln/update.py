@@ -14,7 +14,7 @@ from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
 from kiln.stack import ANSWERS_FILE, load_stack, read_answers
 from kiln.template import DEFAULT_TEMPLATE_SOURCE, template_revision
-from kiln.versions import notes_between, read_changelog
+from kiln.versions import follows_candidates, notes_between, read_changelog
 
 PROTECTED_BRANCHES = ("main", "develop")
 # Ancienne adresse du modèle (init-repo, renommé kiln) : GitHub redirige, mais on la remplace.
@@ -57,6 +57,7 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
             root,
             data=dict(answers or {}),
             vcs_ref=template_revision(_template_source(root)),
+            use_prereleases=follows_candidates(),
             defaults=True,
             skip_answered=True,
             overwrite=True,

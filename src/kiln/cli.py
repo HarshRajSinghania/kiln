@@ -17,6 +17,7 @@ from kiln import (
     install,
     new,
     poste,
+    release,
     settings,
     ui,
     update,
@@ -37,7 +38,7 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 COMMAND_GROUPS = (
     ("Projet", ("new", "install", "update", "set")),
     ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor")),
-    ("Tous les repos", ("status", "update --all")),
+    ("Tous les repos", ("status", "update --all", "version")),
 )
 FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, fusion directe"
 EXAMPLES = (
@@ -46,7 +47,7 @@ EXAMPLES = (
     "kiln set podman=true",
     "kiln set equipe=alice,bob     # hors d'un repo : réglages du poste",
 )
-NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor"})
+NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor", "version"})
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
@@ -61,6 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("check", help="lancer les contrôles du projet")
     _add_ci_command(commands)
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
+    commands.add_parser("version", help="versions de kiln : publique, candidates, prochaine")
     commands.add_parser("doctor", help="diagnostiquer le poste et le repo, avec les corrections")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
@@ -185,6 +187,9 @@ def dispatch(arguments: argparse.Namespace) -> None:
         return
     if arguments.command == "doctor":
         doctor.run_doctor(Path.cwd())
+        return
+    if arguments.command == "version":
+        release.show_release_status(repo_root(Path.cwd()))
         return
     if arguments.command == "status" or (arguments.command == "update" and arguments.all):
         _dispatch_fleet(arguments)

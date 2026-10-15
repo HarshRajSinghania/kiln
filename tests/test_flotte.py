@@ -93,10 +93,11 @@ def test_develop_wins_without_origin_head(tmp_path: Path) -> None:
 
 
 def test_template_state_compares_releases() -> None:
-    assert template_state("v3", "v3") == "v3 à jour"
-    assert template_state("v2.1", "v3") == "v2.1 → v3"
-    assert template_state("f611f82", "v1") == "f611f82 → v1"
-    assert template_state("v3", None) == "v3"
+    assert template_state("v0.4.0", "v0.4.0") == "v0.4.0 à jour"
+    assert template_state("v0.3.2", "v0.4.0") == "v0.3.2 → v0.4.0"
+    assert template_state("v0.4.0-rc.1", "v0.4.0") == "v0.4.0-rc.1 → v0.4.0"
+    assert template_state("f611f82", "v0.3.0") == "f611f82 → v0.3.0"
+    assert template_state("v0.4.0", None) == "v0.4.0"
 
 
 def test_missing_code_dir_is_explained(tmp_path: Path) -> None:
