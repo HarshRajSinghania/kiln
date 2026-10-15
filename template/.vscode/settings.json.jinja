@@ -4,12 +4,11 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "files.exclude": {
-    ".claude/worktrees": true
-  },
   "search.exclude": {
     ".claude/worktrees": true
   },
+  "git.detectWorktrees": true,
+  "scm.alwaysShowRepositories": true,
 {%- if backend in ['django', 'fastapi', 'data', 'cli'] or frontend in ['streamlit', 'dash'] %}
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff"
