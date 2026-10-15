@@ -4,8 +4,8 @@ import os
 
 DEFAULT_TEMPLATE_SOURCE = "https://github.com/antoine-tena/kiln.git"
 TEMPLATE_SOURCE_VARIABLE = "KILN_TEMPLATE"
-# Les projets suivent la tête de main du modèle, sans attendre d'étiquette de version.
-TEMPLATE_REVISION = "HEAD"
+# Révision d'un modèle local ou explicite (développement de kiln) : son dernier commit.
+LOCAL_TEMPLATE_REVISION = "HEAD"
 
 
 def template_source(explicit_source: str | None) -> str:
@@ -13,3 +13,9 @@ def template_source(explicit_source: str | None) -> str:
     if explicit_source:
         return explicit_source
     return os.environ.get(TEMPLATE_SOURCE_VARIABLE, DEFAULT_TEMPLATE_SOURCE)
+
+
+def template_revision(source: str) -> str | None:
+    """Le modèle publié se prend à sa dernière version (None : Copier choisit le tag le plus
+    récent) ; un modèle local ou explicite, à son dernier commit."""
+    return None if source == DEFAULT_TEMPLATE_SOURCE else LOCAL_TEMPLATE_REVISION

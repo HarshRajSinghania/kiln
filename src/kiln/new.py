@@ -15,7 +15,7 @@ from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import load_stack, read_answers
 from kiln.statusline import apply_statusline_settings
-from kiln.template import TEMPLATE_REVISION, template_source
+from kiln.template import template_revision, template_source
 
 INITIAL_COMMIT_MESSAGE = "chore: projet généré par kiln"
 
@@ -36,12 +36,13 @@ def create_project(request: NewProjectRequest) -> None:
     if request.should_publish:
         github.ensure_logged_in()
     step("Génération depuis le modèle")
+    source = template_source(request.template)
     copier.run_copy(
-        template_source(request.template),
+        source,
         request.destination,
         data=request.answers,
         user_defaults=_user_defaults(),
-        vcs_ref=TEMPLATE_REVISION,
+        vcs_ref=template_revision(source),
         unsafe=False,
         # Hors terminal (CI, agent), les questions sans réponse prennent leur valeur par défaut.
         defaults=not sys.stdin.isatty(),

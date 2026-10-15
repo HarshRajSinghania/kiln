@@ -246,3 +246,28 @@ def recap(command: str, started: float, *, succeeded: bool) -> None:
         shown = paint(title, EMBER) if is_failure else title
         print(f"  {bar} {dot} {shown}{gap}{paint(duration, STONE)} {bar}")
     print(f"  {edge}╰{'─' * (inner + 2)}╯{RESET}", flush=True)
+
+
+def panel(title: str, lines: list[str]) -> None:
+    """Encadré : un titre en feu, puis des lignes (une ligne `vN …` en gras, `- …` en puce)."""
+    if not is_styled():
+        print(f"\n{title}", *(f"  {line}" for line in lines), sep="\n", flush=True)
+        return
+    inner = min(max(len(title), *(len(line) for line in lines)) + 2, _columns() - 6)
+    edge = foreground(STONE_DARK)
+    bar = f"{edge}│{RESET}"
+    print(f"\n  {edge}╭{'─' * (inner + 2)}╮{RESET}")
+    shown_title = _fit(title, inner)
+    print(f"  {bar} {paint(shown_title, FIRE, bold=True)}{' ' * (inner - len(shown_title))} {bar}")
+    print(f"  {edge}├{'─' * (inner + 2)}┤{RESET}")
+    for line in lines:
+        text = _fit(line, inner)
+        gap = " " * (inner - len(text))
+        if text.startswith("- "):
+            styled = f"{paint('·', FIRE)} {text[2:]}"
+        elif text[:1] == "v" and text[1:2].isdigit():
+            styled = paint(text, bold=True)
+        else:
+            styled = paint(text, STONE)
+        print(f"  {bar} {styled}{gap} {bar}")
+    print(f"  {edge}╰{'─' * (inner + 2)}╯{RESET}", flush=True)
