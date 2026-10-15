@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from kiln import check, ci, contract, dev, fleet, install, new, settings, update
+from kiln import banner, check, ci, contract, dev, fleet, install, new, settings, update
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
@@ -131,7 +131,16 @@ def _ask_project_name() -> str:
         print("Minuscules, chiffres et tirets seulement, en commençant par une lettre.")
 
 
+BANNER_ACTIONS = {
+    "new": "nouveau projet",
+    "install": "installation",
+    "update": "mise à jour",
+    "status": "état des repos",
+}
+
+
 def dispatch(arguments: argparse.Namespace) -> None:
+    _show_banner(arguments)
     if arguments.command == "new":
         new.create_project(_new_project_request(arguments))
         return
@@ -161,6 +170,17 @@ def dispatch(arguments: argparse.Namespace) -> None:
             settings.apply_settings(root, arguments.assignments)
         else:
             settings.show_settings(root)
+
+
+def _show_banner(arguments: argparse.Namespace) -> None:
+    """Bannière des commandes longues ; les repos de la flotte sont dans le dossier de code."""
+    action = BANNER_ACTIONS.get(arguments.command)
+    if action is None:
+        return
+    if arguments.command == "new" or arguments.command == "status" or arguments.all:
+        banner.show_banner(action if arguments.command != "update" else "mise à jour des repos")
+        return
+    banner.show_banner(action, repo_root(Path.cwd()))
 
 
 def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
@@ -196,6 +216,7 @@ def main() -> None:
         parser = build_parser()
         arguments = parser.parse_args()
         if arguments.command is None:
+            banner.show_banner("orchestrateur de repos")
             parser.print_help()
             return
         dispatch(arguments)

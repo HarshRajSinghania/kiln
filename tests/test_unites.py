@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from packaging.version import Version
 
+from kiln.banner import LOGO, _project_summary, _render_logo
 from kiln.deps import _major_bounds
 from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
@@ -124,3 +125,18 @@ def test_adopted_repo_stack_comes_from_its_files(tmp_path: Path) -> None:
 def test_adopted_repo_declares_its_size_in_its_charter(tmp_path: Path) -> None:
     (tmp_path / "charte.toml").write_text('envergure = "flame"\nexclus = []\n')
     assert answers_if_any(tmp_path) == {"envergure": "flame"}
+
+
+def test_logo_draws_two_pixel_rows_per_line() -> None:
+    lines = _render_logo("5", {"B": "166", "F": "214", "Y": "222"})
+
+    assert len(lines) == len(LOGO) // 2
+    assert all("\033[38;5;166m" in line for line in lines)
+
+
+def test_project_summary_names_size_and_frameworks(tmp_path: Path) -> None:
+    (tmp_path / ".copier-answers.yml").write_text(
+        "nom: atelier\nenvergure: ember\nbackend: fastapi\nfrontend: aucun\npodman: true\n"
+    )
+
+    assert _project_summary(tmp_path) == "atelier · ember · fastapi, podman"
