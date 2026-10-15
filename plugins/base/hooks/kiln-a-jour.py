@@ -11,6 +11,10 @@ Un « non » repousse la question de 5 sessions, puis 10, 30 et 50 ; au-delà, l
 aussi de désinstaller kiln (outil) ou de délier le repo de kiln (repo). Les réponses sont
 enregistrées par ce même script (`refus` ou `accord`), dans `~/.local/state/kiln/rappels.json`.
 
+Crée aussi `.claude/kiln`, lien vers ce plugin tel qu'il est installé sur le poste (ignoré par
+git), pour voir ses skills et ses hooks dans l'éditeur. Claude Code ne charge pas les skills de
+ce dossier : rien n'est chargé deux fois.
+
 Jamais bloquant : trois secondes au plus par appel réseau, silence sans réseau ou hors d'un repo
 kiln. Un repo s'en exempte par `git config kiln-a-jour.desactive true`.
 """
@@ -37,6 +41,8 @@ TIMEOUT_SECONDS = 3
 STARTUP_SOURCE = "startup"
 TOOL_KEY = "outil"
 SCRIPT = f'python3 "{Path(__file__).resolve()}"'
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+PLUGIN_LINK = Path(".claude") / "kiln"
 
 
 def answer(text: str, key: str) -> str:
@@ -162,6 +168,23 @@ def kiln_repo(cwd: str) -> tuple[Path, str] | None:
     return Path(root), commit
 
 
+def link_plugin(root: Path, plugin_root: Path = PLUGIN_ROOT) -> None:
+    """`.claude/kiln` pointe vers le plugin installé ; un vrai dossier à ce nom reste intact."""
+    link = root / PLUGIN_LINK
+    if link.is_symlink():
+        if link.resolve() == plugin_root:
+            return
+        link.unlink()
+    elif link.exists():
+        return
+    try:
+        link.parent.mkdir(exist_ok=True)
+        link.symlink_to(plugin_root, target_is_directory=True)
+    except OSError:
+        # Windows sans le mode développeur refuse les liens symboliques : on s'en passe.
+        pass
+
+
 # --- Consignes données à Claude ---
 
 
@@ -248,8 +271,12 @@ def main() -> None:
         payload = json.load(sys.stdin)
         if payload.get("source", STARTUP_SOURCE) != STARTUP_SOURCE:
             return
+        cwd = payload.get("cwd") or "."
+        repo = kiln_repo(cwd)
+        if repo is not None:
+            link_plugin(repo[0])
         state = load_state()
-        message = instructions(payload.get("cwd") or ".", state)
+        message = instructions(cwd, state)
         save_state(state)
     except Exception:
         # Réseau absent, GitHub qui limite, repo illisible : la session démarre sans rien dire.
