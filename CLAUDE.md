@@ -14,7 +14,7 @@ un dossier ou un module.
   `install.py`, `dev.py`, `check.py`, `settings.py` (`kiln set`, clés réglables), `update.py`,
   `contract.py`, `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
   `.copier-answers.yml`), `template.py`, `deps.py`, `github.py`, `rules.py` (règles non
-  vérifiées), `statusline.py`, `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
+  vérifiées), `statusline.py`, `versions.py` (tags, journal des versions), `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
   roue animée, bilan, succès, erreurs), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
 - `src/kiln/ci/` : `kiln ci` (CI rejouée sur le poste, verdict en note git) ;
   `src/kiln/charte/` : moteur de `charte` (`interdictions.py`, `cliquets.py`,
@@ -29,6 +29,15 @@ un dossier ou un module.
   actions composites (`charte`, `services`).
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_deploiement.py`.
+
+## Versions
+
+`main` ne reçoit que des versions, taguées `vN` ou `vN.M` (skill `base:version`, pas de
+déploiement : le tag poussé sur `main` publie la version). Annonce : une entrée `## vN — date`
+en tête de `CHANGELOG.md` (une ligne `- …` par changement visible), et `version = "N"` dans
+`pyproject.toml`, sur la branche `release/vN`. Contrôle complet : les trois commandes
+ci-dessous, ou la CI GitHub de la branche. Les workflows et actions réutilisables se citent
+`@main`. Module : `src/kiln/versions.py` (tags, journal, version de l'outil).
 
 ## Contrôles
 

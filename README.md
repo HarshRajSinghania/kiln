@@ -61,7 +61,9 @@ connexion et affiche le lien https://github.com/login/device).
 uv tool install git+https://github.com/antoine-tena/kiln
 ```
 
-Installe deux commandes : `kiln` et `charte`. Mettre l'outil à jour : `uv tool upgrade kiln`.
+Installe deux commandes, `kiln` et `charte`, à la dernière version (branche `main`). Quand une
+version sort, le hook de début de session propose de mettre à jour l'outil, puis chaque repo ;
+à la main : `uv tool upgrade kiln`, puis `kiln update` dans le repo.
 Python 3.14 est requis ; uv le télécharge au besoin. Au premier `kiln install`, kiln demande le
 système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.toml`, avec
 `proprietaire` et `equipe` par défaut si on les y ajoute.
@@ -178,10 +180,28 @@ versions pnpm et met à jour les crochets pre-commit. Les contrôles suivent tou
 qui casse quelque chose est signalée avant le commit. Dependabot ne propose que les correctifs de
 sécurité.
 
+## Versions
+
+kiln suit le même chemin que les projets en production : le travail s'intègre dans `develop`,
+et `main` ne reçoit que des versions.
+
+- **Version** `vN` (nouveautés) ou `vN.M` (correctifs seuls) : skill `base:version`. Branche
+  `release/vN` tirée de `develop`, qui ne reçoit plus que des correctifs ; entrée en tête de
+  [`CHANGELOG.md`](CHANGELOG.md) et `version` de `pyproject.toml` ; CI complète ; fusion dans
+  `main` taguée `vN` ; reversement dans `develop`.
+- **Correctif urgent** d'une version publiée : branche `hotfix/vN.M` tirée du dernier tag, même
+  chemin, tag `vN.M`.
+- **Utilisateurs** : l'outil s'installe depuis `main` ; les projets se génèrent et se mettent à
+  jour depuis le tag le plus récent (`_commit: vN` dans `.copier-answers.yml`), jamais depuis
+  `develop`. `kiln update` ouvre sur les nouveautés de chaque version passée, `kiln status` dit
+  de quelle version part chaque repo (`v2 → v3`), et la bannière la version de l'outil
+  (`v3 +4 · abc1234` : quatre commits après v3, outil installé depuis un dossier).
+
 ## Faire évoluer le modèle
 
-Modifier `template/` sur une branche, puis la fusionner dans `develop` : chaque projet la
-récupère par `kiln update` (le hook de début de session le propose).
+Modifier `template/` sur une branche, puis la fusionner dans `develop` : les projets le
+reçoivent à la version suivante, par `kiln update` (le hook de début de session le propose).
+Pour essayer un modèle pas encore publié : `KILN_TEMPLATE=~/code/kiln kiln new …`.
 
 Depuis un projet, un défaut de kiln remonte ici ([REMONTER-A-KILN] de la charte générée) :
 
@@ -214,7 +234,7 @@ avec `verifier(depot, params) -> list[str]`. La liste des règles non vérifiée
 ## Workflows réutilisables
 
 kiln est public : ses workflows servent à n'importe quel dépôt, quel que soit son compte
-(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@develop`). Jamais pip ni docker : uv pour
+(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@main`). Jamais pip ni docker : uv pour
 Python, podman pour les conteneurs (bases de test comprises), podman-compose installé par uv.
 
 | Workflow | Rôle |

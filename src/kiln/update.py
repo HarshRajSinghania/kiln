@@ -12,8 +12,9 @@ from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
-from kiln.stack import ANSWERS_FILE, load_stack
-from kiln.template import DEFAULT_TEMPLATE_SOURCE, TEMPLATE_REVISION
+from kiln.stack import ANSWERS_FILE, load_stack, read_answers
+from kiln.template import DEFAULT_TEMPLATE_SOURCE, template_revision
+from kiln.versions import notes_between, read_changelog
 
 PROTECTED_BRANCHES = ("main", "develop")
 # Ancienne adresse du modèle (init-repo, renommé kiln) : GitHub redirige, mais on la remplace.
@@ -32,7 +33,9 @@ def update_project(
     check_working_branch(root)
     if should_update_template:
         step("Architecture : évolutions du modèle")
+        previous = template_commit(root)
         apply_template(root)
+        show_release_notes(previous, template_commit(root))
     stack = load_stack(root)
     if should_update_deps:
         update_dependencies(root, stack, allow_major=allow_major)
@@ -53,7 +56,7 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
         copier.run_update(
             root,
             data=dict(answers or {}),
-            vcs_ref=TEMPLATE_REVISION,
+            vcs_ref=template_revision(_template_source(root)),
             defaults=True,
             skip_answered=True,
             overwrite=True,
@@ -64,6 +67,27 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
         raise KilnError(f"mise à jour du modèle refusée : {error}") from error
     # Après Copier, qui exige un arbre propre et réécrit le fichier de réponses.
     replace_legacy_source(root)
+
+
+def _template_source(root: Path) -> str:
+    source = str(read_answers(root).get("_src_path", ""))
+    return DEFAULT_TEMPLATE_SOURCE if source in LEGACY_TEMPLATE_SOURCES else source
+
+
+def template_commit(root: Path) -> str:
+    """Révision du modèle dont part le repo : `v3`, ou un commit avant la première version."""
+    return str(read_answers(root).get("_commit", ""))
+
+
+def show_release_notes(previous: str, current: str) -> None:
+    """Encadré des nouveautés de chaque version passée, d'après le journal de kiln."""
+    notes = notes_between(previous, current, read_changelog())
+    if not notes:
+        return
+    lines: list[str] = []
+    for release in notes:
+        lines += [f"{release.tag}  {release.date}".rstrip(), *release.lines, ""]
+    ui.panel(f"Nouveautés de kiln : {previous or '?'} → {current}", lines[:-1])
 
 
 def check_working_branch(root: Path) -> None:
@@ -80,7 +104,10 @@ def report_changes(root: Path) -> None:
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root, live=True)
     print()
-    ui.note("Relire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
+    ui.note(
+        "Relire le diff (conflits marqués <<<<<<<), commiter, puis fusionner dans develop "
+        "(skill base:fusion)."
+    )
 
 
 def replace_legacy_source(root: Path) -> None:

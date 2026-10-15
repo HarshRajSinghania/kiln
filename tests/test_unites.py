@@ -12,6 +12,7 @@ from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
 from kiln.stack import Stack, answers_if_any, load_stack, stack_from_answers
 from kiln.update import replace_legacy_source
+from kiln.versions import notes_between, release_version
 
 
 def test_legacy_answers_mean_django_and_nuxt() -> None:
@@ -176,3 +177,29 @@ def test_poste_settings_are_parsed_and_checked() -> None:
         apply_poste(UserConfig(), ["backend=java"])
     with pytest.raises(KilnError, match="systeme"):
         apply_poste(UserConfig(), ["systeme=windows"])
+
+
+CHANGELOG = """# Nouveautés de kiln
+
+## v3 — 2026-12-01
+- kiln doctor
+
+## v2.1 — 2026-11-10
+- correctif de la bannière
+
+## v2 — 2026-11-01
+- bannière
+"""
+
+
+def test_release_versions_come_from_tags_and_describe() -> None:
+    assert release_version("v2.1") == Version("2.1")
+    assert str(release_version("v3-4-gabc1234")) == "3"
+    assert release_version("f611f82") is None
+
+
+def test_update_shows_the_releases_it_crosses() -> None:
+    assert [n.tag for n in notes_between("v2", "v3", CHANGELOG)] == ["v3", "v2.1"]
+    assert [n.tag for n in notes_between("f611f82", "v2", CHANGELOG)] == ["v2"]
+    assert notes_between("v3", "v3", CHANGELOG) == []
+    assert notes_between("v2", "v3", CHANGELOG)[0].lines == ["- kiln doctor"]

@@ -2,8 +2,8 @@
 
 `update --all` ne change jamais la branche de l'arbre principal d'un repo : il travaille dans un
 worktree (`.claude/worktrees/`) partant de la branche d'intégration, commite par lots de dix
-fichiers au plus, pousse et ouvre une PR (en brouillon si les contrôles échouent), puis retire le
-worktree. La branche reste, pour la PR.
+fichiers au plus, puis fusionne directement dans l'intégration et retire le worktree. Contrôles
+en échec : la branche est poussée sans fusion, à reprendre à la main.
 """
 
 import datetime
@@ -17,11 +17,9 @@ from kiln.install import install_project
 from kiln.shell import KilnError, capture, require_tools, run, step
 from kiln.stack import ANSWERS_FILE, CHARTER_FILE, answers_if_any, load_stack, read_answers
 from kiln.update import update_project
+from kiln.versions import latest_release, release_version
 
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
-KILN_GITHUB_REPO = "antoine-tena/kiln"
-# Ce qui fait le modèle : un commit qui n'y touche pas ne met aucun repo en retard.
-TEMPLATE_PATHS = ("template/", "copier.yml", "macros.jinja")
 SEARCH_DEPTH = 3
 # Un dépôt adopté (que kiln n'a pas généré) se reconnaît à sa charte : `status` le montre,
 # `update --all` l'ignore, car appliquer le modèle écraserait ses fichiers écrits à la main.
@@ -78,23 +76,15 @@ def _marker_files(directory: Path, name: str, depth: int) -> list[Path]:
     return found
 
 
-def template_changed_since(commit: str) -> bool:
-    """Le modèle a-t-il changé sur kiln depuis `commit` ? Seuls ses fichiers comptent."""
-    changed = capture(
-        [
-            "gh",
-            "api",
-            f"repos/{KILN_GITHUB_REPO}/compare/{commit}...HEAD",
-            "-q",
-            ".files[].filename",
-        ],
-        Path.cwd(),
-    ).split()
-    return is_template_change(changed)
-
-
-def is_template_change(changed_paths: list[str]) -> bool:
-    return any(path.startswith(TEMPLATE_PATHS) for path in changed_paths)
+def template_state(commit: str, latest: str | None) -> str:
+    """`v3 à jour`, `v2 → v3`, ou le commit seul quand la dernière version est inconnue."""
+    latest_version = release_version(latest or "")
+    if latest is None or latest_version is None:
+        return commit or "?"
+    current = release_version(commit)
+    if current is not None and current >= latest_version:
+        return f"{commit} à jour"
+    return f"{commit or '?'} → {latest}"
 
 
 def require_code_dir(code_dir: Path) -> None:
@@ -106,28 +96,27 @@ def require_code_dir(code_dir: Path) -> None:
         )
 
 
-STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 17), ("taille", 6))
-# Couleur de chaque état : vert ce qui va, feu ce qui demande une action.
-STATE_COLORS = {
-    "propre": ui.MOSS,
-    "modifié": ui.FIRE,
-    "modèle à jour": ui.MOSS,
-    "modèle en retard": ui.FIRE,
-    "adopté": ui.STONE,
-}
+STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 18), ("taille", 6))
 
 
 def show_status(code_dir: Path) -> None:
     header = " ".join(f"{title:<{width}}" for title, width in STATUS_COLUMNS) + " stack"
     print(" ", ui.paint(header.upper(), ui.STONE, bold=True))
+    latest = latest_release()
     for repo in find_repos(code_dir):
-        is_current = bool(repo.template_commit) and not template_changed_since(repo.template_commit)
-        _print_status(code_dir, repo.root, "modèle à jour" if is_current else "modèle en retard")
+        _print_status(code_dir, repo.root, template_state(repo.template_commit, latest))
     for root in find_adopted(code_dir):
         _print_status(code_dir, root, "adopté")
 
 
-def _print_status(code_dir: Path, root: Path, template_state: str) -> None:
+def _state_color(state: str) -> ui.Color:
+    """Vert ce qui va, feu ce qui demande une action, pierre le reste."""
+    if state.endswith("à jour"):
+        return ui.MOSS
+    return ui.FIRE if "→" in state else ui.STONE
+
+
+def _print_status(code_dir: Path, root: Path, state: str) -> None:
     branch = capture(["git", "branch", "--show-current"], root)
     is_dirty = bool(capture(["git", "status", "--porcelain"], root))
     stack = load_stack(root)
@@ -137,8 +126,8 @@ def _print_status(code_dir: Path, root: Path, template_state: str) -> None:
         " ",
         ui.paint(f"{root.relative_to(code_dir)!s:<30}", bold=True),
         ui.paint(f"{branch:<22}", ui.STONE_LIGHT),
-        ui.paint(f"{tree_state:<8}", STATE_COLORS[tree_state]),
-        ui.paint(f"{template_state:<17}", STATE_COLORS[template_state]),
+        ui.paint(f"{tree_state:<8}", ui.FIRE if is_dirty else ui.MOSS),
+        ui.paint(f"{state:<18}", _state_color(state)),
         ui.paint(f"{size!s:<6}", ui.STONE),
         f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}",
     )

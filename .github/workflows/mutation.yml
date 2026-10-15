@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: antoine-tena/kiln/actions/services@develop
+      - uses: antoine-tena/kiln/actions/services@main
         with:
           base: ${{ inputs.base }}
           postgres: ${{ inputs.postgres }}

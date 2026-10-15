@@ -11,7 +11,7 @@ on:
 jobs:
 {%- if backend == 'django' %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/django.yml@main
     with:
       base: {{ nom | replace('-', '_') }}
       env: |
@@ -19,19 +19,19 @@ jobs:
         DJANGO_DEBUG=True
 {%- elif backend in ['fastapi', 'data', 'cli'] %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/python.yml@main
     with:
       dossier: backend
 {%- elif backend == 'java' %}
   backend:
-    uses: antoine-tena/kiln/.github/workflows/maven.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/maven.yml@main
     with:
       dossier: backend
 {%- endif %}
 {%- if frontend in ['nuxt', 'next', 'astro'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@main
     with:
       scripts: |
 {%- if frontend != 'astro' %}
@@ -42,28 +42,28 @@ jobs:
 {%- elif frontend in ['streamlit', 'dash'] %}
 
   frontend:
-    uses: antoine-tena/kiln/.github/workflows/python.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/python.yml@main
     with:
       dossier: frontend
 {%- endif %}
 {%- if backend == 'django' and frontend == 'nuxt' %}
 
   contrat:
-    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@main
     with:
       env: |
         DJANGO_SECRET_KEY=ci-sans-valeur-secrete
 {%- endif %}
 
   charte:
-    uses: antoine-tena/kiln/.github/workflows/charte.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/charte.yml@main
 
 {%- set uv_dirs = (['backend'] if backend not in ['aucun', 'java'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- set pnpm_dir = 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' %}
 {%- if uv_dirs or pnpm_dir %}
 
   securite:
-    uses: antoine-tena/kiln/.github/workflows/securite.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/securite.yml@main
     with:
       uv: "{{ uv_dirs | join(' ') }}"
       pnpm: "{{ pnpm_dir }}"
@@ -71,7 +71,7 @@ jobs:
 {%- if podman %}
 
   conteneurs:
-    uses: antoine-tena/kiln/.github/workflows/infra.yml@develop
+    uses: antoine-tena/kiln/.github/workflows/infra.yml@main
     with:
       containerfiles: "{{ ((['backend/Containerfile'] if backend not in ['aucun', 'cli', 'java'] else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
       compose: compose.yaml
