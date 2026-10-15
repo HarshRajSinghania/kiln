@@ -12,7 +12,7 @@ un dossier ou un module.
 
 - `src/kiln/` : la commande. `cli.py` (arguments) ; une commande par module : `new.py`,
   `install.py`, `dev.py`, `check.py`, `settings.py` (`kiln set`, clés réglables), `update.py`,
-  `contract.py`, `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
+  `contract.py`, `doctor.py` (diagnostic du poste et du repo), `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
   `.copier-answers.yml`), `template.py`, `deps.py`, `github.py`, `rules.py` (règles non
   vérifiées), `statusline.py`, `versions.py` (tags, journal des versions), `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
   roue animée, bilan, succès, erreurs), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).

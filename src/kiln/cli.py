@@ -6,7 +6,21 @@ import sys
 import time
 from pathlib import Path
 
-from kiln import banner, check, ci, contract, dev, fleet, install, new, poste, settings, ui, update
+from kiln import (
+    banner,
+    check,
+    ci,
+    contract,
+    dev,
+    doctor,
+    fleet,
+    install,
+    new,
+    poste,
+    settings,
+    ui,
+    update,
+)
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
@@ -22,7 +36,7 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 # Écran d'accueil : commandes par section ; le rôle de chacune vient de son aide argparse.
 COMMAND_GROUPS = (
     ("Projet", ("new", "install", "update", "set")),
-    ("Au quotidien", ("dev", "check", "ci", "contrat")),
+    ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor")),
     ("Tous les repos", ("status", "update --all")),
 )
 FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, fusion directe"
@@ -32,7 +46,7 @@ EXAMPLES = (
     "kiln set podman=true",
     "kiln set equipe=alice,bob     # hors d'un repo : réglages du poste",
 )
-NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status"})
+NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor"})
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
@@ -47,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("check", help="lancer les contrôles du projet")
     _add_ci_command(commands)
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
+    commands.add_parser("doctor", help="diagnostiquer le poste et le repo, avec les corrections")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
     set_parser = commands.add_parser(
@@ -159,6 +174,7 @@ BANNER_ACTIONS = {
     "install": "installation",
     "update": "mise à jour",
     "status": "état des repos",
+    "doctor": "diagnostic",
 }
 
 
@@ -166,6 +182,9 @@ def dispatch(arguments: argparse.Namespace) -> None:
     _show_banner(arguments)
     if arguments.command == "new":
         new.create_project(_new_project_request(arguments))
+        return
+    if arguments.command == "doctor":
+        doctor.run_doctor(Path.cwd())
         return
     if arguments.command == "status" or (arguments.command == "update" and arguments.all):
         _dispatch_fleet(arguments)
@@ -229,7 +248,7 @@ def _show_banner(arguments: argparse.Namespace) -> None:
     action = BANNER_ACTIONS.get(arguments.command)
     if action is None:
         return
-    if arguments.command == "new" or arguments.command == "status" or arguments.all:
+    if arguments.command in ("new", "status", "doctor") or arguments.all:
         banner.show_banner(action if arguments.command != "update" else "mise à jour des repos")
         return
     banner.show_banner(action, _repo_root_or_hint())
