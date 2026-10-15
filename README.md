@@ -25,7 +25,8 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 ([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) :
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
-  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire`,
+  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert) ; hooks garde de branche, fichiers protégés, contrôle du fichier
   modifié, mise à jour proposée à l'ouverture de session (oui/non : l'outil kiln s'il est en
   retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
   30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé ;
@@ -82,7 +83,8 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
-modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
+modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, fusionner dans
+`develop` (skill `base:fusion`, sans PR ni approbation à attendre).
 
 Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`,
@@ -168,8 +170,16 @@ sécurité.
 
 ## Faire évoluer le modèle
 
-Modifier `template/` sur une branche, ouvrir une PR. Une fois fusionnée dans `main`, chaque
-projet la récupère par `kiln update`. Seuls les fichiers en `.jinja` sont interprétés ; un dossier
+Modifier `template/` sur une branche, puis la fusionner dans `develop` : chaque projet la
+récupère par `kiln update` (le hook de début de session le propose).
+
+Depuis un projet, un défaut de kiln remonte ici ([REMONTER-A-KILN] de la charte générée) :
+
+- **pull request** vers `develop` quand la correction est claire et localisée (depuis un fork
+  pour qui n'a pas les droits d'écriture), avec le test qui l'aurait détecté ;
+- **issue** quand il faut trancher entre plusieurs voies, ou qu'on ne sait pas corriger. Dans le
+  doute, l'issue d'abord : une PR sur un choix pas encore fait risque d'être refaite.
+ Seuls les fichiers en `.jinja` sont interprétés ; un dossier
 `{% if … %}nom{% endif %}` n'existe que si la condition tient ; les questions sont dans
 [`copier.yml`](copier.yml) et les macros partagées (chaînes Python au format de ruff) dans
 [`macros.jinja`](macros.jinja).
