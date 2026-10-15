@@ -192,6 +192,8 @@ et `main` ne reçoit que des versions.
   `release/vN` tirée de `develop`, qui ne reçoit plus que des correctifs ; entrée en tête de
   [`CHANGELOG.md`](CHANGELOG.md) et `version` de `pyproject.toml` ; CI complète ; fusion dans
   `main` taguée `vN` ; reversement dans `develop`.
+- **Déploiement** : chaque version, `vN` comme `vN.M`, se termine par `kiln update --all` :
+  tous les repos générés passent à la version.
 - **Correctif urgent** d'une version publiée : branche `hotfix/vN.M` tirée du dernier tag, même
   chemin, tag `vN.M`.
 - **Utilisateurs** : l'outil s'installe depuis `main` ; les projets se génèrent et se mettent à

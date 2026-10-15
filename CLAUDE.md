@@ -41,7 +41,11 @@ un dossier ou un module.
 déploiement : le tag poussé sur `main` publie la version). Annonce : une entrée `## vN — date`
 en tête de `CHANGELOG.md` (une ligne `- …` par changement visible), et `version = "N"` dans
 `pyproject.toml`, sur la branche `release/vN`. Contrôle complet : les trois commandes
-ci-dessous, ou la CI GitHub de la branche. Les workflows et actions réutilisables se citent
+ci-dessous, ou la CI GitHub de la branche. Déploiement : chaque version, `vN` comme `vN.M`, se
+termine par `kiln update --all` (tous les repos générés passent à la version, fusionnés dans leur
+`develop` si leurs contrôles passent) ; un repo dont les contrôles échouent se reprend à la main
+avant de clore la version. Les dépôts adoptés (annski) n'en reçoivent pas : ils ne dépendent que
+des workflows et actions en `@develop`. Les workflows et actions réutilisables se citent
 `@main`. Module : `src/kiln/versions.py` (tags, journal, version de l'outil).
 
 ## Contrôles
