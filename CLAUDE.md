@@ -35,7 +35,8 @@ un dossier ou un module.
   version ; `docs/assets/` : images de la vitrine.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
-  `test_ci.py`, `test_flotte.py`, `test_deploiement.py`.
+  `test_ci.py`, `test_flotte.py`, `test_deploiement.py`, `test_statusline.py` (choix du
+  poste et rendu du script).
 
 ## Versions
 
