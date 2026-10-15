@@ -10,6 +10,7 @@ from pathlib import Path
 
 import yaml  # fourni par copier
 
+from kiln import ui
 from kiln.check import check_project
 from kiln.deps import lock_dependencies, sync_dependencies
 from kiln.rules import write_unverified_rules
@@ -48,8 +49,9 @@ def show_settings(root: Path) -> None:
     width = max(len(key) for key in SETTABLE_KEYS)
     for key in SETTABLE_KEYS:
         if key in answers:
-            print(f"{key:<{width}}  {answers[key]}")
-    print("\nChanger : kiln set clé=valeur [clé=valeur…], sur une branche, arbre propre.")
+            print(f"{ui.paint(f'{key:<{width}}', ui.STONE)}  {answers[key]}")
+    print()
+    ui.note("Changer : kiln set clé=valeur [clé=valeur…], sur une branche, arbre propre.")
 
 
 def parse_assignments(assignments: list[str]) -> dict[str, object]:

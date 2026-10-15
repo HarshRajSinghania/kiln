@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from kiln import banner, check, ci, contract, dev, fleet, install, new, settings, update
+from kiln import banner, check, ci, contract, dev, fleet, install, new, settings, ui, update
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
@@ -16,6 +16,21 @@ SIZES = ("spark", "ember", "flame", "blaze")
 PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse", "outil")
 BACKENDS = ("django", "fastapi", "data", "cli", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
+
+
+# Écran d'accueil : commandes par section ; le rôle de chacune vient de son aide argparse.
+COMMAND_GROUPS = (
+    ("Projet", ("new", "install", "update", "set")),
+    ("Au quotidien", ("dev", "check", "ci", "contrat")),
+    ("Tous les repos", ("status", "update --all")),
+)
+FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, une PR chacun"
+EXAMPLES = (
+    "kiln new atelier --size ember --backend fastapi",
+    "kiln update --major",
+    "kiln set podman=true",
+)
+HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -211,15 +226,27 @@ def _dispatch_fleet(arguments: argparse.Namespace) -> None:
         fleet.update_all(code_dir, allow_major=arguments.major)
 
 
+def show_home(parser: argparse.ArgumentParser) -> None:
+    roles = {"update --all": FLEET_UPDATE_ROLE}
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            roles |= {choice.dest: choice.help or "" for choice in action._choices_actions}
+    banner.show_home(
+        [
+            (title, [(name, roles[name][:1].upper() + roles[name][1:]) for name in names])
+            for title, names in COMMAND_GROUPS
+        ],
+        EXAMPLES,
+    )
+
+
 def main() -> None:
     try:
         parser = build_parser()
-        arguments = parser.parse_args()
-        if arguments.command is None:
-            banner.show_banner("orchestrateur de repos")
-            parser.print_help()
+        if sys.argv[1:] in HELP_FLAGS:
+            show_home(parser)
             return
-        dispatch(arguments)
+        dispatch(parser.parse_args())
     except KilnError as error:
-        print(f"kiln : {error}", file=sys.stderr)
+        ui.error(str(error))
         sys.exit(EXIT_FAILURE)

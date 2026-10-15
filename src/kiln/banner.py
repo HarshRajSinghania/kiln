@@ -1,4 +1,4 @@
-"""Bannière d'accueil des commandes longues (`new`, `install`, `update`, `status`).
+"""Bannière des commandes longues (`new`, `install`, `update`, `status`) et écran d'accueil.
 
 Un four rieur en pixel art (pierre et feu), dessiné en demi-blocs (deux pixels par caractère),
 à côté de la version de kiln, de la commande lancée, du projet et de son dossier.
@@ -6,17 +6,16 @@ Hors terminal, ou avec `NO_COLOR`, une seule ligne sans dessin : les journaux et
 capturées restent lisibles.
 """
 
-import os
-import sys
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
+from kiln import ui
 from kiln.shell import KilnError
 from kiln.stack import NO_FRAMEWORK, answers_if_any, load_stack
 
-# Un caractère = deux pixels superposés. Four rieur, pierre et feu : L pierre éclairée, B pierre,
-# b pierre dans l'ombre, d socle et chapeau de brique, W/K yeux, P joues, R/F/Y flamme (bord rouge,
-# orange, cœur jaune), . vide.
+# Un caractère = deux pixels superposés. L pierre éclairée, B pierre, b pierre dans l'ombre,
+# d socle et chapeau de brique, W/K yeux, P joues, R/F/Y flamme (bord, corps, cœur), . vide.
 LOGO = (
     "..........dd..",
     "...LLLBBB.bb..",
@@ -27,84 +26,83 @@ LOGO = (
     ".BBB.FYYF.bbb.",
     "dddddddddddddd",
 )
-# Couleur de chaque pixel : 24 bits, et repli sur la palette de 256 couleurs.
-TRUE_COLORS = {
-    "L": "185;185;180",
-    "B": "140;140;135",
-    "b": "95;95;92",
-    "d": "180;75;35",
-    "W": "255;255;255",
-    "K": "25;25;25",
-    "P": "230;130;120",
-    "R": "205;50;35",
-    "F": "247;150;40",
-    "Y": "255;225;120",
-}
-PALETTE_COLORS = {
-    "L": "250",
-    "B": "245",
-    "b": "240",
-    "d": "130",
-    "W": "231",
-    "K": "234",
-    "P": "174",
-    "R": "160",
-    "F": "208",
-    "Y": "222",
+LOGO_COLORS = {
+    "L": ui.STONE_LIGHT,
+    "B": ui.STONE,
+    "b": ui.STONE_DARK,
+    "d": ui.BRICK,
+    "W": ui.WHITE,
+    "K": ui.SOOT,
+    "P": ui.CHEEK,
+    "R": ui.EMBER,
+    "F": ui.FIRE,
+    "Y": ui.GLOW,
 }
 EMPTY = "."
 UPPER_HALF, LOWER_HALF, FULL_BLOCK = "▀", "▄", "█"
-BOLD, DIM, RESET = "\033[1m", "\033[2m", "\033[0m"
-LOGO_MARGIN, TEXT_GAP = "  ", "   "
+LOGO_MARGIN, TEXT_GAP, INDENT = "  ", "   ", "  "
+REPO_URL = "github.com/antoine-tena/kiln"
+
+# Écran d'accueil : sections de commandes (nom, rôle) et exemples.
+CommandGroup = tuple[str, Sequence[tuple[str, str]]]
 
 
 def show_banner(action: str, root: Path | None = None) -> None:
     """Affiche la bannière ; `root` : le repo concerné, sinon le dossier courant sans projet."""
-    title = f"kiln v{_kiln_version()}"
+    kiln_version = f"v{_kiln_version()}"
     details = [action, *([_project_summary(root)] if root is not None else [])]
     location = _home_relative(root or Path.cwd())
-    if not _supports_drawing():
-        print(" · ".join([title, *details, location]), flush=True)
+    if not ui.is_styled():
+        print(" · ".join([f"kiln {kiln_version}", *details, location]), flush=True)
         return
-    text_lines = ["", f"{BOLD}{title}{RESET}", f"{DIM}{' · '.join(details)}{RESET}", location]
-    drawing = _render_logo(*_color_scheme())
+    text_lines = [
+        "",
+        f"{ui.paint('kiln', bold=True)} {ui.paint(kiln_version, ui.STONE)}",
+        ui.paint(" · ".join(details), ui.FIRE),
+        ui.paint(location, ui.STONE),
+    ]
     print()
-    for logo_line, text_line in zip(drawing, text_lines, strict=True):
+    for logo_line, text_line in zip(render_logo(), text_lines, strict=True):
         print(f"{LOGO_MARGIN}{logo_line}{TEXT_GAP}{text_line}".rstrip())
     print(flush=True)
 
 
-def _render_logo(mode: str, colors: dict[str, str]) -> list[str]:
-    """`mode` : 2 pour les couleurs 24 bits, 5 pour la palette de 256 couleurs."""
-
-    def foreground(pixel: str) -> str:
-        return f"\033[38;{mode};{colors[pixel]}m"
-
-    def background(pixel: str) -> str:
-        return f"\033[48;{mode};{colors[pixel]}m"
-
-    lines = []
-    for top_row, bottom_row in zip(LOGO[0::2], LOGO[1::2], strict=True):
-        cells = []
-        for top, bottom in zip(top_row, bottom_row, strict=True):
-            if top == EMPTY and bottom == EMPTY:
-                cells.append(" ")
-            elif bottom == EMPTY:
-                cells.append(f"{foreground(top)}{UPPER_HALF}{RESET}")
-            elif top == EMPTY:
-                cells.append(f"{foreground(bottom)}{LOWER_HALF}{RESET}")
-            elif top == bottom:
-                cells.append(f"{foreground(top)}{FULL_BLOCK}{RESET}")
-            else:
-                cells.append(f"{foreground(top)}{background(bottom)}{UPPER_HALF}{RESET}")
-        lines.append("".join(cells))
-    return lines
+def show_home(groups: Sequence[CommandGroup], examples: Sequence[str]) -> None:
+    """`kiln` seul ou `kiln --help` : bannière, commandes par section, exemples."""
+    show_banner("orchestrateur de repos")
+    width = max(len(name) for _, commands in groups for name, _ in commands) + 3
+    usage = ui.paint("<commande> [options]", ui.STONE)
+    print(f"{INDENT}{ui.paint('Usage', bold=True)}  kiln {usage}")
+    for title, commands in groups:
+        print(f"\n{INDENT}{ui.paint(title.upper(), ui.FIRE, bold=True)}")
+        for name, role in commands:
+            print(f"{INDENT}  {ui.paint(f'{name:<{width}}', ui.STONE_LIGHT, bold=True)}{role}")
+    print(f"\n{INDENT}{ui.paint('EXEMPLES', ui.FIRE, bold=True)}")
+    for example in examples:
+        print(f"{INDENT}  {ui.paint('$', ui.STONE_DARK)} {example}")
+    print(
+        f"\n{INDENT}{ui.paint('kiln <commande> --help', bold=True)}"
+        f"{ui.paint(f' pour les options · {REPO_URL}', ui.STONE)}\n"
+    )
 
 
-def _color_scheme() -> tuple[str, dict[str, str]]:
-    if os.environ.get("COLORTERM", "") in ("truecolor", "24bit"):
-        return "2", TRUE_COLORS
-    return "5", PALETTE_COLORS
+def render_logo() -> list[str]:
+    def cell(top: str, bottom: str) -> str:
+        if top == EMPTY and bottom == EMPTY:
+            return " "
+        if bottom == EMPTY:
+            return f"{ui.foreground(LOGO_COLORS[top])}{UPPER_HALF}{ui.RESET}"
+        if top == EMPTY:
+            return f"{ui.foreground(LOGO_COLORS[bottom])}{LOWER_HALF}{ui.RESET}"
+        if top == bottom:
+            return f"{ui.foreground(LOGO_COLORS[top])}{FULL_BLOCK}{ui.RESET}"
+        colors = ui.foreground(LOGO_COLORS[top]) + ui.background(LOGO_COLORS[bottom])
+        return f"{colors}{UPPER_HALF}{ui.RESET}"
+
+    return [
+        "".join(cell(top, bottom) for top, bottom in zip(top_row, bottom_row, strict=True))
+        for top_row, bottom_row in zip(LOGO[0::2], LOGO[1::2], strict=True)
+    ]
 
 
 def _project_summary(root: Path) -> str:
@@ -132,11 +130,3 @@ def _home_relative(path: Path) -> str:
         return f"~/{path.relative_to(Path.home())}"
     except ValueError:
         return str(path)
-
-
-def _supports_drawing() -> bool:
-    return (
-        sys.stdout.isatty()
-        and "NO_COLOR" not in os.environ
-        and os.environ.get("TERM", "") != "dumb"
-    )

@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 
+from kiln import ui
 from kiln.install import ensure_env_file
 from kiln.shell import KilnError, step
 from kiln.stack import BACKEND_DIR, load_stack
@@ -28,4 +29,4 @@ def check_project(root: Path) -> None:
     failed_checks = run_checks(root)
     if failed_checks:
         raise KilnError(f"contrôles en échec : {', '.join(failed_checks)}")
-    print("\nTous les contrôles passent.")
+    ui.success("Tous les contrôles passent.")

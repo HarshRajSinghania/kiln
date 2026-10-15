@@ -11,6 +11,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from kiln import ui
 from kiln.check import run_checks
 from kiln.install import install_project
 from kiln.shell import KilnError, capture, require_tools, run, step
@@ -105,7 +106,20 @@ def require_code_dir(code_dir: Path) -> None:
         )
 
 
+STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 17), ("taille", 6))
+# Couleur de chaque état : vert ce qui va, feu ce qui demande une action.
+STATE_COLORS = {
+    "propre": ui.MOSS,
+    "modifié": ui.FIRE,
+    "modèle à jour": ui.MOSS,
+    "modèle en retard": ui.FIRE,
+    "adopté": ui.STONE,
+}
+
+
 def show_status(code_dir: Path) -> None:
+    header = " ".join(f"{title:<{width}}" for title, width in STATUS_COLUMNS) + " stack"
+    print(" ", ui.paint(header.upper(), ui.STONE, bold=True))
     for repo in find_repos(code_dir):
         is_current = bool(repo.template_commit) and not template_changed_since(repo.template_commit)
         _print_status(code_dir, repo.root, "modèle à jour" if is_current else "modèle en retard")
@@ -118,10 +132,15 @@ def _print_status(code_dir: Path, root: Path, template_state: str) -> None:
     is_dirty = bool(capture(["git", "status", "--porcelain"], root))
     stack = load_stack(root)
     size = answers_if_any(root).get("envergure", "?")
+    tree_state = "modifié" if is_dirty else "propre"
     print(
-        f"{root.relative_to(code_dir)!s:<30} {branch:<22} "
-        f"{'modifié' if is_dirty else 'propre':<8} {template_state:<17} {size!s:<6} "
-        f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}"
+        " ",
+        ui.paint(f"{root.relative_to(code_dir)!s:<30}", bold=True),
+        ui.paint(f"{branch:<22}", ui.STONE_LIGHT),
+        ui.paint(f"{tree_state:<8}", STATE_COLORS[tree_state]),
+        ui.paint(f"{template_state:<17}", STATE_COLORS[template_state]),
+        ui.paint(f"{size!s:<6}", ui.STONE),
+        f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}",
     )
 
 
