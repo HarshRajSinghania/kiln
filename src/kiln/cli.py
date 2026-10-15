@@ -248,7 +248,7 @@ def _show_banner(arguments: argparse.Namespace) -> None:
     action = BANNER_ACTIONS.get(arguments.command)
     if action is None:
         return
-    if arguments.command in ("new", "status", "doctor") or arguments.all:
+    if arguments.command in ("new", "status", "doctor") or getattr(arguments, "all", False):
         banner.show_banner(action if arguments.command != "update" else "mise à jour des repos")
         return
     banner.show_banner(action, _repo_root_or_hint())

@@ -27,7 +27,8 @@ un dossier ou un module.
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
   actions composites (`charte`, `services`).
-- `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_unites.py`,
+- `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
+  accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_deploiement.py`.
 
 ## Versions
@@ -41,6 +42,7 @@ ci-dessous, ou la CI GitHub de la branche. Les workflows et actions réutilisabl
 
 ## Contrôles
 
-`uv run pytest -q` (le rendu du modèle prend environ une minute et demie), `uv run ruff check`
+`uv run pytest -q` (réparti sur tous les cœurs par pytest-xdist : une vingtaine de secondes ;
+`-n 0` pour un seul processus, au débogage), `uv run ruff check`
 et `uv run ruff format --check`. Un hook ou un script de plugin est lu en direct par Claude Code
 (catalogue déclaré en dossier local) : il agit dès la fusion dans `develop`.

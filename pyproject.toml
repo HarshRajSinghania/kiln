@@ -19,10 +19,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["mypy", "pytest", "ruff"]
+dev = [
+    "mypy",
+    "pytest",
+    "pytest-xdist>=3.8.0",
+    "ruff",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Le rendu du modèle (une génération par stack) se répartit sur tous les cœurs.
+addopts = "-n auto"
 
 [tool.ruff]
 line-length = 100
