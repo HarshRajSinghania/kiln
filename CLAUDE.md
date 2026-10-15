@@ -14,7 +14,7 @@ un dossier ou un module.
   `install.py`, `dev.py`, `check.py`, `settings.py` (`kiln set`, clés réglables), `update.py`,
   `contract.py`, `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
   `.copier-answers.yml`), `template.py`, `deps.py`, `github.py`, `rules.py` (règles non
-  vérifiées), `statusline.py`, `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
+  vérifiées), `statusline.py`, `banner.py` (bannière des commandes longues), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
 - `src/kiln/ci/` : `kiln ci` (CI rejouée sur le poste, verdict en note git) ;
   `src/kiln/charte/` : moteur de `charte` (`interdictions.py`, `cliquets.py`,
   `outils_python.py`).
