@@ -14,13 +14,14 @@ ANSWERS = {
     "proprietaire": "antoine-tena",
     "equipe": ["antoine-tena", "NathanBarrachin"],
 }
-BACKENDS = ("django", "fastapi", "data", "cli", "aucun")
+BACKENDS = ("django", "fastapi", "data", "cli", "java", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 STACKS = [
     (back, front) for back in BACKENDS for front in FRONTENDS if (back, front) != ("aucun",) * 2
 ]
-# Un outil en ligne de commande seul n'a rien à conteneuriser : copier refuse podman.
-PODMAN_STACKS = [stack for stack in STACKS if stack != ("cli", "aucun")]
+# Un outil en ligne de commande ou un backend Java seuls n'ont rien à conteneuriser : copier
+# refuse podman.
+PODMAN_STACKS = [stack for stack in STACKS if stack not in {("cli", "aucun"), ("java", "aucun")}]
 JSON_FILES = (".vscode/settings.json", ".vscode/extensions.json", ".claude/settings.json")
 
 
@@ -185,3 +186,32 @@ def test_tool_project_gets_a_command_line_package(tmp_path: Path) -> None:
         for line in path.read_text().splitlines()
     ]
     assert all(len(line) <= 100 for line in python_lines)
+
+
+def test_java_backend_gets_a_maven_project(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", nom="demo-app", backend="java", frontend="aucun")
+
+    backend_dir = project_dir / "backend"
+    pom = (backend_dir / "pom.xml").read_text()
+    assert "<artifactId>demo-app</artifactId>" in pom
+    assert "<main.class>fr.demoapp.Main</main.class>" in pom
+    assert (backend_dir / "src/main/java/fr/demoapp/Main.java").is_file()
+    assert (backend_dir / "src/test/java/fr/demoapp/greeting/GreetingServiceTest.java").is_file()
+    assert (backend_dir / "mvnw").stat().st_mode & 0o111
+    wrapper = (backend_dir / ".mvn/wrapper/maven-wrapper.properties").read_text()
+    assert "distributionSha256Sum=" in wrapper
+    assert "[JAVA-MODERNE]" in (backend_dir / "CLAUDE.md").read_text()
+    workflow = yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
+    assert workflow["jobs"]["backend"]["uses"].startswith(
+        "antoine-tena/kiln/.github/workflows/maven.yml@"
+    )
+    assert workflow["jobs"]["securite"]["with"]["uv"] == ""
+    charter = tomllib.loads((project_dir / "charte.toml").read_text())
+    assert ".java" in charter["cliquets"]["taille-fichier"]["suffixes"]
+    booleans_rule = next(
+        line
+        for line in (project_dir / "CLAUDE.md").read_text().splitlines()
+        if line.startswith("- **[BOOLEENS]**")
+    )
+    assert "en Java" in booleans_rule
+    assert "Python" not in booleans_rule

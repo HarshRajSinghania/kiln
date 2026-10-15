@@ -33,6 +33,25 @@ def test_checks_end_with_charter() -> None:
     ]
 
 
+def test_java_backend_is_checked_by_the_maven_wrapper() -> None:
+    stack = Stack(backend="java", frontend="aucun", has_podman=False)
+
+    assert stack.python_dirs == ()
+    assert stack.maven_dir == "backend"
+    assert stack.dev_commands() == []
+    assert [(command.label, command.argv) for command in stack.check_commands()] == [
+        ("backend maven", ("./mvnw", "-B", "-q", "verify")),
+        ("charte", ("charte",)),
+    ]
+
+
+def test_adopted_maven_backend_is_detected(tmp_path: Path) -> None:
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend/pom.xml").write_text("<project/>")
+
+    assert load_stack(tmp_path).backend == "java"
+
+
 def test_major_bounds_keep_the_major() -> None:
     assert _major_bounds(Version("6.1.2")) == ">=6.1.2,<7.0.0"
     assert _major_bounds(Version("0.25.1")) == ">=0.25.1,<0.26.0"
