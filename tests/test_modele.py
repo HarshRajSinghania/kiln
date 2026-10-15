@@ -216,3 +216,14 @@ def test_java_backend_gets_a_maven_project(tmp_path: Path) -> None:
     )
     assert "en Java" in booleans_rule
     assert "Python" not in booleans_rule
+
+
+def test_team_gets_kiln_marketplace_and_base_plugin(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", backend="java", frontend="aucun")
+
+    settings = json.loads((project_dir / ".claude/settings.json").read_text())
+    assert settings["extraKnownMarketplaces"]["kiln"]["source"] == {
+        "source": "github",
+        "repo": "antoine-tena/kiln",
+    }
+    assert settings["enabledPlugins"] == {"base@kiln": True}
