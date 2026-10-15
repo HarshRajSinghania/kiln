@@ -127,12 +127,13 @@ make the opinions yours.
 |---|---|
 | `kiln new [dir]` | Questionnaire, generation, lockfiles, install, first commit on `main`, then `develop` where all work happens. |
 | `kiln install` | Set up a machine after a clone: tools, dependencies, `.env`, migrations, pre-commit. Re-runnable. |
-| `kiln dev` | Start the stack's dev servers; `--containers` runs everything in podman. |
+| `kiln dev` | Start the stack's dev servers, their output interleaved and prefixed by service in colour (`django │ …`); `--containers` runs everything in podman. |
 | `kiln check` | Ruff, mypy, pytest for each Python project, ESLint and type checks for the front, then `charte`. |
 | `kiln set [key=value…]` | Show or change the repo's settings (team, frameworks, podman…); the repo is re-rendered. |
-| `kiln update` | Template changes + compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
+| `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template up to date or behind, stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v2 → v3` when behind), stack — for every kiln repo. |
+| `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |
 | `kiln contrat` | Django + Nuxt: export `openapi.json` and regenerate the front's API types. |
 | `charte` | Check the repo against its `charte.toml` (`--detail`, `types`, `couverture`). |
