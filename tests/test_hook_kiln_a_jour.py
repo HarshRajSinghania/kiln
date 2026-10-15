@@ -27,7 +27,7 @@ def hook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     return module
 
 
-def released(tag: str = "v2", commit: str = "nouveau") -> Callable[[], tuple[str, str]]:
+def released(tag: str = "v0.4.0", commit: str = "nouveau") -> Callable[[], tuple[str, str]]:
     return lambda: (tag, commit)
 
 
@@ -42,11 +42,13 @@ def test_answers_are_read_without_yaml() -> None:
 def test_releases_order_by_number_not_by_text() -> None:
     hook = load_hook()
 
-    assert hook.release_key("v10") > hook.release_key("v9.3")
-    assert hook.release_key("v2-4-gabc1234") == (2, 0)
+    assert hook.release_key("v0.10.0") > hook.release_key("v0.9.3")
+    assert hook.release_key("v0.4.0") > hook.release_key("v0.4.0-rc.3")
+    assert hook.release_key("v0.4.0-2-gabc1234") == (0, 4, 0, hook.FINAL)
     assert hook.release_key("8e6427b") is None
-    assert hook.is_repo_late("8e6427b", "v1")
-    assert not hook.is_repo_late("v2", "v2")
+    assert hook.is_repo_late("8e6427b", "v0.3.0")
+    assert hook.is_repo_late("v0.4.0-rc.1", "v0.4.0")
+    assert not hook.is_repo_late("v0.4.0", "v0.4.0")
 
 
 def test_refusals_push_the_question_back_5_10_30_then_50_sessions(hook: ModuleType) -> None:
@@ -93,8 +95,8 @@ def test_up_to_date_tool_asks_only_for_the_repo(
 
     message = hook.instructions(".", {}, release=released())
 
-    assert message.startswith("kiln v2 est sortie ; annway part de 8e6427b")
-    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: (Path("annway"), "v2"))
+    assert message.startswith("kiln v0.4.0 est sortie ; annway part de 8e6427b")
+    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: (Path("annway"), "v0.4.0"))
     assert hook.instructions(".", {}, release=released()) == ""
 
 

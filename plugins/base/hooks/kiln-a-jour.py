@@ -26,14 +26,21 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
 ANSWERS_FILE = ".copier-answers.yml"
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
-# `v3`, `v3.1`, et ce que `git describe` ajoute derrière (`v3-4-gabc1234`).
-RELEASE_TAG = re.compile(r"^v(\d+)(?:\.(\d+))?(?:-\d+-g[0-9a-f]+)?$")
+# `v0.4.0`, `v0.4.0-rc.2`, et ce que `git describe` ajoute derrière (`v0.4.0-3-gabc1234`).
+RELEASE_TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?(?:-\d+-g[0-9a-f]+)?$")
+# Une version promue passe après toutes ses candidates.
+FINAL = 10**9
+CONFIG_PATH = (
+    Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "kiln" / "config.toml"
+)
+INTERNAL_CHANNEL = "interne"
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
 STATE_PATH = STATE_DIR / "kiln" / "rappels.json"
 # Sessions à attendre avant de reposer la question, selon le nombre de « non » déjà reçus.
@@ -52,10 +59,22 @@ def answer(text: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def release_key(ref: str) -> tuple[int, int] | None:
-    """(N, M) d'une version `vN.M` ; None pour un simple commit (avant la première version)."""
+def release_key(ref: str) -> tuple[int, int, int, int] | None:
+    """Clé de tri d'une version (`v0.4.0-rc.2` → (0, 4, 0, 2)) ; None pour un simple commit."""
     match = RELEASE_TAG.match(ref.strip())
-    return (int(match.group(1)), int(match.group(2) or 0)) if match else None
+    if match is None:
+        return None
+    candidate = match.group(4)
+    return (*(int(match.group(i)) for i in (1, 2, 3)), int(candidate) if candidate else FINAL)
+
+
+def follows_candidates() -> bool:
+    """Le poste est-il au canal `interne` (`canal = "interne"` dans la config de kiln) ?"""
+    try:
+        values = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return False
+    return values.get("canal") == INTERNAL_CHANNEL
 
 
 def run(*command: str) -> subprocess.CompletedProcess[str]:
@@ -120,7 +139,9 @@ def installed_kiln() -> tuple[str, str] | None:
 
 
 def latest_release() -> tuple[str, str] | None:
-    """(tag, commit) de la dernière version publiée ; None sans réseau ou sans version."""
+    """(tag, commit) de la dernière version, candidates comprises au canal `interne` ; None sans
+    réseau ou sans version."""
+    candidates = follows_candidates()
     commits: dict[str, str] = {}
     for line in run("git", "ls-remote", "--tags", f"{KILN_GIT_URL}.git").stdout.splitlines():
         commit, _, ref = line.partition("\t")
@@ -130,7 +151,11 @@ def latest_release() -> tuple[str, str] | None:
             commits[tag.removesuffix("^{}")] = commit
         else:
             commits.setdefault(tag, commit)
-    releases = [(key, tag) for tag in commits if (key := release_key(tag)) is not None]
+    releases = [
+        (key, tag)
+        for tag in commits
+        if (key := release_key(tag)) is not None and (candidates or key[3] == FINAL)
+    ]
     if not releases:
         return None
     tag = max(releases)[1]
