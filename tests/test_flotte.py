@@ -1,6 +1,9 @@
 import subprocess
 from pathlib import Path
 
+import pytest
+
+from kiln import fleet
 from kiln.fleet import (
     MAX_FILES_PER_COMMIT,
     commit_in_batches,
@@ -10,6 +13,7 @@ from kiln.fleet import (
     integration_branch,
     is_template_change,
 )
+from kiln.shell import KilnError
 
 
 def make_repo(root: Path, source: str) -> Path:
@@ -91,3 +95,8 @@ def test_develop_wins_without_origin_head(tmp_path: Path) -> None:
 def test_only_template_files_make_a_repo_late() -> None:
     assert not is_template_change(["src/kiln/fleet.py", "tests/test_flotte.py"])
     assert is_template_change(["src/kiln/fleet.py", "template/README.md.jinja"])
+
+
+def test_missing_code_dir_is_explained(tmp_path: Path) -> None:
+    with pytest.raises(KilnError, match="dossier_code"):
+        fleet.require_code_dir(tmp_path / "code")

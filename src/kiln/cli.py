@@ -184,6 +184,7 @@ def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
 
 def _dispatch_fleet(arguments: argparse.Namespace) -> None:
     code_dir = load_config().code_dir
+    fleet.require_code_dir(code_dir)
     if arguments.command == "status":
         fleet.show_status(code_dir)
     else:

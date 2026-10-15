@@ -96,6 +96,15 @@ def is_template_change(changed_paths: list[str]) -> bool:
     return any(path.startswith(TEMPLATE_PATHS) for path in changed_paths)
 
 
+def require_code_dir(code_dir: Path) -> None:
+    """Le dossier de code existe : sinon, dire où le régler plutôt que de planter."""
+    if not code_dir.is_dir():
+        raise KilnError(
+            f"dossier de code introuvable : {code_dir}. Le régler dans ~/.config/kiln/config.toml "
+            '(dossier_code = "<dossier qui contient vos repos>")'
+        )
+
+
 def show_status(code_dir: Path) -> None:
     for repo in find_repos(code_dir):
         is_current = bool(repo.template_commit) and not template_changed_since(repo.template_commit)
