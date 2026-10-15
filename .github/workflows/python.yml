@@ -37,11 +37,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: antoine-tena/kiln/actions/services@develop
+      # kiln à la version exacte de ce workflow : ses actions et la commande charte en viennent
+      # (retiré aussitôt, pour que les contrôles du projet ne le voient pas).
+      - uses: actions/checkout@v7
+        with:
+          repository: antoine-tena/kiln
+          ref: ${{ job.workflow_sha || 'develop' }}
+          path: .kiln
+      - uses: ./.kiln/actions/services
         if: inputs.postgres != ''
         with:
           base: ${{ inputs.base }}
           postgres: ${{ inputs.postgres }}
+      - name: Retrait de kiln du dossier du projet
+        run: rm -rf .kiln
 
       - name: Variables du projet
         if: inputs.env != ''
