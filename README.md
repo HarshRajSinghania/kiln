@@ -26,7 +26,8 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire` ; hooks garde de branche, fichiers protégés, contrôle du fichier
-  modifié, sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
+  modifié, modèle kiln en retard signalé à l'ouverture de session (`kiln update` proposé,
+  jamais lancé ; `git config kiln-a-jour.desactive true` pour s'en passer), sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
   est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
   déclarer dans `statusLine` de `~/.claude/settings.json`) ;
 - `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish`, `apercu` — captures sur trois téléphones et un ordinateur ; MCP playwright) et `pile-django` (skills
