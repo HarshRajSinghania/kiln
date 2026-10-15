@@ -95,3 +95,26 @@ def test_agreeing_resets_the_reminders(hook: ModuleType) -> None:
 
     assert state[hook.TOOL_KEY]["refus"] == 0
     assert state[hook.TOOL_KEY]["prochaine"] == 0
+
+
+def test_plugin_link_follows_the_installed_plugin(tmp_path: Path) -> None:
+    hook = load_hook()
+    old_plugin, new_plugin = tmp_path / "base-0.6.0", tmp_path / "base-0.7.0"
+    old_plugin.mkdir()
+    new_plugin.mkdir()
+    root = tmp_path / "annway"
+    root.mkdir()
+
+    hook.link_plugin(root, old_plugin)
+    hook.link_plugin(root, new_plugin)
+
+    assert (root / ".claude/kiln").resolve() == new_plugin
+
+
+def test_a_real_folder_is_never_replaced_by_the_link(tmp_path: Path) -> None:
+    hook = load_hook()
+    (tmp_path / "annway/.claude/kiln").mkdir(parents=True)
+
+    hook.link_plugin(tmp_path / "annway", tmp_path)
+
+    assert not (tmp_path / "annway/.claude/kiln").is_symlink()
