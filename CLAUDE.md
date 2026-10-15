@@ -3,7 +3,8 @@
 Orchestrateur de repos (modèle Copier, commande `kiln`, moteur `charte`, plugins Claude Code,
 workflows réutilisables). Tout ce qui est générique aux repos vit ici : un défaut d'un fichier
 généré se corrige dans `template/`, puis `kiln update` dans le repo. Présentation complète et
-commandes dans [`README.md`](README.md).
+commandes dans [`README.fr.md`](README.fr.md) (vitrine en anglais :
+[`README.md`](README.md)).
 
 ## Carte du repo
 
@@ -27,6 +28,9 @@ un dossier ou un module.
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
   actions composites (`charte`, `services`).
+- Vitrine publique, en anglais : `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`
+  (MIT), `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` ; capture de l'écran
+  d'accueil `docs/assets/kiln-accueil.svg`. Référence complète en français : `README.fr.md`.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_deploiement.py`.
 
