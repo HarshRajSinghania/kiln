@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and discussions
+    url: https://github.com/antoine-tena/kiln/discussions
+    about: Ask how to do something, share what you built with kiln.
+  - name: Security vulnerability
+    url: https://github.com/antoine-tena/kiln/security/advisories/new
+    about: Please report vulnerabilities privately.

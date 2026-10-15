@@ -1,0 +1,21 @@
+name: Idea or feature request
+description: A new stack, command, rule or improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you have in mind?
+      description: Rough is fine. Alternatives you considered are welcome too.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to implement this myself.
