@@ -70,6 +70,7 @@ backend:
     FastAPI (API légère, asynchrone): fastapi
     Données Python (polars, marimo, Plotly): data
     Outil en ligne de commande (Python, argparse, sans serveur): cli
+    Java 25 (Maven, JUnit, sans framework): java
     Aucun: aucun
   default: >-
     {% if type_projet == 'app' %}django{% elif type_projet == 'api' %}fastapi{% elif type_projet in ['tableau', 'analyse'] %}data{% elif type_projet == 'outil' %}cli{% else %}aucun{% endif %}
@@ -94,10 +95,11 @@ frontend:
 podman:
   type: bool
   help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
-  default: "{{ envergure in ['flame', 'blaze'] and not (backend == 'cli' and frontend == 'aucun') }}"
-  # Un outil en ligne de commande n'a pas de serveur à conteneuriser ; son front éventuel, si.
+  default: "{{ envergure in ['flame', 'blaze'] and not (backend in ['cli', 'java'] and frontend == 'aucun') }}"
+  # Un outil en ligne de commande, ou un backend Java sans framework, n'a pas encore de serveur à
+  # conteneuriser ; son front éventuel, si.
   validator: >-
-    {% if podman and backend == 'cli' and frontend == 'aucun' %}Un outil en ligne de commande seul n'a rien à mettre dans podman.{% endif %}
+    {% if podman and backend in ['cli', 'java'] and frontend == 'aucun' %}{{ 'Un backend Java sans framework' if backend == 'java' else 'Un outil en ligne de commande' }} seul n'a rien à mettre dans podman.{% endif %}
 
 # Serena (plugin serena@kiln) : navigation par symboles en lecture seule, pour que Claude Code
 # lise une fonction plutôt qu'un fichier entier. Rentable sur un gros code (des milliers de

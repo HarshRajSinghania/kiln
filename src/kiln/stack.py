@@ -4,8 +4,8 @@ Un dépôt adopté, que kiln n'a pas généré, n'a pas de réponses : sa stack 
 fichiers marqueurs (`detect_stack`), pour que `check`, `dev`, `install` et `contrat` y servent.
 `update` et `set`, qui appliquent le modèle, restent réservés aux dépôts générés.
 
-Tout ce qui dépend des frameworks choisis passe par ici : dossiers Python et pnpm, serveurs de
-développement, contrôles. Les commandes (`install`, `dev`, `check`, `update`, `set`) ne
+Tout ce qui dépend des frameworks choisis passe par ici : dossiers Python, Maven et pnpm,
+serveurs de développement, contrôles. Les commandes (`install`, `dev`, `check`, `update`, `set`) ne
 connaissent pas les frameworks, seulement une `Stack`.
 """
 
@@ -27,6 +27,9 @@ FRONTEND_DIR = "frontend"
 
 PYTHON_BACKENDS = frozenset({"django", "fastapi", "data", "cli"})
 API_BACKENDS = frozenset({"django", "fastapi"})
+MAVEN_BACKENDS = frozenset({"java"})
+# Maven passe par le wrapper du projet : version et somme SHA-256 figées dans `.mvn/wrapper/`.
+MAVEN_WRAPPER = "./mvnw"
 PYTHON_FRONTENDS = frozenset({"streamlit", "dash"})
 PNPM_FRONTENDS = frozenset({"nuxt", "next", "astro"})
 NO_FRAMEWORK = "aucun"
@@ -40,6 +43,7 @@ BACKEND_MARKERS: tuple[tuple[str, str], ...] = (
     ("manage.py", "django"),
     ("app/main.py", "fastapi"),
     ("notebooks", "data"),
+    ("pom.xml", "java"),
 )
 FRONTEND_MARKERS: tuple[tuple[str, str], ...] = (
     ("nuxt.config.ts", "nuxt"),
@@ -83,6 +87,7 @@ BUILD_ARTIFACTS: Mapping[str, tuple[str, ...]] = {
     "fastapi": PYTHON_ARTIFACTS,
     "data": (*PYTHON_ARTIFACTS, "__marimo__"),
     "cli": PYTHON_ARTIFACTS,
+    "java": ("target",),
     "streamlit": PYTHON_ARTIFACTS,
     "dash": PYTHON_ARTIFACTS,
     "nuxt": ("pnpm-lock.yaml", "node_modules", ".nuxt", ".output", ".data"),
@@ -95,6 +100,7 @@ PYTHON_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("mypy", ("uv", "run", "mypy", ".")),
     ("pytest", ("uv", "run", "pytest", "-q")),
 )
+MAVEN_CHECK = ("maven", (MAVEN_WRAPPER, "-B", "-q", "verify"))
 
 
 @dataclass(frozen=True)
@@ -123,6 +129,10 @@ class Stack:
         return backend_dirs + frontend_dirs
 
     @property
+    def maven_dir(self) -> str | None:
+        return BACKEND_DIR if self.backend in MAVEN_BACKENDS else None
+
+    @property
     def pnpm_dir(self) -> str | None:
         return FRONTEND_DIR if self.frontend in PNPM_FRONTENDS else None
 
@@ -141,6 +151,9 @@ class Stack:
             for directory in self.python_dirs
             for label, argv in PYTHON_CHECKS
         ]
+        if self.maven_dir is not None:
+            label, argv = MAVEN_CHECK
+            commands.append(Command(f"{self.maven_dir} {label}", self.maven_dir, argv))
         if self.pnpm_dir is not None:
             commands += [
                 Command(f"{self.pnpm_dir} {script}", self.pnpm_dir, ("pnpm", script))

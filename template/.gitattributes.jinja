@@ -1,5 +1,9 @@
 # Fins de ligne normalisées en LF dans le dépôt, quel que soit le poste (Windows compris).
 * text=auto eol=lf
+{%- if backend == 'java' %}
+# Scripts Windows du wrapper Maven : fins de ligne CRLF, que cmd.exe attend.
+*.cmd text eol=crlf
+{%- endif %}
 
 # Binaires.
 *.png binary

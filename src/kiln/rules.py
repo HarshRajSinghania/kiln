@@ -19,6 +19,8 @@ RULE_PATTERN = re.compile(r"\*\*\[([A-Z0-9+-]+)\]\*\*")
 ALWAYS_VERIFIED = frozenset({"PAS-SUR-MAIN", "DEPENDANCES-FIGEES", "AUDIT-VULNERABILITES"})
 PYTHON_VERIFIED = frozenset({"TYPAGE", "TYPAGE-STRICT", "MYPY"})
 PNPM_VERIFIED = frozenset({"TS-STRICT", "ZERO-ANY"})
+# Tenues par le build Maven : `-Xlint:all -Werror` et le plancher de couverture JaCoCo.
+MAVEN_VERIFIED = frozenset({"TYPES-BRUTS", "TESTS"})
 
 HEADER = """\
 # Règles de CLAUDE.md qu'aucun contrôle ne vérifie : appliquées en revue.
@@ -48,6 +50,8 @@ def verified_rules(root: Path, stack: Stack) -> set[str]:
         verified |= PYTHON_VERIFIED
     if stack.frontend in PNPM_FRONTENDS:
         verified |= PNPM_VERIFIED
+    if stack.maven_dir is not None:
+        verified |= MAVEN_VERIFIED
     return verified
 
 

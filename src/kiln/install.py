@@ -8,7 +8,7 @@ from pathlib import Path
 
 from kiln.config import UserConfig, ensure_system, load_config
 from kiln.shell import KilnError, require_tools, run, step
-from kiln.stack import BACKEND_DIR, Stack, answers_if_any, load_stack
+from kiln.stack import BACKEND_DIR, MAVEN_WRAPPER, Stack, answers_if_any, load_stack
 from kiln.statusline import apply_statusline_settings
 
 SECRET_KEY_VARIABLE = "DJANGO_SECRET_KEY"
@@ -17,6 +17,17 @@ ENV_FILE_MODE = 0o600
 
 # Conseils d'installation par système (jamais pip ni docker).
 SYSTEM_HINTS: dict[str, dict[str, str]] = {
+    "java": {
+        "linux": "sudo apt install openjdk-25-jdk",
+        "wsl": "sudo apt install openjdk-25-jdk",
+        "macos": "brew install openjdk@25",
+    },
+    # Le wrapper Maven décompresse sa distribution avec unzip.
+    "unzip": {
+        "linux": "sudo apt install unzip",
+        "wsl": "sudo apt install unzip",
+        "macos": "unzip est fourni par macOS",
+    },
     "pnpm": {
         "linux": "corepack enable pnpm (Node 24, par mise ou le gestionnaire de paquets)",
         "wsl": "corepack enable pnpm (Node 24, par mise ou apt)",
@@ -40,6 +51,9 @@ def install_project(root: Path) -> None:
     for directory in stack.python_dirs:
         step(f"{directory} : dépendances Python")
         run(["uv", "sync", "--locked"], root / directory)
+    if stack.maven_dir is not None:
+        step(f"{stack.maven_dir} : Maven et dépendances (wrapper)")
+        run([MAVEN_WRAPPER, "-B", "-q", "-DskipTests", "package"], root / stack.maven_dir)
     if stack.has_api:
         step("backend : .env")
         ensure_env_file(root / BACKEND_DIR)
@@ -53,13 +67,24 @@ def install_project(root: Path) -> None:
     run(["pre-commit", "install"], root)
     apply_statusline_settings(root)
     command_name = answers_if_any(root).get("nom", "<commande>")
-    launch = "kiln dev" if stack.dev_commands() else f"cd backend && uv run {command_name} --help"
-    print(f"\nPrêt. Lancer le projet : {launch}")
+    print(f"\nPrêt. Lancer le projet : {_launch_hint(stack, command_name)}")
+
+
+def _launch_hint(stack: Stack, command_name: object) -> str:
+    if stack.dev_commands():
+        return "kiln dev"
+    if stack.maven_dir is not None:
+        return f"cd {stack.maven_dir} && {MAVEN_WRAPPER} verify"
+    return f"cd backend && uv run {command_name} --help"
 
 
 def _require_stack_tools(stack: Stack, config: UserConfig) -> None:
     require_tools("git", "uv")
-    needed = (["pnpm"] if stack.pnpm_dir else []) + (["podman"] if stack.has_podman else [])
+    needed = (
+        (["pnpm"] if stack.pnpm_dir else [])
+        + (["podman"] if stack.has_podman else [])
+        + (["java", "unzip"] if stack.maven_dir else [])
+    )
     missing = [tool for tool in needed if shutil.which(tool) is None]
     if missing:
         system = config.system or "linux"

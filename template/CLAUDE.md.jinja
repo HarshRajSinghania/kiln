@@ -2,7 +2,10 @@
 {%- set front_py = frontend in ['streamlit', 'dash'] %}
 {%- set front_js = frontend in ['nuxt', 'next', 'astro'] %}
 {%- set api = backend in ['django', 'fastapi'] %}
-{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly', 'cli': 'outil en ligne de commande Python'}.get(backend) %}
+{%- set java = backend == 'java' %}
+{%- set any_py = back_py or front_py %}
+{%- set langages = (['Python'] if any_py or not java else []) + (['Java'] if java else []) + (['TypeScript'] if front_js else []) %}
+{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly', 'cli': 'outil en ligne de commande Python', 'java': 'Java 25, Maven, sans framework'}.get(backend) %}
 {%- set envergure_label = {'spark': 'un script, un outil perso, une analyse ponctuelle', 'ember': "une petite app ou un site, une ou deux personnes, peu d'enjeu", 'flame': 'une app en production, de vrais utilisateurs, plusieurs contributeurs', 'blaze': 'plusieurs équipes ou services, de gros enjeux'}[envergure] %}
 {%- set front_label = {'nuxt': 'Nuxt 4 + Vue 3', 'next': 'Next.js 16 + React 19', 'astro': 'Astro 7', 'streamlit': 'Streamlit', 'dash': 'Dash'}.get(frontend) -%}
 # {{ titre }} — consignes et charte de développement
@@ -47,6 +50,9 @@ endroit, ce qu'on y trouve ; pas de copie du code.
 {% elif backend == 'cli' -%}
 - `backend/{{ nom | replace('-', '_') }}/` : commandes (`cli.py`, point d'entrée `__main__.py`) et
   logique métier ; `backend/tests/` : tests.
+{% elif java -%}
+- `backend/src/main/java/fr/{{ nom | replace('-', '') }}/` : point d'entrée (`Main.java`), un paquet
+  par domaine ; `backend/src/test/java/` : tests JUnit ; `backend/pom.xml` : build Maven.
 {% endif -%}
 {% if frontend == 'nuxt' -%}
 - `frontend/app/` : pages, composants (`components/`), composables, styles (`assets/`) ; types
@@ -134,6 +140,8 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 {%- endif %}
 {%- if back_py %}
   - Backend : un module qui dépasse devient un paquet ; `__init__.py` réexporte l'API publique.
+{%- elif java %}
+  - Backend : une classe qui dépasse se découpe en classes d'une responsabilité chacune.
 {%- endif %}
   - Exemptés : migrations générées, `settings.py`, fichiers générés — ceux que
     `.gitattributes` marque `linguist-generated`, seule liste (`openapi.json`, types
@@ -155,11 +163,16 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
   publiques et n'ont pas à suivre le vocabulaire du code.
 - **[BOOLEENS]** Un booléen est préfixé :
 {%- if front_js %} `is`, `has`, `should`, `can` côté frontend
-  (`isLoading`, `hasMissingValues`) ;{% endif %} `is_`, `has_`, `should_`, `can_` en Python.
+  (`isLoading`, `hasMissingValues`) ;{% endif %}
+{%- if java %} `is`, `has`, `should`, `can` en Java (`isFull`, `canBook`){% endif %}
+{%- if not java or front_py %}{{ ' ;' if java }} `is_`, `has_`, `should_`, `can_` en Python{% endif %}.
 {%- if api %} Les champs
   déjà publiés dans l'API restent tels quels ([CONTRAT-FIGE]).{% endif %}
 - **[CASSE]**
-{%- if not front_js %} Classes Python en PascalCase ; fonctions et variables Python en snake_case ;
+{%- if java %} Classes Java en PascalCase ; méthodes et variables Java en camelCase ; paquets
+  Java en minuscules ;{% endif %}
+{%- if java and not front_js and not front_py %} constantes en `UPPER_SNAKE_CASE`.{% endif %}
+{%- if not front_js and (not java or front_py) %} Classes Python en PascalCase ; fonctions et variables Python en snake_case ;
   constantes en `UPPER_SNAKE_CASE`.{% endif %}
 {%- if front_js %} Composants {{ {'nuxt': 'Vue', 'next': 'React', 'astro': 'Astro'}[frontend] }} en PascalCase préfixé par le domaine (`ChartLegend`,
   `MapTooltip`) ;
@@ -172,20 +185,21 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 {%- if front_js %} constantes dans `{{ {'nuxt': 'app/utils/constants.ts', 'next': 'lib/constants.ts', 'astro': 'src/constants.ts'}[frontend] }}` ou enums TypeScript côté
   frontend ;{% endif %}
 {%- if backend == 'django' %} `TextChoices` / `IntegerChoices` ou constante nommée en tête de module côté
-  backend.{% else %} `enum.StrEnum` ou constante nommée en tête de module en Python.{% endif %} Ne sont pas magiques : `0`, `1`, `-1`, `""`, `None`, les index et les littéraux des
+  backend.{% elif java %} `enum` ou constante `static final` nommée en Java
+{%- if front_py %} ; `enum.StrEnum` ou constante nommée en tête de module en Python{% endif %}.{% else %} `enum.StrEnum` ou constante nommée en tête de module en Python.{% endif %} Ne sont pas magiques : `0`, `1`, `-1`, `""`, `None`, les index et les littéraux des
   tests.
 
 ### Argent, dates, données personnelles, secrets
 - **[ARGENT]** Tout montant est un **entier en centimes** (`*_cents`), dans la base, l'API et
   le front. Jamais de `float` pour de l'argent ; conversion en euros uniquement à l'affichage.
 - **[FUSEAU]** Stockage en UTC{{ ' (`USE_TZ = True`)' if backend == 'django' }}. Toute notion calendaire — « aujourd'hui »,
-  jour, mois, bornes d'une période — se calcule en `Europe/Paris` ({{ '`timezone.localdate()`' if backend == 'django' else '`ZoneInfo("Europe/Paris")`' }}),
+  jour, mois, bornes d'une période — se calcule en `Europe/Paris` ({{ {'django': '`timezone.localdate()`', 'java': '`ZoneId.of("Europe/Paris")`'}.get(backend, '`ZoneInfo("Europe/Paris")`') }}),
   jamais par `.date()` sur un instant UTC.
 - **[DONNEES-PERSO]** Aucune donnée personnelle (e-mail, nom, téléphone, pièce, IP complète)
   dans les logs, les messages d'erreur, les URL, les clés de cache ou les figures : on
   journalise l'identifiant (`user_id`), pas la personne. Toute nouvelle donnée personnelle
   stockée est couverte par l'export et l'anonymisation RGPD dans le même lot.
-{%- set secrets_back = {'django': '`python-decouple` côté backend', 'fastapi': '`pydantic-settings` côté backend', 'data': '`python-decouple` côté backend', 'cli': '`os.environ` lu à la frontière côté backend'}.get(backend) %}
+{%- set secrets_back = {'django': '`python-decouple` côté backend', 'fastapi': '`pydantic-settings` côté backend', 'data': '`python-decouple` côté backend', 'cli': '`os.environ` lu à la frontière côté backend', 'java': '`System.getenv` lu à la frontière côté backend'}.get(backend) %}
 {%- set secrets_front = {'nuxt': '`runtimeConfig` côté frontend', 'next': 'variables serveur côté frontend (jamais `NEXT_PUBLIC_` pour un secret)', 'astro': '`astro:env` côté frontend', 'streamlit': '`st.secrets` côté frontend', 'dash': '`python-decouple` côté frontend'}.get(frontend) %}
 - **[SECRETS]** Aucun secret dans le code ni dans le dépôt : tout passe par l'environnement
   ({{ [secrets_back, secrets_front] | select | join(', ') }}). Un secret commis par erreur
@@ -193,7 +207,7 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 
 ### Erreurs
 - **[EXCEPTIONS]** Jamais d'exception avalée en silence (`except: pass`, `catch {}`) ni de
-  capture générique (`except Exception`) qui ne la relance pas ou ne la journalise pas.
+  capture générique (`except Exception`{{ ', `catch (Exception e)`' if java }}) qui ne la relance pas ou ne la journalise pas.
 
 ### Commentaires et tests
 - **[RENVOIS-AUDIT]** Un commentaire dit la contrainte au présent, jamais l'historique : aucun
@@ -239,14 +253,23 @@ puis en strict.
 - **[DEPENDANCES-FIGEES]** Toute dépendance est résolue par un lockfile commité (`uv.lock`,
   `pnpm-lock.yaml`) ; la CI installe en mode figé (`uv sync --locked`, `--frozen-lockfile`) et
   échoue si le lockfile dérive.
+{%- if java %} Maven n'a pas de lockfile : versions exactes dans `backend/pom.xml`
+  (l'enforcer refuse plages et versions dynamiques), sommes de contrôle exigées
+  (`.mvn/maven.config`), Maven lui-même figé par le wrapper et sa somme SHA-256.
+{%- endif %}
 - **[UV-PODMAN]** Python passe par uv (`uv add`, `uv run`, `uv tool install`) : jamais pip,
   pipx ni `requirements.txt`. Les conteneurs passent par podman (`Containerfile`,
   `compose.yaml`, `podman-compose`) : jamais docker, `Dockerfile` ni `docker-compose.yml`.
+{%- if java %} Java passe par le wrapper `backend/mvnw` : jamais un `mvn` installé sur le poste.
+{%- endif %}
 - **[IMAGES-PAR-EMPREINTE]** Toute image de base de conteneur est épinglée par empreinte
   `@sha256:`, jamais par un tag mobile seul.
 - **[AUDIT-VULNERABILITES]** La CI audite les dépendances à chaque commit (`uv audit` pour
   chaque projet Python, `pnpm audit --audit-level=high` pour un front pnpm) ; une vulnérabilité haute ou
   critique bloque la fusion, sauf dérogation datée et justifiée.
+{%- if java %} Le backend Maven n'est pas encore audité en CI : les
+  alertes Dependabot de GitHub en tiennent lieu.
+{%- endif %}
 - **[NOUVELLE-DEPENDANCE]** Ajouter une dépendance se justifie dans le commit : maintenue
   (release de moins d'un an), licence compatible, pas d'équivalent déjà présent, pas de nom
   proche d'un paquet connu (typosquatting). Les montées de version passent par `kiln update`
@@ -305,9 +328,9 @@ puis en strict.
   entrée conforme au schéma ne provoque de 500.
 {%- endif %}
 - **[TESTS-PROPRIETES]** Les calculs à invariants — agrégations, bornes de période, totaux,
-  pourcentages — ont des tests par propriétés (`hypothesis`) en plus des exemples.
+  pourcentages — ont des tests par propriétés ({{ '`jqwik` en Java, `hypothesis` en Python' if java and front_py else ('`jqwik`' if java else '`hypothesis`') }}) en plus des exemples.
 - **[TESTS-MUTATION]** Les modules de calcul critiques passent périodiquement au test par
-  mutation (`mutmut`) : un mutant qui survit est un test manquant.
+  mutation ({{ '`pitest` en Java, `mutmut` en Python' if java and front_py else ('`pitest`' if java else '`mutmut`') }}) : un mutant qui survit est un test manquant.
 {%- if front_label %}
 - **[E2E-PARCOURS]** Les parcours critiques ont un test de bout en bout Playwright, joué en CI
   contre une pile complète.
@@ -317,12 +340,14 @@ puis en strict.
   cible **WCAG 2.2 niveau AA**.
 {%- endif %}
 
-### {{ 'Python et TypeScript' if front_js else 'Python' }}
+### {{ langages | join(' et ') }}
+{%- if any_py or not java %}
 - **[PYTHON-MODERNE]** Syntaxe Python 3.12+ : génériques PEP 695 (`def first[T](...)`,
   `type Alias = ...`), `X | None` plutôt que `Optional[X]`, `@override` sur toute surcharge,
   `match` pour les aiguillages sur des statuts, `Self` pour les retours chaînés.
 - **[TYPAGE-STRICT]** mypy `strict` sur tout nouveau module ; aucun `# type: ignore` sans code
   d'erreur précis et raison.
+{%- endif %}
 {%- if frontend == 'nuxt' %}
 - **[VUE-MODERNE]** API Vue 3.5 / Nuxt 4 : `defineModel()` pour le `v-model`,
   `useTemplateRef()` pour les références, props déstructurées réactives, `useFetch` /
@@ -339,7 +364,7 @@ puis en strict.
 {%- endif %}
 - **[VALIDATION-AUX-FRONTIERES]** Toute donnée qui entre (API tierce, fichier source,
   `localStorage`, paramètre d'URL) est validée par un schéma à l'exécution avant usage : le
-  type TypeScript ne protège que ce que le compilateur voit.
+  type {{ 'statique' if java and not front_js else 'TypeScript' }} ne protège que ce que le compilateur voit.
 
 ### Livraison continue
 - **[FEATURE-FLAGS]** Une fonctionnalité risquée se livre éteinte derrière un drapeau, puis

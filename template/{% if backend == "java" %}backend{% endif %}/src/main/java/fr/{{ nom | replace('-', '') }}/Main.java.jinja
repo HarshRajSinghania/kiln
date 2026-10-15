@@ -1,0 +1,30 @@
+package fr.{{ nom | replace('-', '') }};
+
+import fr.{{ nom | replace('-', '') }}.greeting.GreetingService;
+import java.io.PrintStream;
+import java.util.Objects;
+
+/**
+ * Point d'entrée : lit les arguments, délègue au service et écrit la réponse ([COUCHES]).
+ * Aucune logique métier ici.
+ */
+public final class Main {
+
+    static final int EXIT_OK = 0;
+
+    private Main() {
+    }
+
+    public static void main(String[] args) {
+        System.exit(run(args, System.out));
+    }
+
+    static int run(String[] args, PrintStream out) {
+        Objects.requireNonNull(args, "args");
+        Objects.requireNonNull(out, "out");
+        var greetingService = new GreetingService();
+        var name = args.length == 0 ? "" : args[0];
+        out.println(greetingService.greet(name));
+        return EXIT_OK;
+    }
+}
