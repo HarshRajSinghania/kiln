@@ -48,7 +48,8 @@ part, ce qui permet de lui rapporter les évolutions sans écraser ses modificat
 ## Installation
 
 Prérequis : [uv](https://docs.astral.sh/uv/) et git ; [pnpm](https://pnpm.io/) (Node 24) pour un
-front JavaScript ; [podman](https://podman.io/) pour les conteneurs ; [gh](https://cli.github.com)
+front JavaScript ; un JDK 25 et `unzip` pour un backend Java ; [podman](https://podman.io/)
+pour les conteneurs ; [gh](https://cli.github.com)
 pour le dépôt GitHub, que `kiln new` crée d'office (si `gh` n'est pas connecté, kiln lance la
 connexion et affiche le lien https://github.com/login/device).
 
@@ -118,8 +119,13 @@ Le type de projet précoche une stack, que l'on change à la question suivante o
 | Analyse de données (`analyse`) | Données Python | aucun |
 | Outil en ligne de commande (`outil`) | Outil Python (`cli` : argparse, commande installable) | aucun |
 
-Backends : `django`, `fastapi`, `data`, `cli`, `aucun`. Frontends : `nuxt`, `next`, `astro`,
+Backends : `django`, `fastapi`, `data`, `cli`, `java`, `aucun`. Frontends : `nuxt`, `next`, `astro`,
 `streamlit`, `dash`, `aucun`. Toutes les combinaisons sont générées et vérifiées par les tests.
+
+`java` n'est conseillé pour aucun type : Java 25 sans framework, construit par Maven via son
+wrapper `./mvnw` (version et somme SHA-256 figées), tests JUnit 6, couverture JaCoCo, enforcer
+qui refuse les versions dynamiques. `kiln update` n'en monte pas les dépendances : les versions
+du `pom.xml` se changent à la main.
 
 ## Déploiement sur un serveur à soi
 
@@ -192,6 +198,7 @@ Python, podman pour les conteneurs (bases de test comprises), podman-compose ins
 |---|---|
 | `django.yml` | Backend Django : ruff, `charte types`, migrations manquantes, pytest et couverture, contre PostgreSQL et Redis lancés par podman. |
 | `python.yml` | Tout projet uv (FastAPI, données, Streamlit, Dash) : ruff, mypy, pytest avec un plancher de couverture ; PostgreSQL en option. |
+| `maven.yml` | Backend Java : `./mvnw verify` (compilation stricte, JUnit, plancher de couverture JaCoCo) sur un JDK Temurin. |
 | `pnpm.yml` | Front pnpm (Nuxt, Next.js, Astro) : scripts de `package.json` dans l'ordre ; pnpm pris dans `packageManager`. |
 | `charte.yml` | Règles de `charte.toml`. |
 | `securite.yml` | `uv audit` et `pnpm audit`. |
