@@ -600,7 +600,8 @@ def collect_session(status: Status, d: dict, main: str) -> None:
         head.append(Item(f"style {style}", short=""))
     name = str(d.get("session_name") or "")
     if name:
-        head.append(Item(name if len(name) <= 24 else name[:23] + "…", role="muted", short=""))
+        name = name if len(name) <= 24 else name[:23] + "…"
+        head.append(Item(f'"{name}"', role="muted", short=""))
     status.session.append(head)
 
     cw = d.get("context_window") or {}
