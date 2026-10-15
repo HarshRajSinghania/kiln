@@ -5,7 +5,9 @@ from packaging.version import Version
 
 from kiln import ui
 from kiln.banner import LOGO, _project_summary, render_logo
+from kiln.config import UserConfig
 from kiln.deps import _major_bounds
+from kiln.doctor import Level, workstation_findings
 from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments, remove_replaced_artifacts
@@ -203,3 +205,15 @@ def test_update_shows_the_releases_it_crosses() -> None:
     assert [n.tag for n in notes_between("f611f82", "v2", CHANGELOG)] == ["v2"]
     assert notes_between("v3", "v3", CHANGELOG) == []
     assert notes_between("v2", "v3", CHANGELOG)[0].lines == ["- kiln doctor"]
+
+
+def test_doctor_blocks_on_a_tool_the_repo_needs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("kiln.doctor.shutil.which", lambda name: None)
+    monkeypatch.setattr("kiln.doctor._latest_release", lambda: None)
+    stack = Stack(backend="fastapi", frontend="nuxt", has_podman=False)
+
+    findings = {f.label: f for f in workstation_findings(UserConfig(system="wsl"), stack)}
+
+    assert findings["pnpm"].level is Level.FAIL
+    assert findings["pnpm"].fix.startswith("corepack enable pnpm")
+    assert findings["podman"].level is Level.WARN
