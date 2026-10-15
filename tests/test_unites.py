@@ -7,6 +7,7 @@ from kiln import ui
 from kiln.banner import LOGO, _project_summary, render_logo
 from kiln.config import UserConfig
 from kiln.deps import _major_bounds
+from kiln.dev import service_prefix
 from kiln.doctor import Level, workstation_findings
 from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
@@ -217,3 +218,7 @@ def test_doctor_blocks_on_a_tool_the_repo_needs(monkeypatch: pytest.MonkeyPatch)
     assert findings["pnpm"].level is Level.FAIL
     assert findings["pnpm"].fix.startswith("corepack enable pnpm")
     assert findings["podman"].level is Level.WARN
+
+
+def test_dev_prefixes_line_up_outside_a_terminal() -> None:
+    assert service_prefix("nuxt", 6, ui.FIRE) == "nuxt   │ "
