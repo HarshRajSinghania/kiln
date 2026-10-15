@@ -2,9 +2,11 @@
 """Status line commune à tous les dossiers, aux couleurs de kiln (pierre et feu), en anglais.
 
 Le style se choisit par poste (`kiln set statusline=…`, lu dans `~/.config/kiln/config.toml`) :
-- `sobre` (par défaut) : trois lignes, dépôt, session, signaux triés par importance ;
+- `sobre` (par défaut) : trois lignes, dépôt, session (modèle, jauges, durée), signaux triés
+  par importance (tâches, environnement, RAM et CPU du poste) ;
 - `bandeau` : la même sur un bandeau suie, les signaux importants en pastilles pleines ;
-- `classique` : une ligne étiquetée par domaine (REPO, SESSION, TASKS, ENV) ;
+- `classique` : une ligne étiquetée par domaine (REPO, SESSION, TASKS, ENV, ce dernier avec
+  RAM et CPU) ;
 - `classique-fond` : la même sur bandeau ;
 - `aucune` et `perso` : rien ici (`kiln set` retire ou laisse la `statusLine` de Claude Code).
 `--style <nom>` force un style, pour un aperçu.
@@ -156,10 +158,11 @@ Group = list[Item]
 class Status:
     repo: list[Group] = field(default_factory=list)
     commit: str = ""
-    session: list[Group] = field(default_factory=list)  # modèle, jauges, alerte RAM
+    session: list[Group] = field(default_factory=list)  # modèle, jauges
     usage: list[Group] = field(default_factory=list)  # cache, durée, lignes
     tasks: list[Group] = field(default_factory=list)
     env: list[Group] = field(default_factory=list)
+    machine: list[Group] = field(default_factory=list)  # RAM, CPU du poste
 
 
 def level_of(group: Group) -> int:
@@ -653,7 +656,7 @@ def collect_session(status: Status, d: dict, main: str) -> None:
         level = 2 if load >= cores else 1 if load >= 0.8 * cores else 0
         machine.append(Item(f"CPU {load:.1f}/{cores}", level))
     if machine:
-        status.session.append(machine)
+        status.machine.append(machine)
 
     # autres sessions Claude (consigne : une seule à la fois par projet) : dans un repo, celles
     # qui tournent dans ce repo ou ses worktrees ; ailleurs, toutes ; et les sessions suspendues
@@ -836,8 +839,8 @@ def render(status: Status, style: str, columns: int) -> list[str]:
         return bg(SOOT) + " " + text + bg(SOOT) + " " * pad + RESET
 
     if style in ("sobre", "bandeau"):
-        signals = by_importance(status.tasks + status.env) + status.usage
-        rows = (status.repo, status.session, signals or EMPTY)
+        signals = by_importance(status.tasks + status.env + status.machine)
+        rows = (status.repo, status.session + status.usage, signals or EMPTY)
         return [finish(fit(row, painter, inner)) for row in rows]
 
     commit = [[Item(status.commit[:48], role="muted", short="")]] if status.commit else []
@@ -845,7 +848,7 @@ def render(status: Status, style: str, columns: int) -> list[str]:
         ("REPO", status.repo + commit),
         ("SESSION", status.session + status.usage),
         ("TASKS", status.tasks or EMPTY),
-        ("ENV", status.env or EMPTY),
+        ("ENV", status.env + status.machine or EMPTY),
     )
     out = []
     for name, groups in rows:
