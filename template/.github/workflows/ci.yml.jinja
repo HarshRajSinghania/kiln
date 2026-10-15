@@ -58,11 +58,16 @@ jobs:
   charte:
     uses: antoine-tena/kiln/.github/workflows/charte.yml@develop
 
+{%- set uv_dirs = (['backend'] if backend not in ['aucun', 'java'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set pnpm_dir = 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' %}
+{%- if uv_dirs or pnpm_dir %}
+
   securite:
     uses: antoine-tena/kiln/.github/workflows/securite.yml@develop
     with:
-      uv: "{{ ((['backend'] if backend not in ['aucun', 'java'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else [])) | join(' ') }}"
-      pnpm: "{{ 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' }}"
+      uv: "{{ uv_dirs | join(' ') }}"
+      pnpm: "{{ pnpm_dir }}"
+{%- endif %}
 {%- if podman %}
 
   conteneurs:

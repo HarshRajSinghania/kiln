@@ -205,7 +205,8 @@ def test_java_backend_gets_a_maven_project(tmp_path: Path) -> None:
     assert workflow["jobs"]["backend"]["uses"].startswith(
         "antoine-tena/kiln/.github/workflows/maven.yml@"
     )
-    assert workflow["jobs"]["securite"]["with"]["uv"] == ""
+    # Rien à auditer par uv ni pnpm : pas de job de sécurité vide.
+    assert "securite" not in workflow["jobs"]
     charter = tomllib.loads((project_dir / "charte.toml").read_text())
     assert ".java" in charter["cliquets"]["taille-fichier"]["suffixes"]
     booleans_rule = next(
