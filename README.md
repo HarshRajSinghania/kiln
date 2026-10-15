@@ -42,7 +42,7 @@ that fixes the *day ninety* problem:
 > [!NOTE]
 > kiln was born to run a real production app (a non-profit's Django + Nuxt site) and the
 > repos around it. **Its CLI messages and generated docs are currently in French**; this README
-> is in English and translating the CLI is the [#1 help-wanted item](CONTRIBUTING.md#good-first-contributions).
+> is in English and translating the CLI is the [#1 help-wanted item](https://github.com/antoine-tena/kiln/issues/36).
 
 ## Quick start
 
