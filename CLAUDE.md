@@ -1,7 +1,8 @@
 # kiln — consignes de travail
 
-Orchestrateur de repos (modèle Copier, commande `kiln`, moteur `charte`, plugins Claude Code,
-workflows réutilisables). Tout ce qui est générique aux repos vit ici : un défaut d'un fichier
+L'atelier de Claude Code : savoir, garde-fous, façons de travailler et mise à jour des repos
+(modèle Copier, commande `kiln`, moteur `charte`, plugins Claude Code, workflows
+réutilisables). Tout ce qui est générique aux repos vit ici : un défaut d'un fichier
 généré se corrige dans `template/`, puis `kiln update` dans le repo. Présentation complète et
 commandes dans [`README.fr.md`](README.fr.md) (vitrine en anglais :
 [`README.md`](README.md)).

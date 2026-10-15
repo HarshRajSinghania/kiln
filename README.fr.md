@@ -2,8 +2,11 @@
 
 *[English](README.md) · Français*
 
-Orchestrateur de repos : génère un projet complet en une commande, règle ses paramètres à tout
-moment et le tient à jour (architecture et dépendances). Jamais pip ni docker : uv pour Python,
+L'atelier de Claude Code : kiln lui donne de quoi construire des repos de qualité production et
+les garder ainsi. Le savoir (stacks à jour, consignes par repo, documentation des bibliothèques),
+les garde-fous (règles vérifiées par la machine, hooks, branches protégées), les façons de
+travailler (branche, fusion, version, suivi) et la fraîcheur : un projet complet en une
+commande, des paramètres réglables à tout moment, tenu à jour (architecture et dépendances). Jamais pip ni docker : uv pour Python,
 pnpm pour JavaScript, podman pour les conteneurs.
 
 Un projet généré contient :
