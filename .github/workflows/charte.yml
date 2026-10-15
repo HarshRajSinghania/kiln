@@ -13,6 +13,6 @@ jobs:
         with:
           # La règle des migrations compare à la branche d'intégration.
           fetch-depth: 0
-      - uses: antoine-tena/kiln/actions/charte@develop
+      - uses: antoine-tena/kiln/actions/charte@main
       - name: Charte
         run: charte

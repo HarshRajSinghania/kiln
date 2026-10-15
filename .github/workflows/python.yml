@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: antoine-tena/kiln/actions/services@develop
+      - uses: antoine-tena/kiln/actions/services@main
         if: inputs.postgres != ''
         with:
           base: ${{ inputs.base }}
