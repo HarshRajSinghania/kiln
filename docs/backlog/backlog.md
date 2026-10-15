@@ -22,7 +22,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
     Why, what to do (as a `- [ ]` checklist when there are several steps), where to look.
 
 - **ID** `T-NN`: stable, never reused, quoted as is in commits and branches (tickets opened
-  before 16 October 2026 were `AF-NN`, same number). **Next free: T-13.**
+  before 16 October 2026 were `AF-NN`, same number). **Next free: T-14.**
 - **Type**, one of: `bug` (something is broken); `improvement` (it works, it could work
   better); `idea` (nothing exists yet, to be explored); `task` (work that is neither: a release,
   a decision, a check).
@@ -149,7 +149,28 @@ is in English, the command, the skills and the generated files are in French. Th
 - [ ] Command messages in English, French as an option (a `kiln set` setting).
 - [ ] Skills and hooks of the plugins (`plugins/`) in English, with English names (`fusion`,
   `nettoyage`, `maj-kiln`…): breaking, in the same minor release as the backlog rename.
-- [ ] Generated files (`CLAUDE.md`, charters) in the language chosen at `kiln new`.
+- [ ] Generated files (`CLAUDE.md`, charters) in the language chosen at `kiln new` (T-13).
+
+### T-13 · Ask the project's language at `kiln new`, with a per-use option
+- **Type**: improvement
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: M · **Owner**: Claude · **Due**: —
+- **Origin**: language of generated repos, 16 October 2026 (with T-06)
+
+kiln itself is all English; a generated repo is written in its team's language. Code
+(identifiers) stays English whatever the answer. Today the generated `CLAUDE.md` imposes French
+("Échanges, documentation et messages de commit en français").
+- [ ] `copier.yml`: `langue` (English / Français, default English), then `langue_detaillee`
+  ("set the language per use?", default no); when yes, `langue_commentaires`, `langue_commits`,
+  `langue_docs`, `langue_tickets`, each defaulting to `langue` (`when:` on `langue_detaillee`).
+- [ ] The generated `CLAUDE.md` states one rule per use ("comments in French, commits in
+  English…") and the language Claude answers in (`langue`).
+- [ ] The text of the generated backlog follows `langue_tickets`; its keywords (`Type`,
+  `Status`, `todo`, section names) stay English in every language, a single format for the
+  status line and the skill.
+- [ ] `kiln set langue=…` (and the per-use keys), `kiln new --language`.
+- [ ] Ship in the same minor release as T-06 and the backlog rename.
 
 ## 🟡 Normal
 
