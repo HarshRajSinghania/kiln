@@ -6,6 +6,7 @@ from pathlib import Path
 import copier
 from copier.errors import UserMessageError
 
+from kiln import ui
 from kiln.check import check_project
 from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
@@ -78,7 +79,8 @@ def check_working_branch(root: Path) -> None:
 def report_changes(root: Path) -> None:
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root)
-    print("\nRelire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
+    print()
+    ui.note("Relire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
 
 
 def replace_legacy_source(root: Path) -> None:

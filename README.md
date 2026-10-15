@@ -88,7 +88,9 @@ modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter,
 
 `new`, `install`, `update` et `status` s'ouvrent sur une bannière : un four en pixel art, la
 version de kiln, la commande, le projet (envergure, stack) et son dossier. Hors terminal ou avec
-`NO_COLOR`, une seule ligne de texte à la place.
+`NO_COLOR`, une seule ligne de texte à la place. `kiln` seul (ou `kiln --help`) ouvre l'écran
+d'accueil : commandes par section et exemples ; les étapes, succès, erreurs et le tableau de
+`status` suivent la même palette pierre et feu, sans couleur hors terminal.
 
 Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`,

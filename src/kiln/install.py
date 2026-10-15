@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from kiln import ui
 from kiln.config import UserConfig, ensure_system, load_config
 from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import BACKEND_DIR, MAVEN_WRAPPER, Stack, answers_if_any, load_stack
@@ -67,7 +68,7 @@ def install_project(root: Path) -> None:
     run(["pre-commit", "install"], root)
     apply_statusline_settings(root)
     command_name = answers_if_any(root).get("nom", "<commande>")
-    print(f"\nPrêt. Lancer le projet : {_launch_hint(stack, command_name)}")
+    ui.success(f"Prêt. Lancer le projet : {_launch_hint(stack, command_name)}")
 
 
 def _launch_hint(stack: Stack, command_name: object) -> str:

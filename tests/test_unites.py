@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from packaging.version import Version
 
-from kiln.banner import LOGO, PALETTE_COLORS, _project_summary, _render_logo
+from kiln.banner import LOGO, _project_summary, render_logo
 from kiln.deps import _major_bounds
 from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
@@ -127,8 +127,9 @@ def test_adopted_repo_declares_its_size_in_its_charter(tmp_path: Path) -> None:
     assert answers_if_any(tmp_path) == {"envergure": "flame"}
 
 
-def test_logo_draws_two_pixel_rows_per_line() -> None:
-    lines = _render_logo("5", PALETTE_COLORS)
+def test_logo_draws_two_pixel_rows_per_line(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("COLORTERM", raising=False)
+    lines = render_logo()
 
     assert len(lines) == len(LOGO) // 2
     assert all("\033[38;5;" in line for line in lines)
