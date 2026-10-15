@@ -5,12 +5,16 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
+
+# Paramètres d'une règle, ou configuration entière, tels que lus dans `charte.toml`.
+Params = dict[str, Any]
 
 
 class Depot:
     """Le repo vérifié : sa racine, sa configuration (`charte.toml`) et ses fichiers."""
 
-    def __init__(self, racine: Path, config: dict) -> None:
+    def __init__(self, racine: Path, config: Params) -> None:
         self.racine = racine
         self.config = config
         # Sous-chaînes de chemin ignorées par toutes les règles (ex. "/migrations/").

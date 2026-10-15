@@ -56,18 +56,9 @@ extend-exclude = ["template"]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/kiln/charte/*" = ["E501", "E741", "ANN", "B", "SIM", "RUF", "N", "UP"]
-# Status line reprise des dotfiles telle quelle : style à reprendre, comme la charte.
-"plugins/base/scripts/statusline.py" = ["E", "W", "I", "ANN", "B", "SIM", "RUF", "N", "UP"]
 
 [tool.mypy]
 strict = true
-
-# Moteur de charte repris des dotfiles : typage et longueur de ligne à reprendre, module par
-# module ([TYPAGE-STRICT], cliquet).
-[[tool.mypy.overrides]]
-module = ["kiln.charte.*"]
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["copier", "copier.*"]

@@ -10,17 +10,18 @@ from __future__ import annotations
 import ast
 import re
 from collections import defaultdict
+from pathlib import Path
 
-from kiln.charte.moteur import Depot, echec, hors_tests, justifie
+from kiln.charte.moteur import Depot, Params, echec, hors_tests, justifie
 
 PY = ["backend/*.py", "backend/**/*.py"]
 
 
-def _code(depot: Depot, p: dict) -> list:
+def _code(depot: Depot, p: Params) -> list[Path]:
     return hors_tests(depot.suivis(p.get("fichiers", PY)))
 
 
-def signaux_django(depot: Depot, p: dict) -> list[str]:
+def signaux_django(depot: Depot, p: Params) -> list[str]:
     """Les signaux Django sont interdits."""
     fautifs = [
         depot.rel(f)
@@ -34,7 +35,7 @@ def signaux_django(depot: Depot, p: dict) -> list[str]:
     )
 
 
-def journalisation(depot: Depot, p: dict) -> list[str]:
+def journalisation(depot: Depot, p: Params) -> list[str]:
     """Journalisation structurée obligatoire (structlog), `print()` banni hors tests."""
     stdlib, prints = [], []
     for f in depot.suivis(p.get("fichiers", PY)):
@@ -52,7 +53,7 @@ def journalisation(depot: Depot, p: dict) -> list[str]:
     return sortie
 
 
-def migrations_django(depot: Depot, p: dict) -> list[str]:
+def migrations_django(depot: Depot, p: Params) -> list[str]:
     """Migrations nommées `NNNN_nom.py`, numérotées sans trou ; une migration déjà présente sur
     la branche d'intégration n'est ni modifiée ni supprimée (la prod l'a peut-être appliquée)."""
     motif = p.get("fichiers", "backend/**/migrations/*.py")
@@ -80,7 +81,9 @@ def migrations_django(depot: Depot, p: dict) -> list[str]:
     if base:
         changees = depot.git("diff", "--name-status", "--diff-filter=MDR", base, "--", motif)
         reecrites = [
-            l.split("\t")[1] for l in changees.splitlines() if not l.endswith("__init__.py")
+            ligne.split("\t")[1]
+            for ligne in changees.splitlines()
+            if not ligne.endswith("__init__.py")
         ]
         if reecrites:
             sortie.append(
@@ -108,7 +111,7 @@ def _noms(n: ast.expr) -> list[str]:
     return []
 
 
-def temps_constant(depot: Depot, p: dict) -> list[str]:
+def temps_constant(depot: Depot, p: Params) -> list[str]:
     """Un secret ne se compare jamais par `==`/`!=` (le temps de réponse le trahit) :
     `hmac.compare_digest`. Exception justifiée par « # Temps constant : <raison> »."""
     fautifs = []
@@ -139,7 +142,7 @@ JOURNAUX = re.compile(r"^(logger|log|_logger|audit_logger|security_logger|struct
 METHODES = {"debug", "info", "warning", "warn", "error", "exception", "critical", "bind"}
 
 
-def donnees_perso(depot: Depot, p: dict) -> list[str]:
+def donnees_perso(depot: Depot, p: Params) -> list[str]:
     """Aucune donnée personnelle dans un journal : l'identifiant, jamais la personne.
     Exception justifiée par « # Donnée perso : <raison> »."""
     fautifs = []
@@ -164,7 +167,9 @@ def donnees_perso(depot: Depot, p: dict) -> list[str]:
                     cles += [
                         k.value
                         for k in v.keys
-                        if isinstance(k, ast.Constant) and PERSO.match(str(k.value))
+                        if isinstance(k, ast.Constant)
+                        and isinstance(k.value, str)
+                        and PERSO.match(k.value)
                     ]
             if cles and not justifie(lignes, n.lineno, "Donnée perso"):
                 fautifs.append(f"{depot.rel(f)}:{n.lineno}  {', '.join(cles)}")
@@ -173,7 +178,7 @@ def donnees_perso(depot: Depot, p: dict) -> list[str]:
     return [echec(p.get("id", "DONNEES-PERSO"), "donnée personnelle dans un journal", fautifs)]
 
 
-def style_vue(depot: Depot, p: dict) -> list[str]:
+def style_vue(depot: Depot, p: Params) -> list[str]:
     """Aucune balise <style> (en début de ligne) dans un composant .vue."""
     bloc = re.compile(r"^<style\b", re.M)
     fautifs = [
@@ -187,7 +192,7 @@ def style_vue(depot: Depot, p: dict) -> list[str]:
     return [echec(p.get("id", "STYLE-1"), message, fautifs)] if fautifs else []
 
 
-def renvois_audit(depot: Depot, p: dict) -> list[str]:
+def renvois_audit(depot: Depot, p: Params) -> list[str]:
     """Aucun renvoi à un identifiant d'audit dans le code : un commentaire dit la contrainte au
     présent, l'historique va dans le commit. `prefixes` : préfixes des constats (regex)."""
     suffixes = set(
@@ -205,11 +210,14 @@ def renvois_audit(depot: Depot, p: dict) -> list[str]:
         for i, ligne in enumerate(f.read_text("utf-8").splitlines(), start=1):
             if motif.search(ligne):
                 fautifs.append(f"{rel}:{i}: {ligne.strip()[:100]}")
-    message = "renvoi à un identifiant d'audit : dire la contrainte au présent, l'historique va dans le commit"
+    message = (
+        "renvoi à un identifiant d'audit : dire la contrainte au présent, "
+        "l'historique va dans le commit"
+    )
     return [echec(p.get("id", "RENVOIS-AUDIT"), message, fautifs)] if fautifs else []
 
 
-def fichiers_interdits(depot: Depot, p: dict) -> list[str]:
+def fichiers_interdits(depot: Depot, p: Params) -> list[str]:
     """Fichiers qui ne doivent pas (ou plus) exister : `chemins`, `message`."""
     presents = [c for c in p["chemins"] if (depot.racine / c).exists()]
     return (
@@ -219,7 +227,7 @@ def fichiers_interdits(depot: Depot, p: dict) -> list[str]:
     )
 
 
-def copies(depot: Depot, p: dict) -> list[str]:
+def copies(depot: Depot, p: Params) -> list[str]:
     """Copies qui doivent rester identiques à leur original : `paires` = [[original, copie], …]."""
     sortie = []
     for original, copie in p["paires"]:
@@ -235,7 +243,7 @@ def copies(depot: Depot, p: dict) -> list[str]:
     return sortie
 
 
-def _yaml(chemin) -> dict:
+def _yaml(chemin: Path) -> Params:
     try:
         import yaml
     except ImportError:
@@ -249,11 +257,13 @@ def _yaml(chemin) -> dict:
             text=True,
             check=True,
         ).stdout
-        return json.loads(sortie)
-    return yaml.safe_load(chemin.read_text("utf-8"))
+        charge = json.loads(sortie)
+    else:
+        charge = yaml.safe_load(chemin.read_text("utf-8"))
+    return charge if isinstance(charge, dict) else {}
 
 
-def compose_profils(depot: Depot, p: dict) -> list[str]:
+def compose_profils(depot: Depot, p: Params) -> list[str]:
     """Services d'un fichier compose qui doivent être derrière un profil (ex. un intercepteur de
     courrier qui avalerait tout) : `fichier`, `services`. Lu par PyYAML, ou par `uv` s'il manque."""
     compose = _yaml(depot.racine / p["fichier"])
@@ -279,7 +289,7 @@ NOMS_INTERDITS = re.compile(
 SANS_COMMANDES = (".md", ".lock", ".svg", ".png", ".jpg", ".ico", ".csv")
 
 
-def outils_interdits(depot: Depot, p: dict) -> list[str]:
+def outils_interdits(depot: Depot, p: Params) -> list[str]:
     """uv pour Python et podman pour les conteneurs, jamais pip ni docker : ni commande
     (`pip install`, `docker build`…) hors de la documentation, ni fichier (`requirements.txt`,
     `Dockerfile`, `docker-compose.yml`). Exception justifiée par « # Outil interdit : <raison> »."""

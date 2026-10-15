@@ -47,7 +47,8 @@ def types(depot: Depot) -> int:
         return 1
     if ecarts < budget:
         print(
-            f"Typage : {ecarts} écarts (plafond {budget}) — abaisser `budget` de [types] à {ecarts} (charte.toml)."
+            f"Typage : {ecarts} écarts (plafond {budget}) — abaisser `budget` de [types] "
+            f"à {ecarts} (charte.toml)."
         )
         return 0
     print(f"Typage : {ecarts} écarts, le plafond est tenu ({', '.join(p['paquets'])}).")
@@ -73,7 +74,8 @@ def couverture(depot: Depot) -> int:
         mesure = taux.get(nom)
         if mesure is None:
             problemes.append(
-                f"{nom} : absent du rapport (fichier renommé ? mettre à jour [couverture.planchers])."
+                f"{nom} : absent du rapport "
+                "(fichier renommé ? mettre à jour [couverture.planchers])."
             )
         elif mesure < plancher:
             problemes.append(
@@ -81,14 +83,15 @@ def couverture(depot: Depot) -> int:
             )
         elif mesure >= plancher + marge:
             a_relever.append(
-                f"{nom} : {mesure:.1f} % — relever [couverture.planchers] « {nom} » à {int(mesure)}."
+                f"{nom} : {mesure:.1f} % — relever [couverture.planchers] « {nom} » "
+                f"à {int(mesure)}."
             )
     if a_relever:
         print("Couverture en hausse, planchers à relever (le contrôle reste vert) :")
-        print("\n".join(f"  {l}" for l in a_relever))
+        print("\n".join(f"  {ligne}" for ligne in a_relever))
     if problemes:
         print("Couverture sous les planchers :")
-        print("\n".join(f"  {l}" for l in problemes))
+        print("\n".join(f"  {ligne}" for ligne in problemes))
         return 1
     print("Couverture : tous les planchers sont tenus.")
     return 0
