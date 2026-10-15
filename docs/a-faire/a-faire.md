@@ -20,7 +20,7 @@ La boussole est **kiln v0.3.0 publique, adoptée par tous les repos générés**
     Pourquoi, ce qu'il faut faire (en liste à cocher `- [ ]` s'il y a plusieurs étapes), où regarder.
 
 - **Identifiant** `AF-NN` : stable, jamais réattribué, cité tel quel dans les commits et les
-  branches. **Prochain libre : AF-11.**
+  branches. **Prochain libre : AF-13.**
 - **L'état** prend une seule valeur parmi : `à faire` ; `en cours — branche <nom>, depuis le
   JJ mois` ; `bloqué — attend <qui ou quoi>` ; `à vérifier — <où>`.
 - **Criticité** = la section où vit l'entrée ; en changer, c'est déplacer l'entrée.
@@ -62,16 +62,52 @@ La boussole est **kiln v0.3.0 publique, adoptée par tous les repos générés**
 La version affichée vient maintenant de `versions.installed_version()` : la PR doit s'en servir.
 Seul antoine-tena fusionne une PR (CONTRIBUTING.md) ; répondre vite et remercier.
 
-### AF-03 · Lancer kiln publiquement après la première promotion
-- **État** : bloqué — attend AF-01
+### AF-03 · Lancer kiln publiquement, puis l'inscrire dans les annuaires Claude Code
+- **État** : bloqué — attend AF-01, AF-11 et AF-06
 - **Effort** : S · **Qui** : antoine · **Échéance** : —
-- **Origine** : vitrine GitHub, 15 octobre 2026
+- **Origine** : vitrine GitHub, 15 octobre 2026 ; positionnement « atelier de Claude Code »,
+  16 octobre 2026
 
-Publications au nom d'antoine, jamais faites sans lui : Show HN
-(https://news.ycombinator.com/submit, titre proposé « Show HN: Kiln – generate a repo in one
-command, then keep all your repos up to date »), r/ClaudeAI
-(https://www.reddit.com/r/ClaudeAI/submit), PR vers
-https://github.com/hesreallyhim/awesome-claude-code.
+Objectif d'antoine : beaucoup de stars. Les annuaires prennent des projets qui ont déjà des
+utilisateurs : le lancement vient d'abord. Publications au nom d'antoine, jamais faites sans
+lui ; Claude rédige les textes.
+- [ ] Une démo de `kiln new` en tête du README (GIF ou asciinema, issue #38).
+- [ ] Show HN (https://news.ycombinator.com/submit), titre proposé « Show HN: Kiln – make
+  Claude Code build production-grade repos, and keep them that way ».
+- [ ] r/ClaudeAI (https://www.reddit.com/r/ClaudeAI/submit) et r/ClaudeCode
+  (https://www.reddit.com/r/ClaudeCode/submit).
+- [ ] awesome-claude-code (55 000 ★) : pas avant le **29 octobre 2026** (repo d'au moins
+  14 jours, ou 100 ★), une seule proposition à la fois, **par le formulaire d'issue
+  uniquement** (pas de PR) : https://github.com/hesreallyhim/awesome-claude-code/issues/new/choose
+- [ ] Annuaire officiel d'Anthropic (claude-plugins-official, chargé d'office dans Claude Code) :
+  https://clau.de/plugin-directory-submission — après AF-06, des plugins en français ont peu
+  de chances d'y entrer.
+
+### AF-11 · Publier kiln sur PyPI sous le nom `kiln-cli`
+- **État** : à faire
+- **Effort** : S · **Qui** : Claude (antoine pour le compte PyPI) · **Échéance** : —
+- **Origine** : distribution, 16 octobre 2026
+
+Le nom `kiln` est pris sur PyPI ; le paquet s'appelle `kiln-cli`, la commande reste `kiln`.
+Seule la commande passe par PyPI : le modèle, les plugins et les workflows restent lus dans le
+dépôt git au tag (Copier, Claude Code, GitHub Actions ne savent pas lire PyPI). Cible : macOS,
+Linux et Windows via WSL ; Windows natif hors cible (choix d'antoine, 16 octobre 2026).
+- [ ] Renommer la distribution `kiln-cli` dans `pyproject.toml`, et ajouter une commande
+  `kiln-cli` (même point d'entrée) pour que `uvx kiln-cli new` marche.
+- [ ] `installed_version()`, `kiln doctor` et `maj-kiln` : lire la version et proposer la mise
+  à jour par PyPI (`uv tool upgrade kiln-cli`), en gardant l'installation depuis git.
+- [ ] Workflow de publication au tag de promotion, en *trusted publishing* (sans jeton) ;
+  antoine crée le projet en attente sur https://pypi.org/manage/account/publishing/
+- [ ] README (anglais et français) : `uv tool install kiln-cli`, `uvx kiln-cli new`, ligne
+  « macOS, Linux, Windows via WSL ».
+
+### AF-12 · Formule Homebrew dans un tap `antoine-tena/homebrew-kiln`
+- **État** : bloqué — attend AF-11
+- **Effort** : S · **Qui** : Claude · **Échéance** : —
+- **Origine** : distribution, 16 octobre 2026
+
+`brew install antoine-tena/kiln/kiln` pour macOS et Linux, formule mise à jour à chaque
+promotion. Le dépôt officiel homebrew-core exige un projet déjà connu : plus tard.
 
 ### AF-04 · Décider si annski cite les workflows de kiln à un tag
 - **État** : à faire
@@ -83,6 +119,19 @@ arrive sur `develop`, avant toute candidate. Le figer à un tag (`@v0.3.0`) le p
 prix d'une mise à jour à la main à chaque version. Condition de l'utilisateur : ne jamais
 casser annski.
 
+### AF-06 · Traduire en anglais la commande, le modèle et les plugins
+- **État** : à faire
+- **Effort** : L · **Qui** : Claude · **Échéance** : —
+- **Origine** : issues #36 (CLI), #37 (référence du README), #38 (démo de `kiln new`) ;
+  remontée en 🟠 le 16 octobre 2026 (objectif de stars)
+
+Principal frein à l'adoption hors de France et à l'entrée dans l'écosystème Claude Code : le
+README est en anglais, la commande, les skills et les fichiers générés en français.
+- [ ] Messages de la commande en anglais, français en option (réglage `kiln set`).
+- [ ] Skills et hooks des plugins (`plugins/`) en anglais.
+- [ ] Fichiers générés (`CLAUDE.md`, chartes, `docs/a-faire/`) dans la langue choisie à
+  `kiln new`.
+
 ## 🟡 Normal
 
 ### AF-05 · Vérifier le premier vrai passage des workflows sur GitHub
@@ -93,14 +142,6 @@ casser annski.
 Les workflows de kiln clonent kiln à `job.workflow_sha` (propriété d'avril 2026, inconnue
 d'actionlint) avec repli sur `develop`. Vérifier au premier run que la version prise est bien
 celle du tag, et que `.kiln` est retiré avant les contrôles du projet.
-
-### AF-06 · Traduire la commande et le modèle en anglais
-- **État** : à faire
-- **Effort** : L · **Qui** : — · **Échéance** : —
-- **Origine** : issues #36 (CLI), #37 (référence du README), #38 (démo de `kiln new`)
-
-Principal frein à l'adoption hors de France : le README est en anglais, la commande et les
-fichiers générés en français.
 
 ### AF-07 · Mieux suivre les projets Java
 - **État** : à faire
@@ -141,6 +182,10 @@ indépendant de l'état de l'arbre.
 
 ## ✅ Fait
 
+- **2026-10-16** · Positionnement « l'atelier de Claude Code » : accroche « Make Claude Code
+  build production-grade repos — and keep them that way. » (README, `pyproject.toml`,
+  `CLAUDE.md`, sous-titre de l'accueil), description et mots-clés du dépôt GitHub
+  (`docs/positionnement`).
 - **2026-10-15** · Semver en 0.x, candidates (`-rc.N`) et promotion, canal `interne`,
   `kiln version`, workflows cités au tag exact, actions au commit du workflow (`feat/semver`) ;
   candidate `v0.3.0-rc.1` adoptée par annway, sweep et vision ; gitleaks et `workflow_call`
