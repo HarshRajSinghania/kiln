@@ -41,8 +41,19 @@ htmlcov/
 {%- endif %}
 {%- if backend == 'java' %}
 
-# --- Java (backend) : produits de Maven ---
+# --- Java (backend) : produits de Maven et de la JVM, magasins de clés ---
 backend/target/
+*.class
+hs_err_pid*.log
+replay_pid*.log
+*.jks
+*.keystore
+# Projets des IDE Java (IntelliJ, Eclipse) : propres à chaque poste.
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
 {%- endif %}
 {%- if backend == 'django' %}
 backend/db.sqlite3

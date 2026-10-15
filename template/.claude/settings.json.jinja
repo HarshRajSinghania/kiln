@@ -22,6 +22,10 @@
       "Read(./**/*.pem)",
       "Read(./**/*.key)",
       "Read(./**/*.p12)"
+{%- if backend == 'java' %},
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)"
+{%- endif %}
     ]
   }
 }
