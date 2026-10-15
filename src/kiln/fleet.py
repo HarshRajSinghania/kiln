@@ -96,7 +96,7 @@ def require_code_dir(code_dir: Path) -> None:
         )
 
 
-STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 18), ("taille", 6))
+STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 24), ("taille", 6))
 
 
 def show_status(code_dir: Path) -> None:
