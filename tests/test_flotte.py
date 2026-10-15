@@ -11,7 +11,7 @@ from kiln.fleet import (
     find_adopted,
     find_repos,
     integration_branch,
-    is_template_change,
+    template_state,
 )
 from kiln.shell import KilnError
 
@@ -92,9 +92,11 @@ def test_develop_wins_without_origin_head(tmp_path: Path) -> None:
     assert integration_branch(repo) == "develop"
 
 
-def test_only_template_files_make_a_repo_late() -> None:
-    assert not is_template_change(["src/kiln/fleet.py", "tests/test_flotte.py"])
-    assert is_template_change(["src/kiln/fleet.py", "template/README.md.jinja"])
+def test_template_state_compares_releases() -> None:
+    assert template_state("v3", "v3") == "v3 à jour"
+    assert template_state("v2.1", "v3") == "v2.1 → v3"
+    assert template_state("f611f82", "v1") == "f611f82 → v1"
+    assert template_state("v3", None) == "v3"
 
 
 def test_missing_code_dir_is_explained(tmp_path: Path) -> None:
