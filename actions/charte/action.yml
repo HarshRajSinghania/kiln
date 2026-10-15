@@ -4,7 +4,7 @@ description: >-
 inputs:
   ref:
     description: Révision de kiln à installer
-    default: main
+    default: develop
 runs:
   using: composite
   steps:
