@@ -1,0 +1,32 @@
+name: Bug report
+description: Something in kiln, a generated repo or a workflow does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you ran, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The relevant output. `KILN_VERBOSE=1 kiln …` shows the full output of each step.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: kiln version
+      description: Shown in the banner of `kiln status`, or `uv tool list | grep kiln`.
+  - type: input
+    id: stack
+    attributes:
+      label: Stack
+      description: "Backend / frontend / podman, e.g. `django + nuxt, podman`, or `n/a`."
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options: [Linux, WSL, macOS, Other]
