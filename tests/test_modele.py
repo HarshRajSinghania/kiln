@@ -226,4 +226,5 @@ def test_team_gets_kiln_marketplace_and_base_plugin(tmp_path: Path) -> None:
         "source": "github",
         "repo": "antoine-tena/kiln",
     }
+    assert settings["extraKnownMarketplaces"]["kiln"]["autoUpdate"] is True
     assert settings["enabledPlugins"] == {"base@kiln": True}
