@@ -1,7 +1,7 @@
 {
   "name": "base",
-  "version": "0.4.0",
-  "description": "Pour tous les projets : worktrees, fusion, version, nettoyage, garde de branche, fichiers protégés, context7",
+  "version": "0.5.0",
+  "description": "Pour tous les projets : worktrees, fusion, version, nettoyage, garde de branche, modèle kiln à jour, fichiers protégés, context7",
   "author": {
     "name": "antoine-tena"
   }
