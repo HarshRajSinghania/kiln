@@ -1,5 +1,6 @@
 import importlib.util
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 
@@ -23,8 +24,11 @@ def hook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     module = load_hook()
     monkeypatch.setattr(module, "kiln_repo", lambda cwd: (tmp_path / "annway", "8e6427b"))
     monkeypatch.setattr(module, "installed_kiln", lambda: ("git", "ancien"))
-    monkeypatch.setattr(module, "remote_head", lambda: "nouveau")
     return module
+
+
+def released(tag: str = "v2", commit: str = "nouveau") -> Callable[[], tuple[str, str]]:
+    return lambda: (tag, commit)
 
 
 def test_answers_are_read_without_yaml() -> None:
@@ -35,18 +39,21 @@ def test_answers_are_read_without_yaml() -> None:
     assert hook.answer(KILN_ANSWERS, "absent") == ""
 
 
-def test_only_template_files_make_a_repo_late() -> None:
+def test_releases_order_by_number_not_by_text() -> None:
     hook = load_hook()
 
-    assert hook.is_template_change(["template/CLAUDE.md.jinja", "README.md"])
-    assert not hook.is_template_change(["src/kiln/cli.py", "plugins/base/hooks/hooks.json"])
+    assert hook.release_key("v10") > hook.release_key("v9.3")
+    assert hook.release_key("v2-4-gabc1234") == (2, 0)
+    assert hook.release_key("8e6427b") is None
+    assert hook.is_repo_late("8e6427b", "v1")
+    assert not hook.is_repo_late("v2", "v2")
 
 
 def test_refusals_push_the_question_back_5_10_30_then_50_sessions(hook: ModuleType) -> None:
     state: dict[str, dict[str, int]] = {}
     asked_at = []
     for session in range(1, 120):
-        if hook.instructions(".", state, fetch=lambda commit: []):
+        if hook.instructions(".", state, release=released()):
             asked_at.append(session)
             hook.record(state, hook.TOOL_KEY, refused=True)
 
@@ -59,11 +66,11 @@ def test_after_four_refusals_uninstalling_is_offered(hook: ModuleType) -> None:
         hook.record(state, hook.TOOL_KEY, refused=True)
     state[hook.TOOL_KEY]["prochaine"] = 0
 
-    assert "Désinstaller kiln" in hook.instructions(".", state, fetch=lambda commit: [])
+    assert "Désinstaller kiln" in hook.instructions(".", state, release=released())
 
 
 def test_repo_question_follows_a_tool_update(hook: ModuleType) -> None:
-    message = hook.instructions(".", {}, fetch=lambda commit: ["copier.yml"])
+    message = hook.instructions(".", {}, release=released())
 
     assert "L'outil kiln installé" in message
     assert "Une fois l'outil mis à jour avec succès" in message
@@ -73,10 +80,10 @@ def test_repo_question_follows_a_tool_update(hook: ModuleType) -> None:
 
 def test_refused_tool_update_also_silences_the_repo(hook: ModuleType) -> None:
     state: dict[str, dict[str, int]] = {}
-    hook.instructions(".", state, fetch=lambda commit: ["copier.yml"])
+    hook.instructions(".", state, release=released())
     hook.record(state, hook.TOOL_KEY, refused=True)
 
-    assert hook.instructions(".", state, fetch=lambda commit: ["copier.yml"]) == ""
+    assert hook.instructions(".", state, release=released()) == ""
 
 
 def test_up_to_date_tool_asks_only_for_the_repo(
@@ -84,10 +91,15 @@ def test_up_to_date_tool_asks_only_for_the_repo(
 ) -> None:
     monkeypatch.setattr(hook, "installed_kiln", lambda: ("git", "nouveau"))
 
-    message = hook.instructions(".", {}, fetch=lambda commit: ["template/README.md.jinja"])
+    message = hook.instructions(".", {}, release=released())
 
-    assert message.startswith("Le modèle kiln a évolué depuis le commit 8e6427b")
-    assert hook.instructions(".", {}, fetch=lambda commit: ["src/kiln/cli.py"]) == ""
+    assert message.startswith("kiln v2 est sortie ; annway part de 8e6427b")
+    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: (Path("annway"), "v2"))
+    assert hook.instructions(".", {}, release=released()) == ""
+
+
+def test_no_release_means_no_question(hook: ModuleType) -> None:
+    assert hook.instructions(".", {}, release=lambda: None) == ""
 
 
 def test_agreeing_resets_the_reminders(hook: ModuleType) -> None:

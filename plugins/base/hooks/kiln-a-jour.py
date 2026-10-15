@@ -2,10 +2,11 @@
 """SessionStart : propose de mettre kiln à jour, puis le repo, avec des relances espacées.
 
 Au lancement d'une session (pas à la reprise ni après /clear) dans un repo généré par kiln :
-1. Outil : si l'outil `kiln` installé est en retard sur GitHub, Claude demande (oui/non) s'il faut
-   le mettre à jour, avec les plugins de la marketplace kiln.
-2. Repo : une fois l'outil à jour, si le modèle a évolué depuis le commit du repo
-   (`.copier-answers.yml`), Claude demande s'il faut lancer `kiln update`.
+1. Outil : si l'outil `kiln` installé est en retard sur la dernière version (tag `vN` ou `vN.M`
+   de `main`), Claude demande (oui/non) s'il faut le mettre à jour, avec les plugins de la
+   marketplace kiln.
+2. Repo : une fois l'outil à jour, si le repo part d'une version du modèle plus ancienne
+   (`_commit` de `.copier-answers.yml`), Claude demande s'il faut lancer `kiln update`.
 
 Un « non » repousse la question de 5 sessions, puis 10, 30 et 50 ; au-delà, la question propose
 aussi de désinstaller kiln (outil) ou de délier le repo de kiln (repo). Les réponses sont
@@ -25,15 +26,14 @@ import os
 import re
 import subprocess
 import sys
-import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 
 ANSWERS_FILE = ".copier-answers.yml"
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
-COMPARE_URL = "https://api.github.com/repos/antoine-tena/kiln/compare/{commit}...HEAD"
-TEMPLATE_PATHS = ("template/", "copier.yml", "macros.jinja")
+# `v3`, `v3.1`, et ce que `git describe` ajoute derrière (`v3-4-gabc1234`).
+RELEASE_TAG = re.compile(r"^v(\d+)(?:\.(\d+))?(?:-\d+-g[0-9a-f]+)?$")
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
 STATE_PATH = STATE_DIR / "kiln" / "rappels.json"
 # Sessions à attendre avant de reposer la question, selon le nombre de « non » déjà reçus.
@@ -52,8 +52,10 @@ def answer(text: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def is_template_change(changed_paths: list[str]) -> bool:
-    return any(path.startswith(TEMPLATE_PATHS) for path in changed_paths)
+def release_key(ref: str) -> tuple[int, int] | None:
+    """(N, M) d'une version `vN.M` ; None pour un simple commit (avant la première version)."""
+    match = RELEASE_TAG.match(ref.strip())
+    return (int(match.group(1)), int(match.group(2) or 0)) if match else None
 
 
 def run(*command: str) -> subprocess.CompletedProcess[str]:
@@ -117,21 +119,42 @@ def installed_kiln() -> tuple[str, str] | None:
     return None
 
 
-def remote_head() -> str:
-    output = run("git", "ls-remote", f"{KILN_GIT_URL}.git", "HEAD").stdout.split()
-    return output[0] if output else ""
+def latest_release() -> tuple[str, str] | None:
+    """(tag, commit) de la dernière version publiée ; None sans réseau ou sans version."""
+    commits: dict[str, str] = {}
+    for line in run("git", "ls-remote", "--tags", f"{KILN_GIT_URL}.git").stdout.splitlines():
+        commit, _, ref = line.partition("\t")
+        tag = ref.removeprefix("refs/tags/")
+        # Un tag annoté a deux lignes ; `^{}` donne le commit qu'il désigne.
+        if tag.endswith("^{}"):
+            commits[tag.removesuffix("^{}")] = commit
+        else:
+            commits.setdefault(tag, commit)
+    releases = [(key, tag) for tag in commits if (key := release_key(tag)) is not None]
+    if not releases:
+        return None
+    tag = max(releases)[1]
+    return tag, commits[tag]
 
 
-def is_tool_outdated(install: tuple[str, str] | None, head: str) -> bool:
+def is_tool_outdated(install: tuple[str, str] | None, release_commit: str) -> bool:
     if install is None:
         return True
     kind, where = install
     if kind == "git":
-        return where != head
-    return run("git", "-C", where, "merge-base", "--is-ancestor", head, "HEAD").returncode != 0
+        return where != release_commit
+    return (
+        run("git", "-C", where, "merge-base", "--is-ancestor", release_commit, "HEAD").returncode
+        != 0
+    )
 
 
-def tool_update_command(install: tuple[str, str] | None) -> str:
+def is_repo_late(commit: str, tag: str) -> bool:
+    current, latest = release_key(commit), release_key(tag)
+    return latest is not None and (current is None or current < latest)
+
+
+def tool_update_command(install: tuple[str, str] | None, tag: str) -> str:
     # Le plugin base installé pour tout le poste : ses skills, ses hooks et le lien `.claude/kiln`
     # dans tous les repos, pas seulement ceux qui le déclarent.
     plugins = (
@@ -139,23 +162,12 @@ def tool_update_command(install: tuple[str, str] | None) -> str:
         "|| true) && claude plugin marketplace update kiln && claude plugin install base@kiln "
         "--scope user"
     )
-    if install is None:
-        return f"uv tool install git+{KILN_GIT_URL} && {plugins}"
-    if install[0] == "git":
-        return f"uv tool upgrade kiln && {plugins}"
+    if install is None or install[0] == "git":
+        return f'uv tool install --force "git+{KILN_GIT_URL}@{tag}" && {plugins}'
     return f'git -C "{install[1]}" pull --ff-only && uv tool install --reinstall "{install[1]}"'
 
 
-# --- Repo : le modèle a-t-il changé depuis le commit dont part le repo ? ---
-
-
-def fetch_changed_paths(commit: str) -> list[str]:
-    request = urllib.request.Request(
-        COMPARE_URL.format(commit=commit), headers={"Accept": "application/vnd.github+json"}
-    )
-    with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-        comparison = json.load(response)
-    return [entry["filename"] for entry in comparison.get("files", [])]
+# --- Repo : de quelle version du modèle part-il ? ---
 
 
 def git_root(cwd: str) -> Path | None:
@@ -230,15 +242,15 @@ def tool_question(entry: dict[str, int]) -> str:
             f"uninstall base@kiln`, puis `{SCRIPT} accord {TOOL_KEY}`."
         )
     return (
-        "L'outil kiln installé sur ce poste est en retard sur GitHub. Avant toute autre chose, au "
-        "début de ta première réponse, demande avec l'outil AskUserQuestion s'il faut mettre kiln "
-        f"à jour ({choices}).{extra} Si « Oui » : skill `base:maj-kiln` avec l'argument "
-        "`outil`. Si « Non » : "
+        "L'outil kiln installé sur ce poste est en retard sur la dernière version. Avant toute "
+        "autre chose, au début de ta première réponse, demande avec l'outil AskUserQuestion "
+        f"s'il faut mettre kiln à jour ({choices}).{extra} Si « Oui » : skill "
+        "`base:maj-kiln` avec l'argument `outil`. Si « Non » : "
         f"`{SCRIPT} refus {TOOL_KEY}`, sans rien mettre à jour. Reprends ensuite sa demande."
     )
 
 
-def repo_question(root: Path, commit: str, entry: dict[str, int]) -> str:
+def repo_question(root: Path, commit: str, tag: str, entry: dict[str, int]) -> str:
     choices = "« Oui », « Non »"
     extra = ""
     if is_long_refusal(entry):
@@ -250,7 +262,7 @@ def repo_question(root: Path, commit: str, entry: dict[str, int]) -> str:
             f'le skill `base:fusion`, puis `{SCRIPT} accord "{root}"`.'
         )
     return (
-        f"Le modèle kiln a évolué depuis le commit {commit} dont part {root.name}. Avant toute "
+        f"kiln {tag} est sortie ; {root.name} part de {commit}. Avant toute "
         "autre chose, au début de ta réponse, demande avec l'outil AskUserQuestion s'il faut "
         f"mettre {root.name} à jour ({choices}).{extra} Si « Oui » : skill `base:maj-kiln` "
         f'avec l\'argument `depot`. Si « Non » : `{SCRIPT} refus "{root}"`. Reprends ensuite '
@@ -261,7 +273,7 @@ def repo_question(root: Path, commit: str, entry: dict[str, int]) -> str:
 def instructions(
     cwd: str,
     state: dict[str, dict[str, int]],
-    fetch: Callable[[str], list[str]] = fetch_changed_paths,
+    release: Callable[[], tuple[str, str] | None] = latest_release,
 ) -> str:
     repo = kiln_repo(cwd)
     if repo is None:
@@ -272,24 +284,29 @@ def instructions(
     # Un « non » à l'outil repousse aussi la question du repo : sans réseau d'ici l'échéance.
     if not is_due(tool_entry):
         return ""
-    install = installed_kiln()
-    if is_tool_outdated(install, remote_head()):
+    latest = release()
+    if latest is None:
+        return ""
+    tag, release_commit = latest
+    repo_due = is_due(repo_entry) and is_repo_late(commit, tag)
+    if is_tool_outdated(installed_kiln(), release_commit):
         follow_up = ""
-        if is_due(repo_entry) and is_template_change(fetch(commit)):
+        if repo_due:
             follow_up = " Une fois l'outil mis à jour avec succès : " + repo_question(
-                root, commit, repo_entry
+                root, commit, tag, repo_entry
             )
         return tool_question(tool_entry) + follow_up
-    if is_due(repo_entry) and is_template_change(fetch(commit)):
-        return repo_question(root, commit, repo_entry)
-    return ""
+    return repo_question(root, commit, tag, repo_entry) if repo_due else ""
 
 
 def tool_status() -> str:
     """`à jour`, ou la commande qui met à jour l'outil installé (skill `base:maj-kiln`)."""
+    latest = latest_release()
+    if latest is None:
+        return "à jour"
     install = installed_kiln()
-    if is_tool_outdated(install, remote_head()):
-        return tool_update_command(install)
+    if is_tool_outdated(install, latest[1]):
+        return tool_update_command(install, latest[0])
     return "à jour"
 
 
