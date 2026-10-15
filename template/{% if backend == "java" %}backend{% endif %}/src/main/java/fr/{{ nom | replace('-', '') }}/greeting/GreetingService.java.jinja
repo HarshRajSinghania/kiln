@@ -1,0 +1,15 @@
+package fr.{{ nom | replace('-', '') }}.greeting;
+
+import java.util.Objects;
+
+/** Exemple de service : reçoit des valeurs, renvoie une valeur, ne touche pas au terminal. */
+public final class GreetingService {
+
+    static final String DEFAULT_NAME = "monde";
+
+    public String greet(String name) {
+        Objects.requireNonNull(name, "name");
+        var trimmedName = name.strip();
+        return "Bonjour, " + (trimmedName.isEmpty() ? DEFAULT_NAME : trimmedName) + " !";
+    }
+}

@@ -1,0 +1,68 @@
+{%- set paquet = 'fr.' ~ (nom | replace('-', '')) -%}
+# Backend — charte
+
+Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 3. Backend (Java 25, Maven, sans framework)
+
+Le JDK d'abord : aucun framework, aucune bibliothèque sans décision d'équipe
+([NOUVELLE-DEPENDANCE]). Maven est lancé par le wrapper `./mvnw` (aucune installation : il
+télécharge la version figée dans `.mvn/wrapper/`, vérifiée par sa somme SHA-256 ; il faut `unzip`
+sur le poste).
+
+- Vérifier : `./mvnw verify` dans `backend/` (compilation avec avertissements bloquants, tests
+  JUnit, plancher de couverture JaCoCo), ou `kiln check` à la racine.
+- Lancer : `./mvnw -q package -DskipTests && java -jar target/{{ nom }}-0.1.0.jar`.
+- Sources dans `src/main/java`, tests dans `src/test/java`, paquet racine `{{ paquet }}`, un
+  paquet par domaine (`{{ paquet }}.<domaine>`).
+
+### Architecture
+- **[COUCHES]** Entrée (HTTP, ligne de commande) → service → stockage. L'entrée reçoit, vérifie
+  l'accès, délègue et répond ; aucune logique métier dans l'entrée, aucun objet HTTP dans un
+  service.
+- **[INJECTION]** Les dépendances d'un service (stockage, horloge, client d'une API tierce) se
+  passent par son constructeur, typées par une interface : jamais de singleton statique ni de
+  `new` d'un accès système au milieu du métier. Les tests y passent des doublures.
+- **[UNE-CLASSE-PUBLIQUE]** Une classe publique par fichier (imposé par Java) ; pas de classe
+  interne qui mériterait son propre fichier. Une classe est `final` sauf si elle est faite pour
+  être étendue.
+
+### Java
+- **[JAVA-MODERNE]** `record` pour les objets de données immuables (DTO, valeurs), `sealed` +
+  `switch` par motifs pour les aiguillages sur un statut, `var` seulement quand le type se lit
+  à droite.
+- **[NULL]** Une méthode ne renvoie jamais `null` : `Optional<T>` pour une valeur absente,
+  collection vide pour une liste. Paramètres vérifiés avec `Objects.requireNonNull` aux
+  frontières.
+- **[TYPES-BRUTS]** Pas de types bruts (`List` sans paramètre), pas de cast non vérifié sans
+  justification en commentaire : `-Xlint:all -Werror` les refuse à la compilation.
+- **[ERREURS-METIER]** Les erreurs métier sont des exceptions dédiées (non vérifiées), avec un
+  code machine en `UPPER_SNAKE_CASE` et un message en français pour l'utilisateur.
+- **[JOURNALISATION]** Jamais de `System.out.print…` ni de `printStackTrace` : le logger du JDK
+  (`System.getLogger`), avec des messages paramétrés
+  (`LOG.log(Level.INFO, "trip booked tripId={0}", tripId)`), jamais de concaténation. Seule
+  l'entrée d'une ligne de commande écrit sur le flux qu'elle reçoit en paramètre.
+- **[HORLOGE]** L'horloge est injectée (`Clock`) : jamais `Instant.now()`, `LocalDate.now()`
+  ni `System.currentTimeMillis()` sans argument dans le métier ; tout test lié à une date
+  utilise `Clock.fixed`.
+
+### Sécurité et données
+- **[ENTREES]** Toute donnée qui entre (requête, API tierce, paramètre d'URL, argument) est
+  validée avant usage, à la frontière, par le constructeur compact du `record` qui la reçoit.
+- **[SQL]** Jamais de requête SQL construite par concaténation : `PreparedStatement` et
+  paramètres.
+- **[TRANSACTIONS]** Toute écriture touchant plus d'une ligne ou d'une table est dans une
+  transaction, au périmètre le plus court.
+- **[VERROUS]** Ressource disputée (place, stock, paiement) : verrouillage en base
+  (`SELECT … FOR UPDATE`) ou mise à jour conditionnelle, jamais lecture-calcul-écriture en Java.
+- **[TEMPS-CONSTANT]** Toute comparaison de jeton ou de secret se fait en temps constant
+  (`MessageDigest.isEqual`), jamais par `equals`.
+
+### Tests
+- **[TESTS]** Toute classe de service a ses tests JUnit, dans le même paquet que la classe sous
+  `src/test/java` ; la couverture des lignes ne descend pas sous le plancher du `pom.xml`
+  (`coverage.minimum`).
+- **[RESEAU]** Aucun test n'émet de requête réseau réelle.
+- **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
