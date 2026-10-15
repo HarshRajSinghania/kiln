@@ -1,9 +1,11 @@
-"""Versions de kiln : tags `vN` (nouveautés) et `vN.M` (correctifs) sur `main`.
+"""Versions de kiln : semver à trois chiffres, `vMAJEUR.MINEUR.CORRECTIF`.
 
-`main` ne reçoit que des versions : une branche `release/vN` tirée de `develop`, fusionnée et
-taguée (skill `base:version`). Les projets suivent la dernière version (Copier prend le tag le
-plus récent), l'outil s'installe depuis `main` ; chaque version a son entrée dans
-`CHANGELOG.md`, que `kiln update` montre au passage d'une version à l'autre.
+En 0.x (développement initial), un changement cassant monte la mineure (`0.3.4 → 0.4.0`), le
+reste le correctif. Deux canaux : une version sort d'abord en candidate (`v0.4.0-rc.1`), suivie
+par les postes au canal `interne` (`kiln set canal=interne`) ; elle est promue (`v0.4.0`, fusion
+dans `main`) quand la suivante est prête et qu'elle a tenu trois jours. Le canal `public`, par
+défaut, ne voit que les versions promues. Chaque version a son entrée dans `CHANGELOG.md`, que
+`kiln update` montre au passage d'une version à l'autre.
 """
 
 import json
@@ -16,11 +18,13 @@ from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
+from kiln.config import INTERNAL_CHANNEL, load_config
+
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
 CHANGELOG_FILE = "CHANGELOG.md"
-# `v3`, `v3.1`, et ce que `git describe` ajoute derrière (`v3-4-gabc1234`).
-RELEASE_TAG = re.compile(r"^v(\d+(?:\.\d+)?)(?:-(\d+)-g([0-9a-f]+))?$")
-RELEASE_HEADING = re.compile(r"^## (v\d+(?:\.\d+)?)(?:\s+[-—·]\s+(.+))?$")
+# `v0.4.0`, `v0.4.0-rc.2`, et ce que `git describe` ajoute derrière (`v0.4.0-3-gabc1234`).
+RELEASE_TAG = re.compile(r"^v(\d+\.\d+\.\d+(?:-rc\.\d+)?)(?:-(\d+)-g([0-9a-f]+))?$")
+RELEASE_HEADING = re.compile(r"^## (v\d+\.\d+\.\d+)(?:\s+[-—·]\s+(.+))?$")
 NETWORK_TIMEOUT = 5
 # Avant la première version, les projets suivaient un commit : tout est nouveau pour eux.
 BEFORE_FIRST_RELEASE = Version("0")
@@ -44,8 +48,16 @@ def release_version(ref: str) -> Version | None:
         return None
 
 
-def latest_release(source: str = KILN_GIT_URL) -> str | None:
-    """Tag de la version la plus récente du dépôt ; None sans réseau ou sans version."""
+def follows_candidates() -> bool:
+    """Le poste suit-il les candidates (canal `interne`) ?"""
+    return load_config().channel == INTERNAL_CHANNEL
+
+
+def latest_release(source: str = KILN_GIT_URL, *, candidates: bool | None = None) -> str | None:
+    """Tag de la version la plus récente du dépôt, candidates comprises au canal `interne` ;
+    None sans réseau ou sans version."""
+    if candidates is None:
+        candidates = follows_candidates()
     try:
         listing = subprocess.run(
             ["git", "ls-remote", "--tags", "--refs", source],
@@ -57,7 +69,12 @@ def latest_release(source: str = KILN_GIT_URL) -> str | None:
     except subprocess.TimeoutExpired, OSError:
         return None
     tags = [line.rsplit("refs/tags/", 1)[-1] for line in listing.splitlines()]
-    releases = [(version, tag) for tag in tags if (version := release_version(tag)) is not None]
+    releases = [
+        (version, tag)
+        for tag in tags
+        if (version := release_version(tag)) is not None
+        and (candidates or not version.is_prerelease)
+    ]
     return max(releases)[1] if releases else None
 
 
@@ -127,9 +144,11 @@ def notes_between(old_ref: str, new_ref: str, changelog: str) -> list[ReleaseNot
     new = release_version(new_ref)
     if new is None:
         return []
-    old = release_version(old_ref) or BEFORE_FIRST_RELEASE
+    # Une candidate porte déjà les nouveautés de sa version : on compare les versions finales.
+    old = Version((release_version(old_ref) or BEFORE_FIRST_RELEASE).base_version)
+    target = Version(new.base_version)
     return [
         notes
         for notes in parse_changelog(changelog)
-        if (version := release_version(notes.tag)) is not None and old < version <= new
+        if (version := release_version(notes.tag)) is not None and old < version <= target
     ]

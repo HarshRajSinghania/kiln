@@ -17,6 +17,9 @@ CONFIG_RELATIVE_PATH = Path("kiln") / "config.toml"
 DEFAULT_CODE_DIR = Path.home() / "code"
 
 SYSTEMS = ("linux", "wsl", "macos")
+# Canal de versions : `public` (versions promues) ou `interne` (candidates comprises).
+PUBLIC_CHANNEL, INTERNAL_CHANNEL = "public", "interne"
+CHANNELS = (PUBLIC_CHANNEL, INTERNAL_CHANNEL)
 SYSTEM_LABELS = {"linux": "Linux", "wsl": "Windows (WSL)", "macos": "macOS"}
 
 
@@ -26,6 +29,7 @@ class UserConfig:
     owner: str | None = None
     team: tuple[str, ...] = ()
     code_dir: Path = DEFAULT_CODE_DIR
+    channel: str = PUBLIC_CHANNEL
 
 
 def config_path() -> Path:
@@ -44,6 +48,7 @@ def load_config() -> UserConfig:
         owner=values.get("proprietaire"),
         team=tuple(str(login) for login in team) if isinstance(team, list) else (),
         code_dir=Path(values.get("dossier_code", str(DEFAULT_CODE_DIR))).expanduser(),
+        channel=values.get("canal", PUBLIC_CHANNEL),
     )
 
 
@@ -56,6 +61,8 @@ def save_config(config: UserConfig) -> None:
     if config.team:
         lines.append("equipe = [" + ", ".join(f'"{login}"' for login in config.team) + "]")
     lines.append(f'dossier_code = "{config.code_dir}"')
+    if config.channel != PUBLIC_CHANNEL:
+        lines.append(f'canal = "{config.channel}"')
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n")

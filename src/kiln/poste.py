@@ -8,10 +8,10 @@ from dataclasses import replace
 from pathlib import Path
 
 from kiln import ui
-from kiln.config import SYSTEMS, UserConfig, config_path, load_config, save_config
+from kiln.config import CHANNELS, SYSTEMS, UserConfig, config_path, load_config, save_config
 from kiln.shell import KilnError
 
-POSTE_KEYS = ("systeme", "proprietaire", "equipe", "dossier_code")
+POSTE_KEYS = ("systeme", "proprietaire", "equipe", "dossier_code", "canal")
 
 
 def show_poste(config: UserConfig) -> None:
@@ -20,6 +20,7 @@ def show_poste(config: UserConfig) -> None:
         "proprietaire": config.owner or "(aucun)",
         "equipe": ", ".join(config.team) or "(aucune)",
         "dossier_code": str(config.code_dir),
+        "canal": f"{config.channel} (public : versions promues ; interne : candidates comprises)",
     }
     width = max(len(key) for key in POSTE_KEYS)
     print(ui.paint(f"Réglages du poste ({config_path()})", bold=True))
@@ -49,6 +50,10 @@ def apply_poste(config: UserConfig, assignments: list[str]) -> UserConfig:
         elif key == "equipe":
             team = tuple(login.strip() for login in value.strip("[]").split(",") if login.strip())
             updated = replace(updated, team=team)
+        elif key == "canal":
+            if value not in CHANNELS:
+                raise KilnError(f"canal : {', '.join(CHANNELS)}")
+            updated = replace(updated, channel=value)
         else:
             updated = replace(updated, code_dir=Path(value).expanduser())
     return updated
