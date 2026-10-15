@@ -3,6 +3,7 @@
 # Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
 # baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
 {%- set python_files = (['backend/*.py', 'backend/**/*.py'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend/*.py', 'frontend/**/*.py'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set java_files = ['backend/src/**/*.java'] if backend == 'java' else [] %}
 {%- set front_files = {'nuxt': ['frontend/app/**'], 'next': ['frontend/app/**', 'frontend/components/**', 'frontend/lib/**'], 'astro': ['frontend/src/**']}.get(frontend, []) %}
 
 exclus = ["/migrations/", "/notebooks/"]
@@ -48,8 +49,8 @@ exclus = '(^docs/|^charte\.toml$|/migrations/|-lock\.yaml$|\.lock$)'
 
 [cliquets.taille-fichier]
 id = "TAILLE-FICHIER"
-fichiers = {{ (python_files + front_files) | tojson }}
-suffixes = [".py", ".ts", ".tsx", ".vue", ".astro", ".css", ".mjs"]
+fichiers = {{ (python_files + java_files + front_files) | tojson }}
+suffixes = [".py", {{ '".java", ' if java_files }}".ts", ".tsx", ".vue", ".astro", ".css", ".mjs"]
 budget = 0
 {%- if backend in ['django', 'fastapi'] %}
 
@@ -77,6 +78,51 @@ motif = "timezone.now()"
 fichiers = ["backend/tests/*.py", "backend/tests/**/*.py"]
 motif = "datetime.now("
 {%- endif %}
+budget = 0
+{%- endif %}
+{%- if java_files %}
+
+# Java : le logger du JDK, jamais la console ni la trace brute ; l'horloge est injectée.
+[cliquets.journalisation-console]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "System.out.print"
+budget = 0
+
+[cliquets.journalisation-erreurs]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "System.err.print"
+budget = 0
+
+[cliquets.journalisation-trace]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/**/*.java"]
+motif = "printStackTrace("
+budget = 0
+
+[cliquets.horloge-instant]
+regle = "occurrences"
+id = "HORLOGE"
+fichiers = ["backend/src/**/*.java"]
+motif = "Instant.now()"
+budget = 0
+
+[cliquets.horloge-date]
+regle = "occurrences"
+id = "HORLOGE"
+fichiers = ["backend/src/**/*.java"]
+motif = "LocalDate.now()"
+budget = 0
+
+[cliquets.temps-constant-java]
+regle = "occurrences"
+id = "TEMPS-CONSTANT"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "Token.equals("
 budget = 0
 {%- endif %}
 {%- if front_files %}

@@ -39,6 +39,11 @@ htmlcov/
 .ruff_cache/
 .pytest_cache/
 {%- endif %}
+{%- if backend == 'java' %}
+
+# --- Java (backend) : produits de Maven ---
+backend/target/
+{%- endif %}
 {%- if backend == 'django' %}
 backend/db.sqlite3
 # Fichiers statiques rassemblés et version écrite par le déploiement : engendrés.

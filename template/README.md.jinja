@@ -1,5 +1,5 @@
 {%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) -%}
-{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars ou NumPy, Plotly) et les notebooks marimo", 'cli': "l'outil en ligne de commande `" ~ nom ~ "`"}.get(backend) -%}
+{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars ou NumPy, Plotly) et les notebooks marimo", 'cli': "l'outil en ligne de commande `" ~ nom ~ "`", 'java': "le backend Java 25 (Maven, sans framework)"}.get(backend) -%}
 {%- set front_text = {'nuxt': "l'interface, en Nuxt 4 + Vue 3", 'next': "l'interface, en Next.js 16 + React 19", 'astro': "le site, en Astro 7", 'streamlit': "le tableau de bord, en Streamlit", 'dash': "le tableau de bord, en Dash"}.get(frontend) -%}
 {%- set front_url = {'nuxt': 'http://localhost:3000', 'next': 'http://localhost:3000', 'astro': 'http://localhost:4321', 'streamlit': 'http://localhost:8501', 'dash': 'http://localhost:8050'}.get(frontend) -%}
 # {{ titre }}
@@ -9,13 +9,14 @@
 ## Démarrage rapide
 
 Après le clone, depuis la racine du dépôt (prérequis : [uv](https://docs.astral.sh/uv/)
+{%- if backend == 'java' %}, un JDK 25{{ ',' if frontend in ['nuxt', 'next', 'astro'] else ' et' }} `unzip`{% endif %}
 {%- if frontend in ['nuxt', 'next', 'astro'] %} et
 [pnpm](https://pnpm.io/) avec Node 24{% endif %}) :
 
 ```sh
 uv tool install git+https://github.com/antoine-tena/kiln   # une fois par poste
 kiln install
-{%- if front_url or backend != 'cli' %}
+{%- if front_url or backend not in ['cli', 'java'] %}
 kiln dev
 {%- endif %}
 ```
@@ -23,6 +24,8 @@ kiln dev
 {% if backend == 'cli' and not front_url -%}
 Puis lancer l'outil : `cd backend && uv run {{ nom }} --help`, ou l'installer sur le poste par
 `uv tool install --editable backend`. Détail de chaque commande ci-dessous.
+{%- elif backend == 'java' and not front_url -%}
+Puis vérifier le backend : `cd backend && ./mvnw verify`. Détail de chaque commande ci-dessous.
 {%- else -%}
 Puis ouvrir {{ front_url or ('http://localhost:2718' if backend == 'data' else 'http://localhost:8000/api/docs') }}. Détail de chaque commande ci-dessous.
 {%- endif %}
@@ -69,7 +72,7 @@ kiln install
 ```
 
 La commande demande une fois le système du poste (Linux, WSL ou macOS), installe les
-dépendances ({{ (python_dirs + (['frontend'] if frontend in ['nuxt', 'next', 'astro'] else [])) | join(', ') }})
+dépendances ({{ (python_dirs + (['backend'] if backend == 'java' else []) + (['frontend'] if frontend in ['nuxt', 'next', 'astro'] else [])) | join(', ') }})
 {%- if backend in ['django', 'fastapi'] %}, crée `backend/.env`{% endif %}
 {%- if backend == 'django' %}, applique les migrations{% endif %} et active les garde-fous du
 commit (pre-commit, dont le refus de commiter sur `main` ou `develop`). On peut la relancer sans
@@ -80,6 +83,10 @@ risque.
 ```sh
 cd backend && uv run {{ nom }} --help
 uv tool install --editable backend   # depuis la racine : la commande sur tout le poste
+```
+{%- elif backend == 'java' and not front_url %}
+```sh
+cd backend && ./mvnw -q package -DskipTests && java -jar target/{{ nom }}-0.1.0.jar
 ```
 {%- else %}
 ```sh
@@ -95,6 +102,8 @@ kiln dev
 - Notebooks marimo : http://localhost:2718.
 {%- elif backend == 'cli' and front_url %}
 - Outil en ligne de commande : `cd backend && uv run {{ nom }} --help`.
+{%- elif backend == 'java' and front_url %}
+- Backend Java : `cd backend && ./mvnw verify` (rien à servir tant qu'aucun serveur n'existe).
 {%- endif %}
 {%- if front_url %}
 - Frontend : {{ front_url }}
@@ -124,7 +133,12 @@ puis ouvrir une pull request.
 kiln check
 ```
 
+{% if backend == 'java' -%}
+`./mvnw verify` pour le backend Java (compilation stricte, JUnit, couverture)
+{%- if frontend in ['streamlit', 'dash'] %}, ruff, mypy et pytest pour le frontend Python{% endif %}
+{%- else -%}
 Ruff, mypy et pytest pour chaque projet Python
+{%- endif %}
 {%- if frontend in ['nuxt', 'next'] %}, ESLint et le contrôle des types côté frontend
 {%- elif frontend == 'astro' %}, `astro check` côté frontend{% endif %}, puis la charte.
 

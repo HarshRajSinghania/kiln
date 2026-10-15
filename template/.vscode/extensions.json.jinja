@@ -12,6 +12,9 @@
 {%- if backend == 'data' %},
     "marimo-team.vscode-marimo"
 {%- endif %}
+{%- if backend == 'java' %},
+    "vscjava.vscode-java-pack"
+{%- endif %}
 {%- if frontend == 'nuxt' %},
     "vue.volar",
     "nuxtr.nuxtr-vscode"

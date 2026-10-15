@@ -63,6 +63,15 @@ repos:
         always_run: true
         stages: [pre-push]
 {% endif %}
+{%- if backend == 'java' %}
+      - id: compilation-backend
+        name: compilation Java (backend, avant push)
+        entry: bash -c 'cd backend && ./mvnw -q -B -DskipTests compile'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+{% endif %}
 {%- if frontend in ['nuxt', 'next', 'astro'] %}
       - id: typage-frontend
         name: typage TypeScript (frontend, avant push)
