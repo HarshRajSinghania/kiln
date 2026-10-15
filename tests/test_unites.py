@@ -160,3 +160,19 @@ def test_recap_outside_a_terminal_is_one_line(capsys: pytest.CaptureFixture[str]
 
     assert capsys.readouterr().out.splitlines()[-1].startswith("Installation terminée en ")
     ui._steps.clear()
+
+
+def test_poste_settings_are_parsed_and_checked() -> None:
+    from kiln.config import UserConfig
+    from kiln.poste import apply_poste
+
+    updated = apply_poste(
+        UserConfig(), ["systeme=wsl", "proprietaire=antoine", "equipe=a, b", "dossier_code=/srv"]
+    )
+
+    assert (updated.system, updated.owner, updated.team) == ("wsl", "antoine", ("a", "b"))
+    assert updated.code_dir == Path("/srv")
+    with pytest.raises(KilnError, match="clés du poste"):
+        apply_poste(UserConfig(), ["backend=java"])
+    with pytest.raises(KilnError, match="systeme"):
+        apply_poste(UserConfig(), ["systeme=windows"])

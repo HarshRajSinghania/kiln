@@ -100,3 +100,30 @@ def test_only_template_files_make_a_repo_late() -> None:
 def test_missing_code_dir_is_explained(tmp_path: Path) -> None:
     with pytest.raises(KilnError, match="dossier_code"):
         fleet.require_code_dir(tmp_path / "code")
+
+
+def test_update_branch_is_merged_straight_into_integration(tmp_path: Path) -> None:
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "develop", str(origin)], check=True)
+    clone = tmp_path / "clone"
+    subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+    git = ["git", "-C", str(clone), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "init"], check=True)
+    subprocess.run([*git, "push", "-q", "origin", "HEAD:develop"], check=True)
+    subprocess.run([*git, "switch", "-q", "-c", "chore/kiln-update"], check=True)
+    (clone / "f.txt").write_text("x\n")
+    subprocess.run([*git, "add", "f.txt"], check=True)
+    subprocess.run([*git, "commit", "-q", "-m", "chore: maj"], check=True)
+
+    subprocess.run([*git, "config", "user.name", "t"], check=True)
+    subprocess.run([*git, "config", "user.email", "t@t"], check=True)
+    fleet._merge_into_integration(clone, "chore/kiln-update", "develop")
+
+    log = subprocess.run(
+        ["git", "-C", str(origin), "log", "--format=%s", "develop"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    assert log[0] == "Merge branch 'chore/kiln-update' into develop"
+    assert "chore: maj" in log

@@ -145,7 +145,7 @@ def _print_status(code_dir: Path, root: Path, template_state: str) -> None:
 
 
 def update_all(code_dir: Path, *, allow_major: bool) -> None:
-    require_tools("git", "uv", "gh")
+    require_tools("git", "uv")
     results = [
         (repo, update_one(repo.root, allow_major=allow_major)) for repo in find_repos(code_dir)
     ]
@@ -155,7 +155,9 @@ def update_all(code_dir: Path, *, allow_major: bool) -> None:
 
 
 def update_one(root: Path, *, allow_major: bool) -> str:
-    """Met un repo à jour dans un worktree et ouvre la PR ; renvoie le bilan en une ligne."""
+    """Met un repo à jour dans un worktree puis le fusionne directement dans l'intégration
+    ([PAS-SUR-MAIN]) ; contrôles en échec, la branche est poussée sans fusion. Renvoie le bilan
+    en une ligne."""
     step(f"Repo {root.name}")
     integration = integration_branch(root)
     branch = f"{UPDATE_BRANCH_PREFIX}-{datetime.date.today().isoformat()}"
@@ -170,14 +172,17 @@ def update_one(root: Path, *, allow_major: bool) -> str:
             _remove_worktree(root, worktree, branch=branch)
             return "déjà à jour"
         commit_in_batches(worktree)
-        pull_request = _publish(worktree, branch, integration, failed_checks)
+        if failed_checks:
+            run(["git", "push", "-q", "-u", "origin", branch], worktree)
+            return (
+                f"contrôles en échec ({', '.join(failed_checks)}) : branche {branch} poussée, "
+                f"non fusionnée, worktree {worktree}"
+            )
+        _merge_into_integration(worktree, branch, integration)
     except KilnError as error:
         return f"échec : {error} (worktree laissé dans {worktree})"
-    _remove_worktree(root, worktree)
-    suffix = (
-        f" en brouillon, contrôles en échec : {', '.join(failed_checks)}" if failed_checks else ""
-    )
-    return f"PR ouverte{suffix} : {pull_request}"
+    _remove_worktree(root, worktree, branch=branch)
+    return f"fusionné dans {integration}"
 
 
 def _update_worktree(worktree: Path, *, allow_major: bool) -> list[str]:
@@ -290,28 +295,20 @@ def _commit(worktree: Path, paths: list[str], message: str) -> None:
     raise KilnError(f"commit refusé par les crochets : {message}")
 
 
-def _publish(worktree: Path, branch: str, integration: str, failed_checks: list[str]) -> str:
-    run(["git", "push", "-q", "-u", "origin", branch], worktree)
-    checks_line = (
-        f"Contrôles en échec : {', '.join(failed_checks)}. À corriger avant la fusion."
-        if failed_checks
-        else "Contrôles : tous verts (kiln check)."
+def _merge_into_integration(worktree: Path, branch: str, integration: str) -> None:
+    """Commit de fusion au-dessus de l'intégration publiée, poussé tel quel ([FUSION])."""
+    run(["git", "fetch", "-q", "origin", integration], worktree)
+    run(["git", "switch", "-q", "--detach", f"origin/{integration}"], worktree)
+    run(
+        [
+            "git",
+            "merge",
+            "-q",
+            "--no-ff",
+            branch,
+            "-m",
+            f"Merge branch '{branch}' into {integration}",
+        ],
+        worktree,
     )
-    body = (
-        "Mise à jour par `kiln update --all` : évolutions du modèle kiln et des dépendances.\n\n"
-        f"{checks_line}"
-    )
-    command = [
-        "gh",
-        "pr",
-        "create",
-        "--base",
-        integration,
-        "--head",
-        branch,
-        "--title",
-        f"chore: mise à jour kiln ({datetime.date.today().isoformat()})",
-        "--body",
-        body,
-    ]
-    return capture([*command, *(["--draft"] if failed_checks else [])], worktree)
+    run(["git", "push", "-q", "origin", f"HEAD:{integration}"], worktree)
