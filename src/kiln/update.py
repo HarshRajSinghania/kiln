@@ -78,7 +78,7 @@ def check_working_branch(root: Path) -> None:
 
 def report_changes(root: Path) -> None:
     step("Fichiers modifiés")
-    run(["git", "status", "--short"], root)
+    run(["git", "status", "--short"], root, live=True)
     print()
     ui.note("Relire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
 

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from packaging.version import Version
 
+from kiln import ui
 from kiln.banner import LOGO, _project_summary, render_logo
 from kiln.deps import _major_bounds
 from kiln.install import ensure_env_file
@@ -141,3 +142,21 @@ def test_project_summary_names_size_and_frameworks(tmp_path: Path) -> None:
     )
 
     assert _project_summary(tmp_path) == "atelier · ember · fastapi, podman"
+
+
+def test_durations_read_the_french_way() -> None:
+    assert [ui.format_duration(seconds) for seconds in (0.42, 12.3, 65)] == [
+        "0,4 s",
+        "12 s",
+        "1 min 05 s",
+    ]
+
+
+def test_recap_outside_a_terminal_is_one_line(capsys: pytest.CaptureFixture[str]) -> None:
+    ui._steps.clear()
+    ui.step("backend : dépendances Python")
+
+    ui.recap("install", ui._steps[0].started, succeeded=True)
+
+    assert capsys.readouterr().out.splitlines()[-1].startswith("Installation terminée en ")
+    ui._steps.clear()

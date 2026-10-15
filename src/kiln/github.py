@@ -50,7 +50,7 @@ def ensure_logged_in() -> None:
             "ou `kiln new … --no-github`"
         )
     step(f"GitHub : connexion (ouvrir {LOGIN_URL} et saisir le code affiché)")
-    run(["gh", "auth", "login", "--web", "--git-protocol", "https"], Path.cwd())
+    run(["gh", "auth", "login", "--web", "--git-protocol", "https"], Path.cwd(), live=True)
     if not _is_logged_in():
         raise KilnError(f"connexion à GitHub non aboutie : réessayer sur {LOGIN_URL}")
 

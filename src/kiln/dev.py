@@ -42,6 +42,6 @@ def _run_containers(root: Path, *, has_podman: bool) -> None:
     require_tools("podman", "podman-compose")
     step("Pile podman (podman-compose up --build)")
     try:
-        run(["podman-compose", "-f", COMPOSE_FILE, "up", "--build"], root)
+        run(["podman-compose", "-f", COMPOSE_FILE, "up", "--build"], root, live=True)
     except KeyboardInterrupt:
-        run(["podman-compose", "-f", COMPOSE_FILE, "down"], root)
+        run(["podman-compose", "-f", COMPOSE_FILE, "down"], root, live=True)

@@ -91,6 +91,10 @@ version de kiln, la commande, le projet (envergure, stack) et son dossier. Hors 
 `NO_COLOR`, une seule ligne de texte à la place. `kiln` seul (ou `kiln --help`) ouvre l'écran
 d'accueil : commandes par section et exemples ; les étapes, succès, erreurs et le tableau de
 `status` suivent la même palette pierre et feu, sans couleur hors terminal.
+Chaque commande externe (`uv sync`, `pnpm install`, contrôles…) tourne derrière une roue animée
+qui montre sa dernière ligne, puis laisse `✓ commande  durée` ; sa sortie complète n'apparaît
+qu'en cas d'échec. Un bilan encadré clôt la commande : verdict, durée totale et durée de chaque
+étape. `KILN_VERBOSE=1 kiln …` rend la sortie complète des commandes.
 
 Sans dossier, `kiln new` demande le nom du projet et le crée dans le dossier courant.
 Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`,
