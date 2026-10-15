@@ -13,7 +13,8 @@ Thanks for wanting to help! Bug reports, ideas, docs fixes and code are all welc
   it — so it is worth agreeing on the approach before you write code.
 - Not sure? Open an issue, or a draft PR with a short explanation. Both are fine.
 
-PRs target the `develop` branch (the default one). `main` only receives releases.
+Fork the repo and open your PR against `develop` (the default branch); `main` only receives
+releases. The maintainer is the only one who merges.
 
 ## Development setup
 
