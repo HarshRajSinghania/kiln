@@ -3,6 +3,7 @@
 import argparse
 import re
 import sys
+import time
 from pathlib import Path
 
 from kiln import banner, check, ci, contract, dev, fleet, install, new, settings, ui, update
@@ -30,6 +31,7 @@ EXAMPLES = (
     "kiln update --major",
     "kiln set podman=true",
 )
+NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status"})
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
@@ -246,7 +248,20 @@ def main() -> None:
         if sys.argv[1:] in HELP_FLAGS:
             show_home(parser)
             return
-        dispatch(parser.parse_args())
+        arguments = parser.parse_args()
+        started = time.monotonic()
+        try:
+            dispatch(arguments)
+        except KilnError:
+            _recap(arguments, started, succeeded=False)
+            raise
+        _recap(arguments, started, succeeded=True)
     except KilnError as error:
         ui.error(str(error))
         sys.exit(EXIT_FAILURE)
+
+
+def _recap(arguments: argparse.Namespace, started: float, *, succeeded: bool) -> None:
+    """Bilan des commandes à étapes ; `dev` tourne jusqu'à l'arrêt, `ci` a son verdict."""
+    if arguments.command not in NO_RECAP_COMMANDS:
+        ui.recap(arguments.command, started, succeeded=succeeded)

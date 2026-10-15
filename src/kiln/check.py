@@ -1,11 +1,10 @@
 """`kiln check` : rejoue les contrôles de la stack et la charte, sans s'arrêter au premier."""
 
-import subprocess
 from pathlib import Path
 
 from kiln import ui
 from kiln.install import ensure_env_file
-from kiln.shell import KilnError, step
+from kiln.shell import KilnError, run_status, step
 from kiln.stack import BACKEND_DIR, load_stack
 
 
@@ -18,8 +17,7 @@ def run_checks(root: Path) -> list[str]:
         ensure_env_file(root / BACKEND_DIR)
     for command in stack.check_commands():
         step(f"Vérification : {command.label}")
-        completed = subprocess.run(list(command.argv), cwd=root / command.directory, check=False)
-        if completed.returncode != 0:
+        if run_status(list(command.argv), root / command.directory) != 0:
             failed_checks.append(command.label)
     return failed_checks
 
