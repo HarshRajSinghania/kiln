@@ -12,6 +12,8 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  # Rejouée par deploy.yml avant toute mise en production.
+  workflow_call:
 
 jobs:
 {%- if backend == 'django' %}
@@ -62,6 +64,23 @@ jobs:
 
   charte:
     uses: antoine-tena/kiln/.github/workflows/charte.yml@{{ kiln_ref }}
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    # Sur une PR, gitleaks lit la liste de ses commits par l'API.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # [SECRETS] : tout l'historique est fouillé, pas seulement le dernier commit.
+      - name: Rechercher des secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ "{{" }} secrets.GITHUB_TOKEN {{ "}}" }}
 
 {%- set uv_dirs = (['backend'] if backend not in ['aucun', 'java'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
 {%- set pnpm_dir = 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' %}
