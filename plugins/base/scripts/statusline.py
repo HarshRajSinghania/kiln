@@ -595,9 +595,9 @@ def collect_session(status: Status, d: dict, main: str) -> None:
     style = (d.get("output_style") or {}).get("name")
     if style and style != "default":
         head.append(Item(f"style {style}", short=""))
-    mode = str(d.get("permission_mode") or d.get("permissionMode") or "")
-    if mode and mode != "default" and "bypass" not in mode.lower():
-        head.append(Item(mode, 1))
+    name = str(d.get("session_name") or "")
+    if name:
+        head.append(Item(name if len(name) <= 24 else name[:23] + "…", role="muted", short=""))
     status.session.append(head)
 
     cw = d.get("context_window") or {}
@@ -625,8 +625,10 @@ def collect_session(status: Status, d: dict, main: str) -> None:
             when = f"{at:%H:%M}" if k == "five_hour" else DAYS[at.weekday()]
         status.session.append([Item(label, quota_level(used), gauge=used, reset=when)])
 
-    # mémoire du poste (Linux, WSL) : alerte quand la RAM manque, ou que le swap est plein
-    # alors qu'elle se remplit (un swap plein sur une RAM libre ne gêne plus)
+    # poste (Linux, WSL) : RAM, toujours ; alerte quand elle manque, ou que le swap est plein
+    # alors qu'elle se remplit (un swap plein sur une RAM libre ne gêne plus), avec le verdict de
+    # sweep ; et les cœurs occupés (charge sur une minute) sur le total
+    machine: Group = []
     try:
         meminfo = {
             k: int(v.split()[0])
@@ -639,11 +641,19 @@ def collect_session(status: Status, d: dict, main: str) -> None:
             else 0
         )
         if ram >= 90 or (swap >= 80 and ram >= 70):
-            status.session.append(
-                [Item(f"RAM {ram:.0f}% swap {swap:.0f}%{sweep_hint()}", 3, f"RAM {ram:.0f}%")]
-            )
+            text = f"RAM {ram:.0f}% swap {swap:.0f}%{sweep_hint()}"
+            machine.append(Item(text, 3, f"RAM {ram:.0f}%"))
+        else:
+            machine.append(Item(f"RAM {ram:.0f}%", 1 if ram >= 75 else 0))
     except OSError, KeyError, ValueError, ZeroDivisionError:
         pass
+    cores = os.cpu_count() or 0
+    if cores:
+        load = os.getloadavg()[0]
+        level = 2 if load >= cores else 1 if load >= 0.8 * cores else 0
+        machine.append(Item(f"CPU {load:.1f}/{cores}", level))
+    if machine:
+        status.session.append(machine)
 
     # autres sessions Claude (consigne : une seule à la fois par projet) : dans un repo, celles
     # qui tournent dans ce repo ou ses worktrees ; ailleurs, toutes ; et les sessions suspendues
