@@ -107,13 +107,15 @@ def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
     assert "{{ health?.status }}" in health_component
 
 
-def test_a_faire_is_always_there(tmp_path: Path) -> None:
+def test_backlog_is_always_there(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo", boussole="la démo en ligne", backend="fastapi")
 
-    a_faire = (project_dir / "docs/a-faire/a-faire.md").read_text()
-    assert "La boussole est **la démo en ligne**." in a_faire
-    assert "docs/a-faire/" in (project_dir / "CLAUDE.md").read_text()
-    urgent = (project_dir / "docs/a-faire/urgent.md").read_text()
+    backlog = (project_dir / "docs/backlog/backlog.md").read_text()
+    assert "North star: **la démo en ligne**." in backlog
+    assert "- **Type**: task" in backlog
+    assert "docs/backlog/" in (project_dir / "CLAUDE.md").read_text()
+    assert not (project_dir / "docs/a-faire").exists()
+    urgent = (project_dir / "docs/backlog/urgent.md").read_text()
     # La status line compte les lignes qui commencent par une case ouverte : aucune au départ.
     assert not [line for line in urgent.splitlines() if line.lstrip().startswith("- [ ]")]
 

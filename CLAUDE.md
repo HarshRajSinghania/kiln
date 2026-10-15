@@ -24,7 +24,7 @@ un dossier ou un module.
 - `copier.yml` : questions du modèle ; `template/` : le modèle (`CLAUDE.md.jinja`, chartes de
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
-  (skills `worktree`, `fusion`, `version`, `nettoyage`, `a-faire`, `maj-kiln` ; `hooks/` ;
+  (skills `worktree`, `fusion`, `version`, `nettoyage`, `backlog`, `maj-kiln` ; `hooks/` ;
   `scripts/statusline.py`),
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
@@ -32,8 +32,8 @@ un dossier ou un module.
 - Vitrine publique, en anglais : `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`
   (MIT), `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` ; capture de l'écran
   d'accueil `docs/assets/kiln-accueil.svg`. Référence complète en français : `README.fr.md`.
-- `docs/a-faire/` : suivi du travail (skill `base:a-faire`), dont la prochaine promotion de
-  version ; `docs/assets/` : images de la vitrine.
+- `docs/backlog/` : suivi du travail, en anglais (skill `base:backlog`), dont la prochaine
+  promotion de version ; `docs/assets/` : images de la vitrine.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_deploiement.py`, `test_statusline.py` (choix du
@@ -46,7 +46,7 @@ dépendent, alors qu'il change beaucoup ; d'où une version qui ne sort que quan
 prête ici et a tenu quelques jours sur ses propres repos (candidates `-rc`, comme Python ou
 Linux), et le 0.x du semver, prévu pour un début où tout peut casser (comme uv ou ruff), plutôt
 qu'un quatrième chiffre. Les clients se mettent à jour à chaque version, correctif compris.
-Suivi de ce qui reste : `docs/a-faire/a-faire.md`.
+Suivi de ce qui reste : `docs/backlog/backlog.md`.
 
 Semver à trois chiffres, `vMAJEUR.MINEUR.CORRECTIF` ; en 0.x (aujourd'hui), un changement cassant
 monte la mineure, tout le reste le correctif. Est cassant ce qui touche l'API publique de kiln :

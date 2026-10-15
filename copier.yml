@@ -158,10 +158,10 @@ front_deploiement:
   default: aucun
   when: "{{ frontend == 'nuxt' }}"
 
-# Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
+# Suivi du travail, d'office dans tout repo : docs/backlog/ (skill base:backlog).
 boussole:
   type: str
-  help: L'objectif qui ordonne les priorités de docs/a-faire/
+  help: L'objectif qui ordonne les priorités de docs/backlog/ (north star)
   default: "{{ titre }} en service"
 
 date_creation:

@@ -99,7 +99,7 @@ Each generated repo comes with:
 - **Optional production setups:** a hardened VPS deployment for Django (Caddy with automatic
   TLS, read-only containers, one image per commit, automatic rollback, daily backups with
   restore tests) and Vercel deployment for Nuxt fronts.
-- **A work tracker** (`docs/a-faire/`) that Claude Code's status line counts.
+- **A backlog** (`docs/backlog/`: typed `T-NN` tickets by priority) that Claude Code's status line counts.
 
 ## Why not just Copier / cookiecutter?
 
@@ -169,7 +169,7 @@ claude plugin install base@kiln
 
 | Plugin | What's inside |
 |---|---|
-| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `a-faire` = todo, `maj-kiln` = self-update); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
+| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `backlog`, `maj-kiln` = self-update); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
 | `pile-django` | Migrations, API regeneration, read-only PostgreSQL. |
 | `pile-nuxt` | Nuxt / Vue / Vitest skills, UI polish, screenshots on three phones and a desktop (Playwright). |
 | `vps-podman` | Deploy, production logs, production dumps. |

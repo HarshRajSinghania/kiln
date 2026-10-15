@@ -145,3 +145,58 @@ def test_signals_put_tasks_first_and_drop_grey_before_compacting_colour() -> Non
     assert plain.startswith(f"65 tasks urgent{X}10")  # le total reste devant ses sous-comptes
     assert "django ↓153" in plain or "↓153" in plain
     assert f"uv{X}8" not in plain  # le gris tombe en premier
+
+
+BACKLOG = """# Backlog
+
+## 🔴 Critical
+
+### T-01 · Ship it
+- **Type**: task
+- **Status**: in progress — branch feat/ship, since 2026-10-16
+
+## 🟡 Normal
+
+### T-02 · Try an idea
+- **Type**: idea
+- **Status**: blocked — waiting for antoine
+
+## ✅ Done
+
+- **2026-10-15** · T-00 · Done already
+"""
+
+LEGACY = """# À faire
+
+## 🔴 Critique
+
+### AF-01 · Livrer
+- **État** : à vérifier — en prod
+
+## ✅ Fait
+
+### AF-00 · Déjà fait
+"""
+
+
+def labels(group: list) -> list[str]:
+    return [item.text for item in group]
+
+
+def test_backlog_counts_open_tickets_and_their_status(tmp_path: Path) -> None:
+    (tmp_path / "docs/backlog").mkdir(parents=True)
+    (tmp_path / "docs/backlog/backlog.md").write_text(BACKLOG)
+    (tmp_path / "docs/backlog/urgent.md").write_text("# Urgent\n\n- [ ] Pay — antoine\n")
+
+    items = load_script().backlog_items(str(tmp_path))
+
+    assert labels(items) == ["2 tasks", f"urgent{X}1", f"crit{X}1", f"doing{X}1", f"blocked{X}1"]
+
+
+def test_backlog_still_reads_the_old_french_tracker(tmp_path: Path) -> None:
+    (tmp_path / "docs/a-faire").mkdir(parents=True)
+    (tmp_path / "docs/a-faire/a-faire.md").write_text(LEGACY)
+
+    items = load_script().backlog_items(str(tmp_path))
+
+    assert labels(items) == ["1 tasks", f"crit{X}1", f"review{X}1"]
