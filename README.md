@@ -132,7 +132,8 @@ make the opinions yours.
 | `kiln set [key=value…]` | Show or change the repo's settings (team, frameworks, podman…); the repo is re-rendered. |
 | `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template release (`v2 → v3` when behind), stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.4.0` when behind), stack — for every kiln repo. |
+| `kiln version` | In kiln's own repo: latest public release, candidates (age, adopting repos, ready to promote) and the number the next release should take. |
 | `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |
 | `kiln contrat` | Django + Nuxt: export `openapi.json` and regenerate the front's API types. |
@@ -147,7 +148,7 @@ kiln's workflows work from any repository, kiln-generated or not:
 ```yaml
 jobs:
   backend:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@main   # main = latest release
+    uses: antoine-tena/kiln/.github/workflows/django.yml@v0.3.0   # a kiln release tag
 ```
 
 `django.yml`, `python.yml`, `maven.yml`, `pnpm.yml`, `charte.yml`, `securite.yml` (`uv audit`,
@@ -177,10 +178,13 @@ Generated repos enable the right plugins for their stack automatically.
 
 ## Status
 
-kiln is used daily on a handful of real repos, including one in production. It is young:
-work lands on `develop`, and `main` only receives tagged releases (`vN`), each one described in
-[`CHANGELOG.md`](CHANGELOG.md). Projects are generated and updated from the latest release
-tag, never from `develop`; `kiln update` shows what changed in each release it applies.
+kiln is used daily on a handful of real repos, including one in production. It is young, so it
+follows semver in its `0.x` form: a breaking change bumps the minor (`0.3.4 → 0.4.0`), anything
+else the patch. Each release is first a candidate (`v0.4.0-rc.1`) used on the author's own repos;
+it is promoted to `main` (`v0.4.0`) only once the next candidate is ready and it has held for
+three days. Projects are generated and updated from the latest release, pin kiln's workflows to
+that exact tag, and `kiln update` shows what changed in each release it applies (see
+[`CHANGELOG.md`](CHANGELOG.md)).
 Linux, WSL and macOS are supported.
 
 ## Contributing
