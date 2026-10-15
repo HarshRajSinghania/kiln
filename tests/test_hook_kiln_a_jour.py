@@ -1,4 +1,5 @@
 import importlib.util
+import subprocess
 from pathlib import Path
 from types import ModuleType
 
@@ -66,7 +67,8 @@ def test_repo_question_follows_a_tool_update(hook: ModuleType) -> None:
 
     assert "L'outil kiln installé" in message
     assert "Une fois l'outil mis à jour avec succès" in message
-    assert "kiln update" in message
+    assert "`base:maj-kiln` avec l'argument `outil`" in message
+    assert "`base:maj-kiln` avec l'argument `depot`" in message
 
 
 def test_refused_tool_update_also_silences_the_repo(hook: ModuleType) -> None:
@@ -118,3 +120,19 @@ def test_a_real_folder_is_never_replaced_by_the_link(tmp_path: Path) -> None:
     hook.link_plugin(tmp_path / "annway", tmp_path)
 
     assert not (tmp_path / "annway/.claude/kiln").is_symlink()
+
+
+def test_link_is_ignored_even_outside_kiln_repos(tmp_path: Path) -> None:
+    hook = load_hook()
+    root = tmp_path / "autre-repo"
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+
+    hook.link_plugin(root, tmp_path)
+    hook.link_plugin(root, tmp_path)
+
+    status = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain"], capture_output=True, text=True
+    )
+    assert (root / ".claude/kiln").is_symlink()
+    assert status.stdout == ""
+    assert (root / ".git/info/exclude").read_text().count(".claude/kiln") == 1

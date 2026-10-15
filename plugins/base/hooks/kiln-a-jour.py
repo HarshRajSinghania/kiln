@@ -11,8 +11,9 @@ Un « non » repousse la question de 5 sessions, puis 10, 30 et 50 ; au-delà, l
 aussi de désinstaller kiln (outil) ou de délier le repo de kiln (repo). Les réponses sont
 enregistrées par ce même script (`refus` ou `accord`), dans `~/.local/state/kiln/rappels.json`.
 
-Crée aussi `.claude/kiln`, lien vers ce plugin tel qu'il est installé sur le poste (ignoré par
-git), pour voir ses skills et ses hooks dans l'éditeur. Claude Code ne charge pas les skills de
+Crée aussi `.claude/kiln` dans tout repo où tourne le plugin, kiln ou non : lien vers ce plugin tel
+qu'il est installé sur le poste (ignoré par git, au besoin par `.git/info/exclude`), pour voir ses
+skills et ses hooks dans l'éditeur. Claude Code ne charge pas les skills de
 ce dossier : rien n'est chargé deux fois.
 
 Jamais bloquant : trois secondes au plus par appel réseau, silence sans réseau ou hors d'un repo
@@ -131,7 +132,13 @@ def is_tool_outdated(install: tuple[str, str] | None, head: str) -> bool:
 
 
 def tool_update_command(install: tuple[str, str] | None) -> str:
-    plugins = "claude plugin marketplace update kiln"
+    # Le plugin base installé pour tout le poste : ses skills, ses hooks et le lien `.claude/kiln`
+    # dans tous les repos, pas seulement ceux qui le déclarent.
+    plugins = (
+        f"(claude plugin marketplace add {KILN_GIT_URL.removeprefix('https://github.com/')} "
+        "|| true) && claude plugin marketplace update kiln && claude plugin install base@kiln "
+        "--scope user"
+    )
     if install is None:
         return f"uv tool install git+{KILN_GIT_URL} && {plugins}"
     if install[0] == "git":
@@ -151,12 +158,20 @@ def fetch_changed_paths(commit: str) -> list[str]:
     return [entry["filename"] for entry in comparison.get("files", [])]
 
 
-def kiln_repo(cwd: str) -> tuple[Path, str] | None:
-    """Racine et commit du modèle d'un repo généré par kiln, s'il n'en est pas exempté."""
+def git_root(cwd: str) -> Path | None:
+    """Racine du repo git (ou du worktree) de la session, s'il n'est pas exempté."""
     root = run("git", "-C", cwd, "rev-parse", "--show-toplevel").stdout.strip()
     if not root:
         return None
     if run("git", "-C", root, "config", "--get", "kiln-a-jour.desactive").stdout.strip() == "true":
+        return None
+    return Path(root)
+
+
+def kiln_repo(cwd: str) -> tuple[Path, str] | None:
+    """Racine et commit du modèle d'un repo généré par kiln, s'il n'en est pas exempté."""
+    root = git_root(cwd)
+    if root is None:
         return None
     answers_path = Path(root) / ANSWERS_FILE
     if not answers_path.is_file():
@@ -165,7 +180,7 @@ def kiln_repo(cwd: str) -> tuple[Path, str] | None:
     commit = answer(answers, "_commit")
     if not commit or not any(m in answer(answers, "_src_path") for m in KILN_SOURCE_MARKERS):
         return None
-    return Path(root), commit
+    return root, commit
 
 
 def link_plugin(root: Path, plugin_root: Path = PLUGIN_ROOT) -> None:
@@ -173,6 +188,7 @@ def link_plugin(root: Path, plugin_root: Path = PLUGIN_ROOT) -> None:
     link = root / PLUGIN_LINK
     if link.is_symlink():
         if link.resolve() == plugin_root:
+            ignore_locally(root)
             return
         link.unlink()
     elif link.exists():
@@ -182,13 +198,28 @@ def link_plugin(root: Path, plugin_root: Path = PLUGIN_ROOT) -> None:
         link.symlink_to(plugin_root, target_is_directory=True)
     except OSError:
         # Windows sans le mode développeur refuse les liens symboliques : on s'en passe.
-        pass
+        return
+    ignore_locally(root)
+
+
+def ignore_locally(root: Path) -> None:
+    """Le lien n'apparaît jamais dans `git status`, même dans un repo que kiln n'a pas généré :
+    il va dans `.git/info/exclude`, propre au poste, sans toucher aux fichiers du repo."""
+    if run("git", "-C", str(root), "check-ignore", "-q", str(PLUGIN_LINK)).returncode == 0:
+        return
+    common_dir = run("git", "-C", str(root), "rev-parse", "--git-common-dir").stdout.strip()
+    if not common_dir:
+        return
+    exclude = (root / common_dir) / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    with exclude.open("a", encoding="utf-8") as exclude_file:
+        exclude_file.write(f"\n# Lien vers le plugin kiln (hook kiln-a-jour)\n{PLUGIN_LINK}\n")
 
 
 # --- Consignes données à Claude ---
 
 
-def tool_question(install: tuple[str, str] | None, entry: dict[str, int]) -> str:
+def tool_question(entry: dict[str, int]) -> str:
     choices = "« Oui », « Non »"
     extra = ""
     if is_long_refusal(entry):
@@ -201,8 +232,8 @@ def tool_question(install: tuple[str, str] | None, entry: dict[str, int]) -> str
     return (
         "L'outil kiln installé sur ce poste est en retard sur GitHub. Avant toute autre chose, au "
         "début de ta première réponse, demande avec l'outil AskUserQuestion s'il faut mettre kiln "
-        f"à jour ({choices}).{extra} Si « Oui » : `{tool_update_command(install)}`, puis "
-        f"`{SCRIPT} accord {TOOL_KEY}`, puis dis de taper /reload-plugins. Si « Non » : "
+        f"à jour ({choices}).{extra} Si « Oui » : skill `base:maj-kiln` avec l'argument "
+        "`outil`. Si « Non » : "
         f"`{SCRIPT} refus {TOOL_KEY}`, sans rien mettre à jour. Reprends ensuite sa demande."
     )
 
@@ -215,16 +246,15 @@ def repo_question(root: Path, commit: str, entry: dict[str, int]) -> str:
         extra = (
             f" La question commence par « Ça fait longtemps que tu dis non : tu veux délier "
             f"{root.name} de kiln ? ». Si « Délier » : sur une branche dédiée, supprimer "
-            f"`{ANSWERS_FILE}` (kiln ne mettra plus ce repo à jour), commiter et ouvrir la PR "
-            f'comme le veut le CLAUDE.md du repo, puis `{SCRIPT} accord "{root}"`.'
+            f"`{ANSWERS_FILE}` (kiln ne mettra plus ce repo à jour), commiter et fusionner avec "
+            f'le skill `base:fusion`, puis `{SCRIPT} accord "{root}"`.'
         )
     return (
         f"Le modèle kiln a évolué depuis le commit {commit} dont part {root.name}. Avant toute "
         "autre chose, au début de ta réponse, demande avec l'outil AskUserQuestion s'il faut "
-        f"mettre {root.name} à jour ({choices}).{extra} Si « Oui » : "
-        "`kiln update` sur une branche dédiée `chore/kiln-update` (worktree), relire le diff, "
-        f"commiter et ouvrir la PR comme le veut le CLAUDE.md du repo, puis `{SCRIPT} accord "
-        f'"{root}"`. Si « Non » : `{SCRIPT} refus "{root}"`. Reprends ensuite sa demande.'
+        f"mettre {root.name} à jour ({choices}).{extra} Si « Oui » : skill `base:maj-kiln` "
+        f'avec l\'argument `depot`. Si « Non » : `{SCRIPT} refus "{root}"`. Reprends ensuite '
+        "sa demande."
     )
 
 
@@ -249,10 +279,18 @@ def instructions(
             follow_up = " Une fois l'outil mis à jour avec succès : " + repo_question(
                 root, commit, repo_entry
             )
-        return tool_question(install, tool_entry) + follow_up
+        return tool_question(tool_entry) + follow_up
     if is_due(repo_entry) and is_template_change(fetch(commit)):
         return repo_question(root, commit, repo_entry)
     return ""
+
+
+def tool_status() -> str:
+    """`à jour`, ou la commande qui met à jour l'outil installé (skill `base:maj-kiln`)."""
+    install = installed_kiln()
+    if is_tool_outdated(install, remote_head()):
+        return tool_update_command(install)
+    return "à jour"
 
 
 def answer_cli(arguments: list[str]) -> None:
@@ -264,6 +302,9 @@ def answer_cli(arguments: list[str]) -> None:
 
 
 def main() -> None:
+    if sys.argv[1:] == [TOOL_KEY]:
+        print(tool_status())
+        return
     if len(sys.argv) == 3:
         answer_cli(sys.argv[1:])
         return
@@ -272,9 +313,10 @@ def main() -> None:
         if payload.get("source", STARTUP_SOURCE) != STARTUP_SOURCE:
             return
         cwd = payload.get("cwd") or "."
-        repo = kiln_repo(cwd)
-        if repo is not None:
-            link_plugin(repo[0])
+        # Le lien vaut pour tout repo où tourne le plugin ; les mises à jour, pour les repos kiln.
+        root = git_root(cwd)
+        if root is not None:
+            link_plugin(root)
         state = load_state()
         message = instructions(cwd, state)
         save_state(state)
