@@ -206,8 +206,8 @@ Pour essayer un modèle pas encore publié : `KILN_TEMPLATE=~/code/kiln kiln new
 
 Depuis un projet, un défaut de kiln remonte ici ([REMONTER-A-KILN] de la charte générée) :
 
-- **pull request** vers `develop` quand la correction est claire et localisée (depuis un fork
-  pour qui n'a pas les droits d'écriture), avec le test qui l'aurait détecté ;
+- **pull request** vers `develop` quand la correction est claire et localisée, depuis un fork :
+  kiln n'appartient qu'à antoine-tena, seul à y écrire et à fusionner ;
 - **issue** quand il faut trancher entre plusieurs voies, ou qu'on ne sait pas corriger. Dans le
   doute, l'issue d'abord : une PR sur un choix pas encore fait risque d'être refaite.
  Seuls les fichiers en `.jinja` sont interprétés ; un dossier
