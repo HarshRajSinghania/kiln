@@ -9,10 +9,10 @@ from __future__ import annotations
 import ast
 import re
 
-from kiln.charte.moteur import Depot, hors_tests
+from kiln.charte.moteur import Depot, Params, hors_tests
 
 
-def taille_fichier(depot: Depot, p: dict) -> tuple[int, list[str]]:
+def taille_fichier(depot: Depot, p: Params) -> tuple[int, list[str]]:
     """`max_lignes` (300) lignes au plus par fichier ; les fichiers engendrés ne comptent pas."""
     suffixes = set(p.get("suffixes", [".py", ".ts", ".vue", ".css", ".mjs"]))
     plafond = p.get("max_lignes", 300)
@@ -26,7 +26,7 @@ def taille_fichier(depot: Depot, p: dict) -> tuple[int, list[str]]:
     return len(fautifs), sorted(fautifs, reverse=True)
 
 
-def routes_longues(depot: Depot, p: dict) -> tuple[int, list[str]]:
+def routes_longues(depot: Depot, p: Params) -> tuple[int, list[str]]:
     """Vues de plus de `max_lignes` (15) lignes, repérées par leur décorateur (`decorateur`,
     regex ; par défaut celui de django-ninja)."""
     decorateur = re.compile(p.get("decorateur", r"\s*@(api|router)\.(get|post|put|patch|delete)"))
@@ -53,7 +53,7 @@ def routes_longues(depot: Depot, p: dict) -> tuple[int, list[str]]:
     return len(fautifs), sorted(fautifs, reverse=True)
 
 
-def verrous_django(depot: Depot, p: dict) -> tuple[int, list[str]]:
+def verrous_django(depot: Depot, p: Params) -> tuple[int, list[str]]:
     """`select_for_update` sans `nowait`/`skip_locked` ni justification « # Verrou bloquant : »
     dans les 8 lignes au-dessus. Analyse syntaxique : une docstring n'est pas un verrou."""
     fautifs = []
@@ -70,7 +70,7 @@ def verrous_django(depot: Depot, p: dict) -> tuple[int, list[str]]:
     return len(fautifs), fautifs
 
 
-def occurrences(depot: Depot, p: dict) -> tuple[int, list[str]]:
+def occurrences(depot: Depot, p: Params) -> tuple[int, list[str]]:
     """Nombre d'occurrences d'un texte (`motif`, littéral) dans des fichiers : par exemple
     `timezone.now()` dans les tests, où l'horloge doit être figée."""
     fautifs = []
@@ -81,7 +81,7 @@ def occurrences(depot: Depot, p: dict) -> tuple[int, list[str]]:
     return sum(int(o.split()[0]) for o in fautifs), sorted(fautifs, reverse=True)
 
 
-def densite_tests(depot: Depot, p: dict) -> tuple[int, list[str]]:
+def densite_tests(depot: Depot, p: Params) -> tuple[int, list[str]]:
     """Lignes de test pour mille lignes de code (fichiers engendrés exclus). Les fichiers de
     test finissent par un des `suffixes_tests`."""
     suffixes = set(p.get("suffixes", [".ts", ".vue", ".mjs"]))

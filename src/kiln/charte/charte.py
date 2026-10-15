@@ -29,12 +29,16 @@ import importlib.util
 import subprocess
 import sys
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 from kiln.charte.cliquets import COMPTEURS
 from kiln.charte.interdictions import REGLES
-from kiln.charte.moteur import Depot, echec
+from kiln.charte.moteur import Depot, Params, echec
 from kiln.charte.outils_python import couverture, types
+
+# Règle propre au repo : `verifier(depot, params)` renvoie ses échecs.
+RegleLocale = Callable[[Depot, Params], list[str]]
 
 FIN_RAPPORT = "Règles de CLAUDE.md non vérifiées"
 
@@ -49,10 +53,12 @@ def charger() -> Depot:
     return Depot(config.parent, tomllib.loads(config.read_text("utf-8")))
 
 
-def _regles_locales(depot: Depot) -> list:
-    fonctions = []
+def _regles_locales(depot: Depot) -> list[RegleLocale]:
+    fonctions: list[RegleLocale] = []
     for chemin in depot.config.get("regles_locales", []):
         spec = importlib.util.spec_from_file_location(Path(chemin).stem, depot.racine / chemin)
+        if spec is None or spec.loader is None:
+            raise SystemExit(f"charte : règle locale illisible : {chemin}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         fonctions.append(module.verifier)
@@ -72,7 +78,7 @@ def _regles_non_verifiees(depot: Depot) -> None:
     print("\n".join(f"  - {r}" for r in regles))
 
 
-def mesures(depot: Depot, section: str) -> list[tuple[str, dict, int, list[str]]]:
+def mesures(depot: Depot, section: str) -> list[tuple[str, Params, int, list[str]]]:
     sortie = []
     for nom, p in depot.config.get(section, {}).items():
         valeur, detail = COMPTEURS[p.get("regle", nom)](depot, p)
@@ -91,11 +97,15 @@ def verifier(depot: Depot) -> int:
     for nom, p, valeur, detail in mesures(depot, "cliquets"):
         budget = p["budget"]
         if valeur > budget:
-            message = f"{p.get('message', nom)} : {valeur} infractions, plafond {budget}. {valeur - budget} de plus qu'au dernier abaissement."
+            message = (
+                f"{p.get('message', nom)} : {valeur} infractions, plafond {budget}. "
+                f"{valeur - budget} de plus qu'au dernier abaissement."
+            )
             problemes.append(echec(p.get("id", "CLIQUET"), message, detail))
         elif valeur < budget:
             a_resserrer.append(
-                f"  {nom} : {valeur} < {budget} — abaisser `budget` de [cliquets.{nom}] à {valeur} (charte.toml)."
+                f"  {nom} : {valeur} < {budget} — abaisser `budget` de [cliquets.{nom}] "
+                f"à {valeur} (charte.toml)."
             )
     for nom, p, valeur, detail in mesures(depot, "planchers"):
         plancher = p["plancher"]
@@ -106,7 +116,8 @@ def verifier(depot: Depot) -> int:
             problemes.append(echec(p.get("id", "PLANCHER"), message, detail))
         elif valeur > plancher:
             a_resserrer.append(
-                f"  {nom} : {valeur} > {plancher} — relever `plancher` de [planchers.{nom}] à {valeur} (charte.toml)."
+                f"  {nom} : {valeur} > {plancher} — relever `plancher` de [planchers.{nom}] "
+                f"à {valeur} (charte.toml)."
             )
 
     if a_resserrer:
