@@ -1,0 +1,32 @@
+name: pypi
+
+# Publication de kiln sur PyPI (paquet kiln-cli) au tag d'une version promue, `vX.Y.Z` ; jamais
+# une candidate `-rc.N`, que seul le canal `interne` suit, par GitHub. Sans jeton : PyPI fait
+# confiance à ce workflow (trusted publishing), déclaré pour l'environnement `pypi`.
+on:
+  push:
+    tags: [ "v[0-9]+.[0-9]+.[0-9]+" ]
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/kiln-cli/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Version du tag = version du paquet
+        run: |
+          paquet="$(uv version --short)"
+          if [ "v${paquet}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME}, mais pyproject.toml dit ${paquet}"
+            exit 1
+          fi
+      - name: Construction
+        run: uv build
+      - name: Publication
+        run: uv publish --trusted-publishing always

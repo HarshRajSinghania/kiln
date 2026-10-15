@@ -1,5 +1,6 @@
 [project]
-name = "kiln"
+# Sur PyPI, `kiln` est pris : la distribution s'appelle kiln-cli, la commande reste `kiln`.
+name = "kiln-cli"
 version = "0.2.0"
 description = "Generate production-grade repos in one command, then keep every one of them up to date"
 readme = "README.md"
@@ -30,7 +31,12 @@ Issues = "https://github.com/antoine-tena/kiln/issues"
 
 [project.scripts]
 kiln = "kiln.cli:main"
+# Même commande sous le nom du paquet, pour que `uvx kiln-cli new` marche sans `--from`.
+kiln-cli = "kiln.cli:main"
 charte = "kiln.charte.charte:lancer"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kiln"]
 
 # Le journal des versions voyage avec l'outil : `kiln update` en montre les nouveautés.
 [tool.hatch.build.targets.wheel.force-include]
