@@ -1,9 +1,10 @@
+import sys
 from pathlib import Path
 
 import pytest
 from packaging.version import Version
 
-from kiln import ui
+from kiln import cli, ui
 from kiln.banner import LOGO, _project_summary, render_logo
 from kiln.config import UserConfig
 from kiln.deps import _major_bounds
@@ -15,7 +16,7 @@ from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
 from kiln.stack import Stack, answers_if_any, load_stack, stack_from_answers
 from kiln.update import replace_legacy_source
-from kiln.versions import notes_between, release_version
+from kiln.versions import installed_version, notes_between, release_version
 
 
 def test_legacy_answers_mean_django_and_nuxt() -> None:
@@ -222,3 +223,14 @@ def test_doctor_blocks_on_a_tool_the_repo_needs(monkeypatch: pytest.MonkeyPatch)
 
 def test_dev_prefixes_line_up_outside_a_terminal() -> None:
     assert service_prefix("nuxt", 6, ui.FIRE) == "nuxt   │ "
+
+
+def test_version_flag_prints_the_installed_version(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["kiln", "--version"])
+    with pytest.raises(SystemExit) as exit_request:
+        cli.main()
+
+    assert exit_request.value.code == 0
+    assert capsys.readouterr().out.strip() == installed_version()

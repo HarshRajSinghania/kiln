@@ -24,6 +24,7 @@ from kiln import (
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
+from kiln.versions import installed_version
 
 EXIT_FAILURE = 1
 PROJECT_NAME = re.compile(r"[a-z][a-z0-9-]*")
@@ -52,6 +53,7 @@ HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kiln", description=__doc__)
+    parser.add_argument("--version", action="version", version=installed_version())
     commands = parser.add_subparsers(dest="command")
     _add_new_command(commands)
     commands.add_parser("install", help="préparer le poste après un clone")
