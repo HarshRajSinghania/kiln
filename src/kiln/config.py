@@ -20,6 +20,10 @@ SYSTEMS = ("linux", "wsl", "macos")
 # Canal de versions : `public` (versions promues) ou `interne` (candidates comprises).
 PUBLIC_CHANNEL, INTERNAL_CHANNEL = "public", "interne"
 CHANNELS = (PUBLIC_CHANNEL, INTERNAL_CHANNEL)
+# Status line de Claude Code : un style de kiln, aucune, ou celle de l'utilisateur (`perso`).
+STATUSLINE_STYLES = ("sobre", "bandeau", "classique", "classique-fond")
+STATUSLINE_CHOICES = (*STATUSLINE_STYLES, "aucune", "perso")
+DEFAULT_STATUSLINE = "sobre"
 SYSTEM_LABELS = {"linux": "Linux", "wsl": "Windows (WSL)", "macos": "macOS"}
 
 
@@ -30,6 +34,7 @@ class UserConfig:
     team: tuple[str, ...] = ()
     code_dir: Path = DEFAULT_CODE_DIR
     channel: str = PUBLIC_CHANNEL
+    statusline: str | None = None  # None : pas encore choisie (kiln install la pose)
 
 
 def config_path() -> Path:
@@ -49,6 +54,7 @@ def load_config() -> UserConfig:
         team=tuple(str(login) for login in team) if isinstance(team, list) else (),
         code_dir=Path(values.get("dossier_code", str(DEFAULT_CODE_DIR))).expanduser(),
         channel=values.get("canal", PUBLIC_CHANNEL),
+        statusline=values.get("statusline"),
     )
 
 
@@ -63,6 +69,8 @@ def save_config(config: UserConfig) -> None:
     lines.append(f'dossier_code = "{config.code_dir}"')
     if config.channel != PUBLIC_CHANNEL:
         lines.append(f'canal = "{config.channel}"')
+    if config.statusline:
+        lines.append(f'statusline = "{config.statusline}"')
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n")

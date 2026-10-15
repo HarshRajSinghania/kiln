@@ -33,7 +33,8 @@ un dossier ou un module.
   d'accueil `docs/assets/kiln-accueil.svg`. Référence complète en français : `README.fr.md`.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
-  `test_ci.py`, `test_flotte.py`, `test_deploiement.py`.
+  `test_ci.py`, `test_flotte.py`, `test_deploiement.py`, `test_statusline.py` (choix du
+  poste et rendu du script).
 
 ## Versions
 

@@ -33,8 +33,11 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
   retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
   30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé ;
   `git config kiln-a-jour.desactive true` pour s'en passer), sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
-  est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`, à
-  déclarer dans `statusLine` de `~/.claude/settings.json`) ;
+  est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`,
+  en anglais, aux couleurs de kiln), posée par `kiln install` dans `~/.claude/settings.json` ; son
+  style se choisit par poste : `kiln set statusline=sobre|bandeau|classique|classique-fond`,
+  `aucune` (retirée) ou `perso` (kiln ne touche plus à la `statusLine` de l'utilisateur, choix
+  automatique s'il en a déjà une) ;
 - `pile-nuxt` (skills Nuxt, Vue, Vitest, `polish`, `apercu` — captures sur trois téléphones et un ordinateur ; MCP playwright) et `pile-django` (skills
   `migration`, `regen-api`, `postgres-lecture`), activés par le `.claude/settings.json` généré
   selon la stack ;

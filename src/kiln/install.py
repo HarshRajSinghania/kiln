@@ -10,7 +10,7 @@ from kiln import ui
 from kiln.config import UserConfig, ensure_system, load_config
 from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import BACKEND_DIR, MAVEN_WRAPPER, Stack, answers_if_any, load_stack
-from kiln.statusline import apply_statusline_settings
+from kiln.statusline import apply_statusline_settings, ensure_statusline
 
 SECRET_KEY_VARIABLE = "DJANGO_SECRET_KEY"
 SECRET_KEY_BYTES = 50
@@ -67,6 +67,7 @@ def install_project(root: Path) -> None:
     step("Garde-fous git (pre-commit) et status line")
     run(["pre-commit", "install"], root)
     apply_statusline_settings(root)
+    ensure_statusline(config)
     command_name = answers_if_any(root).get("nom", "<commande>")
     ui.success(f"Prêt. Lancer le projet : {_launch_hint(stack, command_name)}")
 
