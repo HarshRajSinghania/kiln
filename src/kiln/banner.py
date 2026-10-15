@@ -1,8 +1,9 @@
 """Bannière d'accueil des commandes longues (`new`, `install`, `update`, `status`).
 
-Un four en pixel art, dessiné en demi-blocs (deux pixels par caractère), à côté de la version
-de kiln, de la commande lancée, du projet et de son dossier. Hors terminal, ou avec `NO_COLOR`,
-une seule ligne sans dessin : les journaux et les sorties capturées restent lisibles.
+Un four rieur en pixel art (pierre et feu), dessiné en demi-blocs (deux pixels par caractère),
+à côté de la version de kiln, de la commande lancée, du projet et de son dossier.
+Hors terminal, ou avec `NO_COLOR`, une seule ligne sans dessin : les journaux et les sorties
+capturées restent lisibles.
 """
 
 import os
@@ -13,20 +14,44 @@ from pathlib import Path
 from kiln.shell import KilnError
 from kiln.stack import NO_FRAMEWORK, answers_if_any, load_stack
 
-# Un caractère = deux pixels superposés : B brique, F flamme, Y cœur de la flamme, . vide.
+# Un caractère = deux pixels superposés. Four rieur, pierre et feu : L pierre éclairée, B pierre,
+# b pierre dans l'ombre, d socle et chapeau de brique, W/K yeux, P joues, R/F/Y flamme (bord rouge,
+# orange, cœur jaune), . vide.
 LOGO = (
-    "..........BB..",
-    "...BBBBBB.BB..",
-    "..BBBBBBBBBB..",
-    ".BBBBBBBBBBBB.",
-    ".BBBB.F..BBBB.",
-    ".BBB..FF..BBB.",
-    ".BBB.FYYF.BBB.",
-    "BBBBBBBBBBBBBB",
+    "..........dd..",
+    "...LLLBBB.bb..",
+    "..LWKBBWKBbb..",
+    ".LLWKBBWKBBbb.",
+    ".LBP.RR..PBbb.",
+    ".LBB.RFR..Bbb.",
+    ".BBB.FYYF.bbb.",
+    "dddddddddddddd",
 )
 # Couleur de chaque pixel : 24 bits, et repli sur la palette de 256 couleurs.
-TRUE_COLORS = {"B": "217;98;43", "F": "247;179;43", "Y": "255;230;140"}
-PALETTE_COLORS = {"B": "166", "F": "214", "Y": "222"}
+TRUE_COLORS = {
+    "L": "185;185;180",
+    "B": "140;140;135",
+    "b": "95;95;92",
+    "d": "180;75;35",
+    "W": "255;255;255",
+    "K": "25;25;25",
+    "P": "230;130;120",
+    "R": "205;50;35",
+    "F": "247;150;40",
+    "Y": "255;225;120",
+}
+PALETTE_COLORS = {
+    "L": "250",
+    "B": "245",
+    "b": "240",
+    "d": "130",
+    "W": "231",
+    "K": "234",
+    "P": "174",
+    "R": "160",
+    "F": "208",
+    "Y": "222",
+}
 EMPTY = "."
 UPPER_HALF, LOWER_HALF, FULL_BLOCK = "▀", "▄", "█"
 BOLD, DIM, RESET = "\033[1m", "\033[2m", "\033[0m"
