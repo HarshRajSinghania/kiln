@@ -5,6 +5,7 @@ import json
 import subprocess
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -179,7 +180,7 @@ LEGACY = """# À faire
 """
 
 
-def labels(group: list) -> list[str]:
+def labels(group: list[Any]) -> list[str]:
     return [item.text for item in group]
 
 
