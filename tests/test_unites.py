@@ -141,3 +141,19 @@ def test_project_summary_names_size_and_frameworks(tmp_path: Path) -> None:
     )
 
     assert _project_summary(tmp_path) == "atelier · ember · fastapi, podman"
+
+
+def test_poste_settings_are_parsed_and_checked() -> None:
+    from kiln.config import UserConfig
+    from kiln.poste import apply_poste
+
+    updated = apply_poste(
+        UserConfig(), ["systeme=wsl", "proprietaire=antoine", "equipe=a, b", "dossier_code=/srv"]
+    )
+
+    assert (updated.system, updated.owner, updated.team) == ("wsl", "antoine", ("a", "b"))
+    assert updated.code_dir == Path("/srv")
+    with pytest.raises(KilnError, match="clés du poste"):
+        apply_poste(UserConfig(), ["backend=java"])
+    with pytest.raises(KilnError, match="systeme"):
+        apply_poste(UserConfig(), ["systeme=windows"])

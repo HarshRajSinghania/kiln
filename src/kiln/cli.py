@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from kiln import banner, check, ci, contract, dev, fleet, install, new, settings, ui, update
+from kiln import banner, check, ci, contract, dev, fleet, install, new, poste, settings, ui, update
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 from kiln.stack import load_stack
@@ -14,7 +14,7 @@ EXIT_FAILURE = 1
 PROJECT_NAME = re.compile(r"[a-z][a-z0-9-]*")
 SIZES = ("spark", "ember", "flame", "blaze")
 PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse", "outil")
-BACKENDS = ("django", "fastapi", "data", "cli", "aucun")
+BACKENDS = ("django", "fastapi", "data", "cli", "java", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 
@@ -24,11 +24,12 @@ COMMAND_GROUPS = (
     ("Au quotidien", ("dev", "check", "ci", "contrat")),
     ("Tous les repos", ("status", "update --all")),
 )
-FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, une PR chacun"
+FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, fusion directe"
 EXAMPLES = (
     "kiln new atelier --size ember --backend fastapi",
     "kiln update --major",
     "kiln set podman=true",
+    "kiln set equipe=alice,bob     # hors d'un repo : réglages du poste",
 )
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
@@ -46,8 +47,13 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
-    set_parser = commands.add_parser("set", help="afficher ou changer les paramètres du repo")
+    set_parser = commands.add_parser(
+        "set", help="afficher ou changer les paramètres du repo (hors d'un repo : du poste)"
+    )
     set_parser.add_argument("assignments", nargs="*", metavar="clé=valeur")
+    set_parser.add_argument(
+        "--poste", action="store_true", help="réglages du poste, même depuis un repo"
+    )
     return parser
 
 
@@ -95,7 +101,7 @@ def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentPa
     update_parser.add_argument("--no-deps", action="store_true", help="garder les dépendances")
     update_parser.add_argument("--major", action="store_true", help="versions majeures comprises")
     update_parser.add_argument(
-        "--all", action="store_true", help="tous les repos kiln, une PR chacun"
+        "--all", action="store_true", help="tous les repos kiln, fusion directe"
     )
 
 
@@ -162,7 +168,10 @@ def dispatch(arguments: argparse.Namespace) -> None:
     if arguments.command == "status" or (arguments.command == "update" and arguments.all):
         _dispatch_fleet(arguments)
         return
-    root = repo_root(Path.cwd())
+    if arguments.command == "set" and (arguments.poste or not _is_in_repo()):
+        poste.run_poste(arguments.assignments)
+        return
+    root = _repo_root_or_hint()
     if arguments.command == "install":
         install.install_project(root)
     elif arguments.command == "update":
@@ -187,6 +196,32 @@ def dispatch(arguments: argparse.Namespace) -> None:
             settings.show_settings(root)
 
 
+def _is_in_repo() -> bool:
+    try:
+        repo_root(Path.cwd())
+    except KilnError:
+        return False
+    return True
+
+
+def _repo_root_or_hint() -> Path:
+    """Racine du repo courant ; hors d'un repo, l'erreur dit où aller et quoi lancer d'ici."""
+    try:
+        return repo_root(Path.cwd())
+    except KilnError:
+        code_dir = load_config().code_dir
+        names = (
+            [str(repo.root.relative_to(code_dir)) for repo in fleet.find_repos(code_dir)]
+            if code_dir.is_dir()
+            else []
+        )
+        repos_line = f" Repos kiln de {code_dir} : {', '.join(names)}." if names else ""
+        raise KilnError(
+            f"{Path.cwd()} n'est pas dans un repo : s'y placer d'abord (cd <repo>).{repos_line} "
+            "D'ici : kiln status, kiln update --all, kiln set (réglages du poste), kiln new."
+        ) from None
+
+
 def _show_banner(arguments: argparse.Namespace) -> None:
     """Bannière des commandes longues ; les repos de la flotte sont dans le dossier de code."""
     action = BANNER_ACTIONS.get(arguments.command)
@@ -195,7 +230,7 @@ def _show_banner(arguments: argparse.Namespace) -> None:
     if arguments.command == "new" or arguments.command == "status" or arguments.all:
         banner.show_banner(action if arguments.command != "update" else "mise à jour des repos")
         return
-    banner.show_banner(action, repo_root(Path.cwd()))
+    banner.show_banner(action, _repo_root_or_hint())
 
 
 def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
