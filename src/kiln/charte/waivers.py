@@ -149,7 +149,7 @@ def _problems(entry: dict[str, Any]) -> list[str]:
 
 
 def check_targets(
-    waivers: Waivers, known_rules: Iterable[str], tracked: Callable[[list[str]], list[str]]
+    waivers: Waivers, known_rules: Iterable[str], tracked: Callable[[list[str]], list[Path]]
 ) -> None:
     """Une dérogation qui ne vise plus rien (règle inconnue, motif sans fichier) est retirée et
     signalée : sinon elle couvrirait en silence le prochain fichier qui y correspondrait."""

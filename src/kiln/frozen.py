@@ -63,7 +63,7 @@ def _render(source: str, ref: str, answers: dict[str, object], destination: Path
 
 
 def _diff(before: Path, after: Path, name: str) -> list[str]:
-    lines = [p.read_text().splitlines() if p.exists() else [] for p in (before, after)]
+    old, new = (p.read_text().splitlines() if p.exists() else [] for p in (before, after))
     return list(
-        difflib.unified_diff(*lines, f"kiln {name} (avant)", f"kiln {name} (après)", lineterm="")
+        difflib.unified_diff(old, new, f"kiln {name} (avant)", f"kiln {name} (après)", lineterm="")
     )
