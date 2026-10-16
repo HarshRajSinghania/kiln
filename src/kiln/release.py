@@ -1,11 +1,12 @@
 """`kiln version` : où en sont les versions de kiln, et quoi sortir ensuite (dépôt de kiln).
 
-- **Numéro** : déduit des commits depuis la dernière version (semver à trois chiffres). En 0.x,
-  un commit cassant (`feat!:`, `BREAKING CHANGE`) monte la mineure, tout le reste le correctif ;
-  à partir de 1.0, cassant → majeure, `feat` → mineure, le reste → correctif.
+- **Numéro** (CLAUDE.md, Versions) : en 0.x, chaque version monte le correctif, cassante
+  comprise, comme Claude Code ; la mineure ne monte que pour une étape décidée
+  (`kiln version --minor`). À partir de 1.0, semver strict, comme Next.js : cassant → majeure,
+  `feat` → mineure, le reste → correctif.
 - **Promotion** : une candidate (`vX.Y.Z-rc.N`, la dernière de sa version) devient publique quand
-  une candidate d'une version plus récente existe et qu'elle a tenu `SOAK_DAYS` jours sans
-  nouvelle candidate. Les repos du dossier de code disent qui l'a déjà adoptée.
+  une candidate d'une version plus récente existe : la suivante prête, pas un délai, évite le
+  correctif d'urgence. Les repos du dossier de code disent qui l'a déjà adoptée.
 
 Lecture seule : les tags et les fusions se font par la skill `base:version` (CLAUDE.md, Versions).
 """
@@ -25,8 +26,6 @@ from kiln.shell import KilnError, capture
 from kiln.versions import release_version
 
 # Jours d'usage d'une candidate avant promotion : plus court en 0.x, où tout bouge vite.
-SOAK_DAYS_INITIAL = 3
-SOAK_DAYS_STABLE = 7
 BREAKING_SUBJECT = re.compile(r"^\w+(\([^)]*\))?!:")
 FEATURE_SUBJECT = re.compile(r"^feat(\([^)]*\))?:")
 INTEGRATION_REF = "origin/develop"
@@ -40,7 +39,7 @@ class Tag:
     created: datetime.datetime
 
 
-def show_release_status(root: Path) -> None:
+def show_release_status(root: Path, *, milestone: bool = False) -> None:
     if not (root / VERSION_MODULE).is_file():
         raise KilnError("kiln version se lance dans le dépôt de kiln")
     capture(["git", "fetch", "-q", "--tags", "origin"], root)
@@ -55,7 +54,7 @@ def show_release_status(root: Path) -> None:
         print(f"    {ui.paint('aucune', ui.STONE)}")
     adopted = _adoption()
     for candidate in candidates:
-        verdict, ready = promotion_verdict(candidate, candidates, now)
+        verdict, ready = promotion_verdict(candidate, candidates)
         mark = ui.paint("✓", ui.MOSS) if ready else ui.paint("·", ui.STONE)
         age = (now - candidate.created).days
         users = adopted.get(candidate.name, [])
@@ -66,11 +65,13 @@ def show_release_status(root: Path) -> None:
     last = tags[-1] if tags else None
     subjects = _subjects_since(root, last.name if last else None)
     baseline = last.version if last else _package_version(root)
-    proposed = next_version(baseline, subjects)
+    proposed = next_version(baseline, subjects, milestone=milestone)
     print(f"\n  {ui.paint('PROCHAINE', ui.FIRE, bold=True)}")
     if subjects:
         detail = f"{len(subjects)} commits depuis {last.name}" if last else "première version"
         print(f"    v{proposed}-rc.1  {ui.paint(f'({detail})', ui.STONE)}")
+        if Version(proposed).major == 0 and not milestone:
+            print(f"    {ui.paint('une étape ? kiln version --minor', ui.STONE)}")
     else:
         print(f"    {ui.paint('rien de neuf sur develop', ui.STONE)}")
     print()
@@ -102,29 +103,23 @@ def latest_candidates(tags: list[Tag]) -> list[Tag]:
     return [latest[final] for final in sorted(latest)]
 
 
-def promotion_verdict(
-    candidate: Tag, candidates: list[Tag], now: datetime.datetime
-) -> tuple[str, bool]:
-    soak = SOAK_DAYS_INITIAL if candidate.version.major == 0 else SOAK_DAYS_STABLE
-    has_next = any(other.version > candidate.version for other in candidates)
-    age = now - candidate.created
-    if not has_next:
+def promotion_verdict(candidate: Tag, candidates: list[Tag]) -> tuple[str, bool]:
+    if not any(other.version > candidate.version for other in candidates):
         return "attend une version suivante prête", False
-    if age < datetime.timedelta(days=soak):
-        return f"attend {soak} jours d'usage", False
     return f"prête : promouvoir en v{candidate.version.base_version}", True
 
 
-def next_version(last: Version, subjects: list[str]) -> str:
+def next_version(last: Version, subjects: list[str], *, milestone: bool = False) -> str:
     """Numéro de la prochaine version, d'après les commits depuis `last` (la dernière version,
-    ou celle de `pyproject.toml` avant la première)."""
+    ou celle de `pyproject.toml` avant la première). En 0.x, le correctif suivant, sauf pour une
+    étape (`milestone`) ; à partir de 1.0, le semver strict."""
     # Une candidate compte comme sa version : ses correctifs à elle vont en `-rc.N+1` sur sa
     # branche, ce qui vient de develop prépare la version d'après.
     major, minor, patch = Version(last.base_version).release[:3]
     is_breaking = any(BREAKING_SUBJECT.match(s) or "BREAKING CHANGE" in s for s in subjects)
     has_feature = any(FEATURE_SUBJECT.match(s) for s in subjects)
     if major == 0:
-        return f"0.{minor + 1}.0" if is_breaking else f"0.{minor}.{patch + 1}"
+        return f"0.{minor + 1}.0" if milestone else f"0.{minor}.{patch + 1}"
     if is_breaking:
         return f"{major + 1}.0.0"
     return f"{major}.{minor + 1}.0" if has_feature else f"{major}.{minor}.{patch + 1}"

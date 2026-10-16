@@ -62,7 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("check", help="lancer les contrôles du projet")
     _add_ci_command(commands)
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
-    commands.add_parser("version", help="versions de kiln : publique, candidates, prochaine")
+    version_parser = commands.add_parser(
+        "version", help="versions de kiln : publique, candidates, prochaine"
+    )
+    version_parser.add_argument(
+        "--minor", action="store_true", help="la prochaine est une étape : monter la mineure"
+    )
     commands.add_parser("doctor", help="diagnostiquer le poste et le repo, avec les corrections")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
@@ -189,7 +194,7 @@ def dispatch(arguments: argparse.Namespace) -> None:
         doctor.run_doctor(Path.cwd())
         return
     if arguments.command == "version":
-        release.show_release_status(repo_root(Path.cwd()))
+        release.show_release_status(repo_root(Path.cwd()), milestone=arguments.minor)
         return
     if arguments.command == "status" or (arguments.command == "update" and arguments.all):
         _dispatch_fleet(arguments)
