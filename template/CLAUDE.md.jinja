@@ -122,12 +122,16 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 
 ### Ce qui vient de kiln
 - **[REMONTER-A-KILN]** Un défaut de ce que fournit kiln (fichier généré, règle commune de cette
-  charte, skill ou hook du plugin `base`, visibles dans `.claude/kiln`) ne se corrige pas dans
-  ce dépôt : `kiln update` écraserait la correction. Il remonte à kiln,
-  https://github.com/antoine-tena/kiln, qui n'appartient qu'à antoine-tena : **pull request**
-  quand la correction est claire et localisée (depuis un fork, PR vers `develop`, avec le test
-  qui l'aurait détecté) ; **issue** quand il faut trancher entre plusieurs voies, ou qu'on ne sait pas
-  corriger. Dans le doute, l'issue d'abord. Une règle propre à ce dépôt, elle, s'amende ici.
+  charte, skill ou hook d'un plugin kiln — ceux de `base` sont visibles dans `.claude/kiln` —,
+  workflow réutilisable) ne se corrige pas dans ce dépôt : `kiln update` écraserait la
+  correction. Il remonte à kiln, https://github.com/antoine-tena/kiln, par le skill
+  `base:report-to-kiln` : **pull request** quand la correction est claire et localisée (depuis
+  un fork, PR vers `develop`, avec le test qui l'aurait détecté) ; **issue** quand il faut
+  trancher entre plusieurs voies, ou qu'on ne sait pas corriger. Dans le doute, l'issue
+  d'abord. Ce qui part est public, sous le compte GitHub de l'utilisateur : rien sans son
+  accord explicite, rien de privé de ce dépôt (code, noms, données, secrets), en anglais, et
+  seulement après avoir vérifié que kiln est à jour et que personne ne l'a déjà signalé. Une
+  règle propre à ce dépôt, elle, s'amende ici.
 
 ---
 

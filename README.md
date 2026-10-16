@@ -167,7 +167,7 @@ claude plugin install base@kiln
 
 | Plugin | What's inside |
 |---|---|
-| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `a-faire` = todo, `maj-kiln` = self-update); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
+| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `a-faire` = todo, `maj-kiln` = self-update) and `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
 | `pile-django` | Migrations, API regeneration, read-only PostgreSQL. |
 | `pile-nuxt` | Nuxt / Vue / Vitest skills, UI polish, screenshots on three phones and a desktop (Playwright). |
 | `vps-podman` | Deploy, production logs, production dumps. |
@@ -193,6 +193,9 @@ Issues and pull requests are very welcome — see [CONTRIBUTING.md](CONTRIBUTING
 Small fixes can go straight to a PR; for bigger changes, open an issue first so we agree on
 the approach. Good places to start: the
 [`good first issue`](https://github.com/antoine-tena/kiln/labels/good%20first%20issue) label.
+Using Claude Code in a kiln repo? `/base:report-to-kiln` turns a kiln defect into a
+ready-to-post issue or PR: checked against the latest release and the existing issues, scrubbed
+of anything private, posted only once you approve.
 
 If kiln saves you time, a ⭐ helps other people find it.
 

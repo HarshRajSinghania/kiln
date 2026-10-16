@@ -28,7 +28,7 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire`,
-  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert) ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur) ; hooks garde de branche, fichiers protégés, contrôle du fichier
   modifié, mise à jour proposée à l'ouverture de session (oui/non : l'outil kiln s'il est en
   retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
   30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé ;
@@ -213,12 +213,17 @@ Modifier `template/` sur une branche, puis la fusionner dans `develop` : les pro
 reçoivent à la version suivante, par `kiln update` (le hook de début de session le propose).
 Pour essayer un modèle pas encore publié : `KILN_TEMPLATE=~/code/kiln kiln new …`.
 
-Depuis un projet, un défaut de kiln remonte ici ([REMONTER-A-KILN] de la charte générée) :
+Depuis un projet, un défaut de kiln remonte ici ([REMONTER-A-KILN] de la charte générée), par
+le skill `base:report-to-kiln` :
 
 - **pull request** vers `develop` quand la correction est claire et localisée, depuis un fork :
   kiln n'appartient qu'à antoine-tena, seul à y écrire et à fusionner ;
 - **issue** quand il faut trancher entre plusieurs voies, ou qu'on ne sait pas corriger. Dans le
   doute, l'issue d'abord : une PR sur un choix pas encore fait risque d'être refaite.
+
+Le skill vérifie d'abord que kiln est à jour et que personne ne l'a déjà signalé, rédige en
+anglais sans rien de privé du projet, et ne publie qu'avec l'accord explicite de l'utilisateur :
+c'est public, sous son compte GitHub.
  Seuls les fichiers en `.jinja` sont interprétés ; un dossier
 `{% if … %}nom{% endif %}` n'existe que si la condition tient ; les questions sont dans
 [`copier.yml`](copier.yml) et les macros partagées (chaînes Python au format de ruff) dans
