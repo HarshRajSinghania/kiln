@@ -20,7 +20,7 @@ un dossier ou un module.
   roue animée, bilan, succès, erreurs), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
 - `src/kiln/ci/` : `kiln ci` (CI rejouée sur le poste, verdict en note git) ;
   `src/kiln/charte/` : moteur de `charte` (`interdictions.py`, `cliquets.py`,
-  `outils_python.py`).
+  `outils_python.py`, `waivers.py` : dérogations de `kiln-waivers.toml`).
 - `copier.yml` : questions du modèle ; `template/` : le modèle (`CLAUDE.md.jinja`, chartes de
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
@@ -38,7 +38,7 @@ un dossier ou un module.
   promotion de version ; `docs/assets/` : images de la vitrine.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
-  `test_ci.py`, `test_flotte.py`, `test_deploiement.py`, `test_statusline.py` (choix du
+  `test_ci.py`, `test_flotte.py`, `test_waivers.py` (dérogations), `test_deploiement.py`, `test_statusline.py` (choix du
   poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier).
 
 ## Versions

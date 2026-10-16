@@ -37,7 +37,8 @@ keeps every repo you own current:
   per repo, small commits, merge only when the checks pass.
 - 📏 **`charte`** — a rule engine for things linters don't catch (no `pip`/`docker`, file-size
   ratchets, Django locks, personal-data patterns, coverage floors…), declared per repo in
-  `charte.toml`.
+  `charte.toml`. Disagree with a rule? Waive it in `kiln-waivers.toml`, with a reason and an
+  expiry that grows with each renewal (a week, a month, three months, six months).
 - 🤖 **Claude Code native** — every generated repo ships agent instructions and enables kiln's
   Claude Code plugins (branch guards, worktree/merge/release skills, status line).
 

@@ -256,6 +256,24 @@ docstring de chaque règle. Règle propre à un repo : un module listé dans `re
 avec `verifier(depot, params) -> list[str]`. La liste des règles non vérifiées
 (`scripts/ci/charte-non-verifiee.txt`) est recalculée par kiln à chaque `set` et `update`.
 
+Dérogations : `kiln-waivers.toml` à la racine du repo (jamais réécrit par kiln) écarte une
+règle de tout le repo ou de certains chemins (`[[waiver]]` : `rule`, `paths`, `reason`, `by`,
+`since`, `until`, `renewals`). Une semaine au plus la première fois, puis un mois, trois mois,
+six mois à chaque renouvellement ; `until = "never"` pour un écart permanent, toujours affiché.
+`charte` liste les dérogations actives, prévient dans la seconde moitié de la période, et
+échoue sur une dérogation échue, mal formée, qui ne vise plus rien, ou qui porte sur une règle
+non dérogeable (`DONNEES-PERSO`, `SECRETS`, `PAS-SUR-MAIN`, `DEPENDANCES-FIGEES`).
+
+```toml
+[[waiver]]
+rule = "TAILLE-FICHIER"
+paths = ["backend/app/import_x/*.py"]
+reason = "module repris tel quel du projet X, découpage prévu au T-31"
+by = "antoine"
+since = 2026-10-16
+until = 2026-10-23
+```
+
 ## Workflows réutilisables
 
 kiln est public : ses workflows servent à n'importe quel dépôt, quel que soit son compte

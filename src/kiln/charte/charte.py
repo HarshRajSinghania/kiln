@@ -16,6 +16,9 @@ Le nom d'une section est celui de la règle (voir interdictions.py et cliquets.p
 `regle` permet d'en déclarer plusieurs du même type. `regles_locales` : modules Python du
 repo, chacun avec une fonction `verifier(depot, params) -> list[str]`, pour ses règles propres.
 
+Dérogations : `kiln-waivers.toml` (voir waivers.py) écarte une règle de tout le repo ou de
+certains chemins, pour un temps limité ; elles sont listées à chaque vérification.
+
 Usage : charte [verifier]   règles de la charte (défaut)
         charte types        typage mypy en cliquet ([types])
         charte couverture   planchers de couverture du backend ([couverture])
@@ -29,13 +32,15 @@ import importlib.util
 import subprocess
 import sys
 import tomllib
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from kiln.charte.cliquets import COMPTEURS
 from kiln.charte.interdictions import REGLES
 from kiln.charte.moteur import Depot, Params, echec
 from kiln.charte.outils_python import couverture, types
+from kiln.charte.waivers import RULE_ID, WAIVERS_FILE, Waivers, check_targets, load
+from kiln.rules import charter_rules
 
 # Règle propre au repo : `verifier(depot, params)` renvoie ses échecs.
 RegleLocale = Callable[[Depot, Params], list[str]]
@@ -78,23 +83,70 @@ def _regles_non_verifiees(depot: Depot) -> None:
     print("\n".join(f"  - {r}" for r in regles))
 
 
-def mesures(depot: Depot, section: str) -> list[tuple[str, Params, int, list[str]]]:
-    sortie = []
+def derogations(depot: Depot) -> Waivers:
+    """Dérogations de `kiln-waivers.toml`, vérifiées contre les règles et les fichiers du repo."""
+    waivers = load(depot.racine)
+    connues = [
+        p["id"]
+        for section in ("interdictions", "cliquets", "planchers")
+        for p in depot.config.get(section, {}).values()
+        if "id" in p
+    ]
+    check_targets(
+        waivers, [*connues, *charter_rules(depot.racine)], lambda m: depot.suivis(m, exclus=False)
+    )
+    return waivers
+
+
+def regles(depot: Depot, section: str, waivers: Waivers) -> Iterator[tuple[str, Params]]:
+    """Règles d'une section, chacune vérifiée hors des chemins que ses dérogations couvrent ;
+    une règle dérogée dans tout le repo est sautée."""
     for nom, p in depot.config.get(section, {}).items():
+        deroges = waivers.waived_paths(p.get("id", ""))
+        if deroges is None:
+            continue
+        depot.deroges = deroges
+        try:
+            yield nom, p
+        finally:
+            depot.deroges = []
+
+
+def mesures(
+    depot: Depot, section: str, waivers: Waivers | None = None
+) -> list[tuple[str, Params, int, list[str]]]:
+    sortie = []
+    for nom, p in regles(depot, section, waivers or Waivers()):
         valeur, detail = COMPTEURS[p.get("regle", nom)](depot, p)
         sortie.append((nom, p, valeur, detail))
     return sortie
 
 
+def _rapport_derogations(waivers: Waivers) -> None:
+    if not (waivers.actives or waivers.warnings):
+        return
+    print(f"Dérogations ({WAIVERS_FILE}) : {len(waivers.actives)} active(s).")
+    for waiver in waivers.actives:
+        fin = waiver.until or "permanente"
+        print(f"  {waiver.label} — {waiver.reason} ({waiver.by}, jusqu'au {fin})")
+    for avertissement in waivers.warnings:
+        print(f"  ! {avertissement}")
+    print()
+
+
 def verifier(depot: Depot) -> int:
+    waivers = derogations(depot)
+    _rapport_derogations(waivers)
     problemes: list[str] = []
-    for nom, p in depot.config.get("interdictions", {}).items():
+    if waivers.errors:
+        problemes.append(echec(RULE_ID, f"dérogations à revoir ({WAIVERS_FILE})", waivers.errors))
+    for nom, p in regles(depot, "interdictions", waivers):
         problemes.extend(REGLES[p.get("regle", nom)](depot, p))
     for fonction in _regles_locales(depot):
         problemes.extend(fonction(depot, {}))
 
     a_resserrer = []
-    for nom, p, valeur, detail in mesures(depot, "cliquets"):
+    for nom, p, valeur, detail in mesures(depot, "cliquets", waivers):
         budget = p["budget"]
         if valeur > budget:
             message = (
@@ -107,7 +159,7 @@ def verifier(depot: Depot) -> int:
                 f"  {nom} : {valeur} < {budget} — abaisser `budget` de [cliquets.{nom}] "
                 f"à {valeur} (charte.toml)."
             )
-    for nom, p, valeur, detail in mesures(depot, "planchers"):
+    for nom, p, valeur, detail in mesures(depot, "planchers", waivers):
         plancher = p["plancher"]
         if valeur < plancher:
             message = (
