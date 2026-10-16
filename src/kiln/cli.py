@@ -4,7 +4,9 @@ import argparse
 import re
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
+from typing import NoReturn
 
 from kiln import (
     banner,
@@ -51,9 +53,27 @@ NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor"})
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
+class _VersionAction(argparse.Action):
+    """`--version`, calculée seulement quand on la demande : `installed_version()` lance git
+    sur une installation depuis un dossier, ce que les autres commandes n'ont pas à payer."""
+
+    def __init__(self, option_strings: Sequence[str], dest: str, **_: object) -> None:
+        super().__init__(option_strings, dest, nargs=0, help="afficher la version de kiln")
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: object,
+        option_string: str | None = None,
+    ) -> NoReturn:
+        print(installed_version())
+        parser.exit()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kiln", description=__doc__)
-    parser.add_argument("--version", action="version", version=installed_version())
+    parser.add_argument("--version", action=_VersionAction)
     commands = parser.add_subparsers(dest="command")
     _add_new_command(commands)
     commands.add_parser("install", help="préparer le poste après un clone")
