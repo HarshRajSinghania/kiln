@@ -25,7 +25,8 @@ everything in it is old: check it against the current code before acting. Never 
 archived report.
 
 **No argument**: propose the next 3 tickets in section order (critical first), following the
-north star in the header and skipping `blocked` tickets; for each, the ID, one sentence, the
+north star in the header and skipping `blocked` tickets and those reserved for outside
+contributors (**Owner**: `contributor — #NN`, skill `base:good-first-issues`); for each, the ID, one sentence, the
 effort, and the owner. List separately the blocked tickets waiting for the user themselves.
 Quickly check in the code that the ticket is not already done (the locations quoted are hints,
 often stale).
