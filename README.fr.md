@@ -31,7 +31,7 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `backlog`,
-  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur) ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur), `contribution` (la PR d'un contributeur extérieur : code relu avant d'en rien lancer, tri, revue, fusion qui le crédite, rien publié sans accord) ; hooks garde de branche, fichiers protégés, contrôle du fichier
   modifié, mise à jour proposée à l'ouverture de session (oui/non : l'outil kiln s'il est en
   retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
   30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé ;

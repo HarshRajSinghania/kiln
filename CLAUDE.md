@@ -26,7 +26,8 @@ un dossier ou un module.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
   (skills `worktree`, `fusion`, `version`, `nettoyage`, `backlog`, `maj-kiln`,
   `report-to-kiln` (défaut de kiln remonté en issue ou PR), `token` (jeton d'un service dans
-  `.<service>/`) ; `hooks/` ; `scripts/statusline.py`),
+  `.<service>/`), `contribution` (PR d'un contributeur extérieur : sécurité, tri, revue,
+  fusion créditée) ; `hooks/` ; `scripts/statusline.py`),
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés, plus ceux de
   kiln (`kiln.yml` contrôles, `pypi.yml` publication du paquet `kiln-cli` au tag promu) ;
