@@ -44,11 +44,18 @@ Only then:
 - **CI**: GitHub holds the workflows of a first-time contributor's fork until a maintainer
   approves them (`statusCheckRollup` empty, a yellow banner on
   `https://github.com/{owner}/{repo}/pull/<n>/checks`). Give the user that link; approving
-  it is theirs.
+  it is theirs, or yours once they said to go ahead:
+  `gh run list --branch <headRefName> --json databaseId,conclusion` (`action_required`),
+  then `gh api -X POST repos/{owner}/{repo}/actions/runs/<id>/approve`, for each new push.
+- **The integration branch first**: before blaming the PR for a red check, look at the last
+  run on the integration branch (`gh run list --branch develop --limit 3`). If it is red
+  too, the failure is the repo's: fix it there (own branch, `base:fusion`), then bring the
+  PR up to date; never ask the contributor to fix what they did not break.
 - **Locally**: in a worktree of its own, never the main tree:
   `git fetch origin pull/<n>/head:pr-<n>`, then
   `git worktree add .claude/worktrees/pr-<n> pr-<n>`, and the repo's checks (`CLAUDE.md`,
-  `CONTRIBUTING.md`).
+  `CONTRIBUTING.md`). Run each check on its own and read its exit code: a `| tail` or `| head`
+  hides a failure.
 
 ## 3. Triage
 
@@ -98,6 +105,10 @@ round to do, and their commits keep their name.
   worktree), so the PR shows the fix; otherwise merge first, then commit the fix on a
   branch of the repo right after, and say so in the PR. One commit per subject, the repo's
   conventions, the checks run again.
+- **Out of date or in conflict** with the integration branch: merge it into their branch
+  yourself (`git merge origin/develop -m "Merge branch 'develop' into <headRefName>"` in the
+  `pr-<n>` worktree, conflicts resolved, checks run on the result), push, and mention it in
+  the review. It is part of the fix-up, not a request to them.
 - **Ask first, then fix**: when the fix changes *what* the PR does, not only how (another
   approach, a smaller feature, a behaviour they did not intend). Do not rewrite their idea
   behind their back: say what you propose and why, wait a few days for an objection, then
