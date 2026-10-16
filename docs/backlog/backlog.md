@@ -43,18 +43,18 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
 
 ### T-01 · Promote v0.3.0, the first public release
 - **Type**: task
-- **Status**: blocked — waiting for a next candidate and 18 October (3 days of v0.3.0-rc.1)
+- **Status**: blocked — waiting for a next candidate (no waiting period, antoine 2026-10-16)
 - **Opened**: 2026-10-15
-- **Effort**: S · **Owner**: Claude · **Due**: 2026-10-18
+- **Effort**: S · **Owner**: Claude · **Due**: —
 - **Origin**: move to semver and release candidates, 15 October 2026
 
 `v0.3.0-rc.1` (branch `release/v0.3.0`) is adopted by annway, sweep and vision. The rule
-(CLAUDE.md, "Versions") requires a next candidate ready and 3 days without a new `-rc`.
+(CLAUDE.md, "Versions") requires a next candidate ready, nothing more.
 `kiln version` says when it is ready.
 - [ ] Cut `v0.3.1-rc.1` from `develop` (gitleaks in CI, the `status` column, the `doctor` fix
   are already there), then `kiln update --all`: annway must no longer conflict on `ci.yml`
   (its gitleaks job is now in the template, identical).
-- [ ] On 18 October at the earliest: tag `v0.3.0` on the commit of `v0.3.0-rc.1`, merge
+- [ ] As soon as `v0.3.1-rc.1` is out: tag `v0.3.0` on the commit of `v0.3.0-rc.1`, merge
   `release/v0.3.0` into `main`, merge back into `develop`, then `kiln update --all`.
 - [ ] Check the public install: `uv tool install git+https://github.com/antoine-tena/kiln@main`
   (the default branch stays `develop`, so install docs quote `@main`).

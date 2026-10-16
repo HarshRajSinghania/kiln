@@ -4,7 +4,7 @@ En 0.x, chaque version monte le correctif, cassante comprise (`0.3.4 → 0.3.5`)
 monte que pour une étape (CLAUDE.md, Versions). Deux canaux : une version sort d'abord en
 candidate (`v0.3.5-rc.1`), suivie par les postes au canal `interne` (`kiln set canal=interne`) ;
 elle est promue (`v0.3.5`, fusion
-dans `main`) quand la suivante est prête et qu'elle a tenu trois jours. Le canal `public`, par
+dans `main`) quand la suivante est prête. Le canal `public`, par
 défaut, ne voit que les versions promues. Chaque version a son entrée dans `CHANGELOG.md`, que
 `kiln update` montre au passage d'une version à l'autre.
 """

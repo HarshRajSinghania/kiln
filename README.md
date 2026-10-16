@@ -187,7 +187,7 @@ numbers releases like Claude Code does: in `0.x`, every release bumps the patch,
 included (`0.3.4 → 0.3.5`), listed first in the release notes and migrated by `kiln update`; the
 minor only moves for a milestone. Strict semver starts at 1.0. Each release is first a candidate
 (`v0.3.5-rc.1`) used on the author's own repos; it is promoted to `main` (`v0.3.5`) only once
-the next candidate is ready and it has held for three days. Projects are generated and updated from the latest release, pin kiln's workflows to
+the next candidate is ready, so a release never needs an emergency fix. Projects are generated and updated from the latest release, pin kiln's workflows to
 that exact tag, and `kiln update` shows what changed in each release it applies (see
 [`CHANGELOG.md`](CHANGELOG.md)).
 Linux, WSL and macOS are supported.

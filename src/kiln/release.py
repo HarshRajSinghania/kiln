@@ -5,8 +5,8 @@
   (`kiln version --minor`). À partir de 1.0, semver strict, comme Next.js : cassant → majeure,
   `feat` → mineure, le reste → correctif.
 - **Promotion** : une candidate (`vX.Y.Z-rc.N`, la dernière de sa version) devient publique quand
-  une candidate d'une version plus récente existe et qu'elle a tenu `SOAK_DAYS` jours sans
-  nouvelle candidate. Les repos du dossier de code disent qui l'a déjà adoptée.
+  une candidate d'une version plus récente existe : la suivante prête, pas un délai, évite le
+  correctif d'urgence. Les repos du dossier de code disent qui l'a déjà adoptée.
 
 Lecture seule : les tags et les fusions se font par la skill `base:version` (CLAUDE.md, Versions).
 """
@@ -26,8 +26,6 @@ from kiln.shell import KilnError, capture
 from kiln.versions import release_version
 
 # Jours d'usage d'une candidate avant promotion : plus court en 0.x, où tout bouge vite.
-SOAK_DAYS_INITIAL = 3
-SOAK_DAYS_STABLE = 7
 BREAKING_SUBJECT = re.compile(r"^\w+(\([^)]*\))?!:")
 FEATURE_SUBJECT = re.compile(r"^feat(\([^)]*\))?:")
 INTEGRATION_REF = "origin/develop"
@@ -56,7 +54,7 @@ def show_release_status(root: Path, *, milestone: bool = False) -> None:
         print(f"    {ui.paint('aucune', ui.STONE)}")
     adopted = _adoption()
     for candidate in candidates:
-        verdict, ready = promotion_verdict(candidate, candidates, now)
+        verdict, ready = promotion_verdict(candidate, candidates)
         mark = ui.paint("✓", ui.MOSS) if ready else ui.paint("·", ui.STONE)
         age = (now - candidate.created).days
         users = adopted.get(candidate.name, [])
@@ -105,16 +103,9 @@ def latest_candidates(tags: list[Tag]) -> list[Tag]:
     return [latest[final] for final in sorted(latest)]
 
 
-def promotion_verdict(
-    candidate: Tag, candidates: list[Tag], now: datetime.datetime
-) -> tuple[str, bool]:
-    soak = SOAK_DAYS_INITIAL if candidate.version.major == 0 else SOAK_DAYS_STABLE
-    has_next = any(other.version > candidate.version for other in candidates)
-    age = now - candidate.created
-    if not has_next:
+def promotion_verdict(candidate: Tag, candidates: list[Tag]) -> tuple[str, bool]:
+    if not any(other.version > candidate.version for other in candidates):
         return "attend une version suivante prête", False
-    if age < datetime.timedelta(days=soak):
-        return f"attend {soak} jours d'usage", False
     return f"prête : promouvoir en v{candidate.version.base_version}", True
 
 

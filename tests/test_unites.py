@@ -243,12 +243,12 @@ def test_next_version_bumps_the_patch_in_0x_even_when_breaking() -> None:
     assert next_version(Version("1.2.3"), ["fix: x\n\nBREAKING CHANGE: y"]) == "2.0.0"
 
 
-def test_a_candidate_is_promoted_once_the_next_is_ready_and_it_held() -> None:
+def test_a_candidate_is_promoted_as_soon_as_the_next_is_ready() -> None:
     now = datetime.datetime(2026, 11, 10, tzinfo=datetime.UTC)
-    old = Tag("v0.3.0-rc.2", Version("0.3.0rc2"), now - datetime.timedelta(days=4))
-    young = Tag("v0.3.1-rc.1", Version("0.3.1rc1"), now - datetime.timedelta(days=1))
+    old = Tag("v0.3.0-rc.2", Version("0.3.0rc2"), now - datetime.timedelta(hours=2))
+    young = Tag("v0.3.1-rc.1", Version("0.3.1rc1"), now - datetime.timedelta(hours=1))
 
-    assert promotion_verdict(old, [old, young], now)[1]
-    assert not promotion_verdict(young, [old, young], now)[1]
-    assert not promotion_verdict(old, [old], now)[1]
+    assert promotion_verdict(old, [old, young])[1]
+    assert not promotion_verdict(young, [old, young])[1]
+    assert not promotion_verdict(old, [old])[1]
     assert latest_candidates([old, young]) == [old, young]

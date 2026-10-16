@@ -45,8 +45,9 @@ un dossier ou un module.
 
 **Pourquoi** (choix d'antoine, 15 octobre 2026) : kiln doit rester stable pour les repos qui en
 dépendent, alors qu'il change beaucoup ; d'où une version qui ne sort que quand la suivante est
-prête ici et a tenu quelques jours sur ses propres repos (candidates `-rc`, comme Python ou
-Linux), et le 0.x du semver, prévu pour un début où tout peut casser (comme uv ou ruff), plutôt
+prête ici, en candidate sur ses propres repos (`-rc`, comme Python ou Linux) : pas de délai
+fixe, c'est la suivante prête qui évite le correctif d'urgence (précisé par antoine le
+16 octobre 2026), et le 0.x du semver, prévu pour un début où tout peut casser (comme uv ou ruff), plutôt
 qu'un quatrième chiffre. Les clients se mettent à jour à chaque version, correctif compris.
 Suivi de ce qui reste : `docs/backlog/backlog.md`.
 
@@ -79,8 +80,8 @@ publie sur PyPI le paquet `kiln-cli` par `pypi.yml`) :
    commandes ci-dessous), tag `vX.Y.Z-rc.1` poussé. Les postes au canal `interne` (`kiln set
    canal=interne`, celui d'antoine) la suivent : `kiln update --all` y fait passer tous les repos
    générés. Un correctif de la candidate : commit `fix:` sur sa branche, tag `-rc.N+1`.
-2. **Promotion**, quand `kiln version` la dit prête (une candidate plus récente existe, et elle a
-   tenu 3 jours en 0.x, 7 ensuite, sans nouvelle `-rc`) : tag `vX.Y.Z` sur le commit exact de sa
+2. **Promotion**, quand `kiln version` la dit prête (une candidate plus récente existe, sans
+   délai d'attente) : tag `vX.Y.Z` sur le commit exact de sa
    dernière candidate, fusion dans `main`, reversement dans `develop`, puis `kiln update --all`.
    Le canal `public` (par défaut) ne voit que ces versions.
 
