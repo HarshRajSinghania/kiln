@@ -116,13 +116,16 @@ Linux and Windows through WSL; native Windows is out of scope (antoine's call, 1
 
 ### T-12 · Homebrew formula in an `antoine-tena/homebrew-kiln` tap
 - **Type**: improvement
-- **Status**: blocked — waiting for T-11
+- **Status**: blocked — waiting for demand (an issue asking for it) or homebrew-core notability
 - **Opened**: 2026-10-16
 - **Effort**: S · **Owner**: Claude · **Due**: —
 - **Origin**: distribution, 16 October 2026
 
 `brew install antoine-tena/kiln/kiln` for macOS and Linux, formula updated on each
-promotion. The official homebrew-core requires an already known project: later.
+promotion. Not now (antoine, 16 October 2026): kiln needs uv anyway, so
+`uv tool install kiln-cli` covers its users, and a formula lists ~30 dependencies to keep up
+to date. The tap https://github.com/antoine-tena/homebrew-kiln is created to keep the name
+(README only, issues off). The official homebrew-core requires an already known project.
 
 ### T-04 · Decide whether annski quotes kiln's workflows at a tag
 - **Type**: task
