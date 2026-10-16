@@ -5,6 +5,14 @@ changement visible (`- …`), cassants en tête. `kiln update` montre les entré
 qu'un projet passe ; la skill `base:version` rédige celle de la version qu'elle sort, sur la
 branche `release/vX.Y.Z`, avant sa première candidate.
 
+## v0.3.2 — 2026-10-16
+- `kiln adopt` fait suivre kiln à un repo existant, sans le régénérer ; le skill `adoption` trie avec l'utilisateur ce que la charte y trouve à redire, et l'ouverture de session le propose dans un repo à soi qui ne suit pas encore kiln.
+- Dérogations à la charte dans `kiln-waivers.toml`, avec un motif et une échéance croissante à chaque renouvellement : `kiln waive` les ajoute, renouvelle ou liste, `kiln update` épargne les fichiers figés et dit ce qu'il y aurait changé, `kiln status` compte celles de chaque repo.
+- Skill `relecture` : commits et diff d'une branche relus et rangés avant la fusion (`fusion` le lance), dépôt entier avant une version (`version` le lance) ; le hook `garde-branche` refuse un message de commit signé Claude.
+- Les questions de kiln en début de session suivent une politique commune : chaque « non » espace la suivante, chaque « oui » la rapproche.
+- `kiln --version` (#39, merci @SakarPaisen, première contribution extérieure).
+- Correctifs : `kiln update --all` dit « GitHub injoignable » en une ligne au lieu d'une trace Python, et un passage raté ne bloque plus le suivant avec un worktree laissé vide.
+
 ## v0.3.1 — 2026-10-16
 - **Cassant** : le suivi du travail passe en anglais, `docs/a-faire/` devient `docs/backlog/` (tickets `T-NN`, skill `base:backlog` à la place de `base:a-faire`) ; `kiln update` déplace l'ancien dossier.
 - Numérotation comme Claude Code : en 0.x, chaque version monte le correctif, cassante comprise ; la mineure ne monte que pour une étape (`kiln version --minor`). Une version est promue dès que la suivante est prête en candidate, sans délai d'attente.

@@ -41,7 +41,7 @@ un dossier ou un module.
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_waivers.py` (dérogations), `test_waive.py`, `test_deploiement.py`, `test_statusline.py` (choix du
   poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier), `test_garde_branche.py` (hook garde-branche), `test_adopt.py`,
-  `test_relances.py`, `test_hook_kiln_a_jour.py`.
+  `test_relances.py`, `test_hook_kiln_a_jour.py` ; `conftest.py` : config git du poste écartée, identité de test.
 
 ## Versions
 

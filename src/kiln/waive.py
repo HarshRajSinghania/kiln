@@ -7,6 +7,7 @@ reste tel quel.
 
 import datetime
 import re
+import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,7 @@ from kiln import ui
 from kiln.charte.charte import derogations
 from kiln.charte.moteur import Depot
 from kiln.charte.waivers import NEVER, NOT_WAIVABLE, TIERS_DAYS, WAIVERS_FILE, max_days
-from kiln.shell import KilnError, capture
+from kiln.shell import KilnError
 
 RULE_ID = re.compile(r"[A-Z0-9+-]+")
 TIERS = ", ".join(map(str, TIERS_DAYS[:-1])) + f" puis {TIERS_DAYS[-1]}"
@@ -81,7 +82,7 @@ def waive(root: Path, request: WaiveRequest, today: datetime.date | None = None)
         key: request.target,
         "paths": list(request.paths),
         "reason": request.reason.strip(),
-        "by": capture(["git", "config", "user.name"], root) or "inconnu",
+        "by": _git_user(root),
         "since": today,
         "until": until,
         "renewals": renewals,
@@ -161,3 +162,11 @@ def _restore(path: Path, previous: str | None) -> None:
         path.unlink()
     else:
         path.write_text(previous, "utf-8")
+
+
+def _git_user(root: Path) -> str:
+    """Auteur de la dérogation : `user.name` de git, « inconnu » s'il n'est pas réglé."""
+    found = subprocess.run(
+        ["git", "config", "user.name"], cwd=root, capture_output=True, text=True, check=False
+    )
+    return found.stdout.strip() or "inconnu"
