@@ -37,7 +37,8 @@ keeps every repo you own current:
   per repo, small commits, merge only when the checks pass.
 - 📏 **`charte`** — a rule engine for things linters don't catch (no `pip`/`docker`, file-size
   ratchets, Django locks, personal-data patterns, coverage floors…), declared per repo in
-  `charte.toml`.
+  `charte.toml`. Disagree with a rule? `kiln waive` it in `kiln-waivers.toml`, with a reason and an
+  expiry that grows with each renewal (a week, a month, three months, six months).
 - 🤖 **Claude Code native** — every generated repo ships agent instructions and enables kiln's
   Claude Code plugins (branch guards, worktree/merge/release skills, status line).
 
@@ -135,9 +136,10 @@ make the opinions yours.
 | `kiln dev` | Start the stack's dev servers, their output interleaved and prefixed by service in colour (`django │ …`); `--containers` runs everything in podman. |
 | `kiln check` | Ruff, mypy, pytest for each Python project, ESLint and type checks for the front, then `charte`. |
 | `kiln set [key=value…]` | Show or change the repo's settings (team, frameworks, podman…); the repo is re-rendered. |
+| `kiln waive [RULE\|file]` | Waive a kiln rule (`--paths`, `--reason`), or freeze a generated file so `kiln update` leaves it alone; `--renew` moves to the next tier (a week, a month, three months, six months). No argument: list the waivers. |
 | `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), waivers, stack — for every kiln repo, then the most waived rules across them. |
 | `kiln version` | In kiln's own repo: latest public release, candidates (age, adopting repos, ready to promote) and the number the next release should take. |
 | `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |

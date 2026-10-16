@@ -21,6 +21,8 @@ class Depot:
         self.exclus = config.get("exclus", [])
         # Fichiers engendrés : la liste vit dans `.gitattributes` (attribut linguist-generated).
         self.engendres = set(self.git("ls-files", "--", ":(attr:linguist-generated=true)").split())
+        # Motifs dérogés pour la règle en cours de vérification (`kiln-waivers.toml`).
+        self.deroges: list[str] = []
 
     def git(self, *args: str) -> str:
         return subprocess.run(
@@ -32,8 +34,9 @@ class Depot:
         créé mais pas encore indexé, et le contrôle local passait au vert sur du code que la CI
         aurait refusé. Un fichier supprimé mais encore indexé est ignoré."""
         motifs = [motifs] if isinstance(motifs, str) else motifs
+        deroges = [f":(exclude){m}" for m in self.deroges] if motifs else []
         sortie = self.git(
-            "ls-files", "--cached", "--others", "--exclude-standard", "--", *motifs
+            "ls-files", "--cached", "--others", "--exclude-standard", "--", *motifs, *deroges
         ).split()
         vus = dict.fromkeys(
             p

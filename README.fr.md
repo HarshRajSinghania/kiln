@@ -94,11 +94,12 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
 | `kiln ci [commit]` | Rejoue sur le poste la CI du `ci.yml` pour ce commit (défaut `HEAD`) et pose le verdict en note git sur origin, que le script de déploiement accepte comme une CI verte. `--statut` : le verdict seul. Voir « CI rejouée sur le poste ». |
 | `kiln contrat` | Django + Nuxt : exporte `openapi.json` depuis le code, puis régénère les types du front (`app/types/api.d.ts`). `kiln update` le fait aussi. |
+| `kiln waive [RÈGLE\|fichier]` | Déroge à une règle de kiln (`--paths`, `--reason`, `--upstream`), ou fige un fichier généré que `kiln update` ne touchera plus ; `--renew` passe au palier suivant (une semaine, un mois, trois mois, six mois), `--permanent` sans échéance. Sans argument : liste les dérogations. Voir [Moteur de charte](#moteur-de-charte). |
 | `kiln set` | Dans un repo : sans argument, affiche ses paramètres ; `kiln set clé=valeur…` les change (équipe, frameworks, podman, boussole…) : le repo est régénéré, un framework retiré emporte ses fichiers. Hors d'un repo, ou avec `--poste` : les réglages du poste (`systeme`, `proprietaire`, `equipe`, `dossier_code`, dans `~/.config/kiln/config.toml`). |
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
 | `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, puis la fusion directe dans l'intégration (commit de fusion poussé) ; contrôles en échec, la branche est poussée sans être fusionnée. L'arbre principal ne change jamais de branche. |
 | `kiln doctor` | Diagnostic du poste (git, uv, gh connecté, pnpm, podman, Java, pre-commit, version de kiln, plugin Claude, configuration) et du repo courant (version du modèle, crochet pre-commit, dépendances, `backend/.env`) : ✓, ! à regarder ou ✗ bloquant, chaque fois avec la commande qui corrige. Ne modifie rien. |
-| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.3.5` en retard), stack. |
+| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.3.5` en retard), dérogations (`!` si l'une est échue), stack ; puis les règles dérogées, par nombre de repos. |
 | `kiln version` | Dans le dépôt de kiln : dernière version publique, candidates (âge, repos qui les ont adoptées, prêtes à promouvoir) et numéro de la prochaine. |
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
@@ -260,6 +261,27 @@ pip ni docker, ni leurs fichiers), cliquets et planchers
 docstring de chaque règle. Règle propre à un repo : un module listé dans `regles_locales`,
 avec `verifier(depot, params) -> list[str]`. La liste des règles non vérifiées
 (`scripts/ci/charte-non-verifiee.txt`) est recalculée par kiln à chaque `set` et `update`.
+
+Dérogations : `kiln-waivers.toml` à la racine du repo (jamais réécrit par kiln) écarte une
+règle de tout le repo ou de certains chemins (`[[waiver]]` : `rule`, `paths`, `reason`, `by`,
+`since`, `until`, `renewals`). Une semaine au plus la première fois, puis un mois, trois mois,
+six mois à chaque renouvellement ; `until = "never"` pour un écart permanent, toujours affiché.
+`charte` liste les dérogations actives, prévient dans la seconde moitié de la période, et
+échoue sur une dérogation échue, mal formée, qui ne vise plus rien, ou qui porte sur une règle
+non dérogeable (`DONNEES-PERSO`, `SECRETS`, `PAS-SUR-MAIN`, `DEPENDANCES-FIGEES`).
+Une dérogation `file = "…"` (au lieu de `rule`) fige un fichier généré : `kiln update` et
+`kiln set` n'y touchent plus, et `kiln update` montre ce que kiln y a changé entre les deux
+versions, à reporter à la main ou à reprendre en levant la dérogation.
+
+```toml
+[[waiver]]
+rule = "TAILLE-FICHIER"
+paths = ["backend/app/import_x/*.py"]
+reason = "module repris tel quel du projet X, découpage prévu au T-31"
+by = "antoine"
+since = 2026-10-16
+until = 2026-10-23
+```
 
 ## Workflows réutilisables
 

@@ -8,10 +8,12 @@ en échec : la branche est poussée sans fusion, à reprendre à la main.
 
 import datetime
 import subprocess
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
 from kiln import ui
+from kiln.charte.waivers import Waivers, load
 from kiln.check import run_checks
 from kiln.install import install_project
 from kiln.shell import KilnError, capture, require_tools, run, step
@@ -96,17 +98,30 @@ def require_code_dir(code_dir: Path) -> None:
         )
 
 
-STATUS_COLUMNS = (("repo", 30), ("branche", 22), ("arbre", 8), ("modèle", 24), ("taille", 6))
+STATUS_COLUMNS = (
+    ("repo", 30),
+    ("branche", 22),
+    ("arbre", 8),
+    ("modèle", 24),
+    ("taille", 6),
+    ("dérog.", 6),
+)
 
 
 def show_status(code_dir: Path) -> None:
     header = " ".join(f"{title:<{width}}" for title, width in STATUS_COLUMNS) + " stack"
     print(" ", ui.paint(header.upper(), ui.STONE, bold=True))
     latest = latest_release()
+    waived: Counter[str] = Counter()
     for repo in find_repos(code_dir):
-        _print_status(code_dir, repo.root, template_state(repo.template_commit, latest))
+        state = template_state(repo.template_commit, latest)
+        waived.update(_print_status(code_dir, repo.root, state))
     for root in find_adopted(code_dir):
-        _print_status(code_dir, root, "adopté")
+        waived.update(_print_status(code_dir, root, "adopté"))
+    if waived:
+        # Une règle dérogée dans plusieurs repos est sans doute à revoir dans kiln.
+        counts = ", ".join(f"{target} ({n})" for target, n in waived.most_common())
+        print(f"\n  Dérogations (kiln-waivers.toml), par nombre de repos : {counts}")
 
 
 def _state_color(state: str) -> ui.Color:
@@ -116,7 +131,9 @@ def _state_color(state: str) -> ui.Color:
     return ui.FIRE if "→" in state else ui.STONE
 
 
-def _print_status(code_dir: Path, root: Path, state: str) -> None:
+def _print_status(code_dir: Path, root: Path, state: str) -> set[str]:
+    """Ligne du repo ; renvoie les règles et fichiers qu'il déroge."""
+    waivers = load(root)
     branch = capture(["git", "branch", "--show-current"], root)
     is_dirty = bool(capture(["git", "status", "--porcelain"], root))
     stack = load_stack(root)
@@ -129,8 +146,17 @@ def _print_status(code_dir: Path, root: Path, state: str) -> None:
         ui.paint(f"{tree_state:<8}", ui.FIRE if is_dirty else ui.MOSS),
         ui.paint(f"{state:<18}", _state_color(state)),
         ui.paint(f"{size!s:<6}", ui.STONE),
+        ui.paint(f"{_waiver_count(waivers):<6}", ui.FIRE if waivers.errors else ui.STONE),
         f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}",
     )
+    return {w.rule or f"fichier {w.file}" for w in waivers.actives}
+
+
+def _waiver_count(waivers: Waivers) -> str:
+    """Dérogations actives ; `!` quand l'une est échue ou mal formée."""
+    if not (waivers.actives or waivers.errors):
+        return "—"
+    return f"{len(waivers.actives)}{' !' if waivers.errors else ''}"
 
 
 def update_all(code_dir: Path, *, allow_major: bool) -> None:
