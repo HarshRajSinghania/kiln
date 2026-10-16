@@ -169,6 +169,8 @@ branch (`develop` if it exists, else the default branch; retarget with
   (`base:version`), note it in the backlog (`base:backlog`) so it is not forgotten.
 - A first contribution that went well: suggest a next one if an issue labelled
   `good first issue` fits, in one line, without insisting.
+- The PR closed a `good first issue`: close its ticket in the backlog, crediting them, and
+  offer to open the next one (`base:good-first-issues`).
 - If the user wants to be quick next time, say what would have helped (a PR template line, a
   rule in `CONTRIBUTING.md`) and offer to add it.
 

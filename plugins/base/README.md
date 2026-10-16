@@ -4,7 +4,8 @@ Vu depuis un repo par le lien `.claude/kiln`, créé à l'ouverture de chaque se
 git) : c'est le plugin tel qu'il tourne sur ce poste.
 
 - `skills/` : les skills `/base:…` (`worktree`, `fusion`, `version`, `nettoyage`, `backlog`,
-  `maj-kiln`, `report-to-kiln`, `token`, `contribution`).
+  `maj-kiln`, `report-to-kiln`, `token`, `contribution`,
+  `good-first-issues`).
 - `hooks/` : les hooks (`hooks.json` dit quand chacun se déclenche).
 - `scripts/` : la status line.
 

@@ -1,7 +1,7 @@
 {
   "name": "base",
-  "version": "0.11.0",
-  "description": "Pour tous les projets : worktrees, fusion, version, nettoyage, mise à jour de kiln, défauts remontés à kiln, PR de contributeurs, jetons de service, garde de branche, modèle kiln à jour, fichiers protégés, context7",
+  "version": "0.12.0",
+  "description": "Pour tous les projets : worktrees, fusion, version, nettoyage, mise à jour de kiln, défauts remontés à kiln, PR de contributeurs, issues pour débutants, jetons de service, garde de branche, modèle kiln à jour, fichiers protégés, context7",
   "author": {
     "name": "antoine-tena"
   }
