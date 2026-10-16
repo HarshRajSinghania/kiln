@@ -22,7 +22,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
     Why, what to do (as a `- [ ]` checklist when there are several steps), where to look.
 
 - **ID** `T-NN`: stable, never reused, quoted as is in commits and branches (tickets opened
-  before 16 October 2026 were `AF-NN`, same number). **Next free: T-18.**
+  before 16 October 2026 were `AF-NN`, same number). **Next free: T-20.**
 - **Type**, one of: `bug` (something is broken); `improvement` (it works, it could work
   better); `idea` (nothing exists yet, to be explored); `task` (work that is neither: a release,
   a decision, a check).
@@ -43,20 +43,22 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
 
 ### T-14 · Promote v0.3.1, the first release on PyPI
 - **Type**: task
-- **Status**: blocked — waiting for `v0.3.2-rc.1`
+- **Status**: blocked — waiting for antoine (token scoped to `kiln-cli`)
 - **Opened**: 2026-10-16
-- **Effort**: S · **Owner**: Claude · **Due**: —
+- **Effort**: XS · **Owner**: antoine, then Claude · **Due**: —
 - **Origin**: promotion of v0.3.0, 16 October 2026
 
-`v0.3.0` has no PyPI workflow: `kiln-cli` is first published when `v0.3.1` is promoted. The
-`PYPI_TOKEN` secret (environment `pypi`, account-wide token in `.pypi/token`) is set.
-- [ ] Cut `v0.3.2-rc.1` from `develop`; its `CHANGELOG.md` entry credits the first outside
-  contribution: `kiln --version` (#39, thanks @SakarPaisen). Then `kiln update --all`.
-- [ ] Promote `v0.3.1` (tag on the commit of `v0.3.1-rc.1`, merge into `main`, back into
-  `develop`), check the `pypi` run, then `uv tool install kiln-cli` on a clean machine.
-- [ ] Replace the account-wide token with one scoped to `kiln-cli`
-  (https://pypi.org/manage/project/kiln-cli/settings/), update the secret, delete the old one.
-- [ ] README (English and French): `uv tool install kiln-cli` as the main install.
+`v0.3.1` is promoted and `kiln-cli 0.3.1` is on PyPI (16 October 2026); `v0.3.2-rc.2` is the
+candidate followed by annway, sweep and vision.
+- [x] Cut `v0.3.2-rc.1`, then `-rc.2` (tests independent of the machine's git config); the
+  `CHANGELOG.md` entry credits #39 (@SakarPaisen). `kiln update --all` done.
+- [x] Promote `v0.3.1`, `pypi` run green, `uvx --from kiln-cli==0.3.1 kiln` works on an empty
+  uv cache.
+- [x] README (English and French): `uv tool install kiln-cli` as the main install.
+- [ ] Replace the account-wide token with one scoped to `kiln-cli`: antoine creates it on
+  https://pypi.org/manage/account/token/ (scope: project `kiln-cli`) and pastes it into
+  `.pypi/token`; Claude updates the `PYPI_TOKEN` secret (`gh secret set PYPI_TOKEN --env pypi`);
+  antoine deletes the old token on the same page.
 
 ## 🟠 Important
 
@@ -144,6 +146,35 @@ kiln itself is all English; a generated repo is written in its team's language. 
 - [ ] Ship in the same release as T-06 and the backlog rename.
 
 ## 🟡 Normal
+
+### T-18 · Promoting a release makes `kiln update` conflict on `ci.yml`
+- **Type**: bug
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: S · **Owner**: Claude · **Due**: —
+- **Origin**: `kiln update --all` to `v0.3.2-rc.2`, right after the promotion of `v0.3.1`
+
+annway, sweep and vision stopped on conflicts in `.github/workflows/ci.yml`, only on the
+`@<tag>` of kiln's workflows (`v0.3.1-rc.1` before, `v0.3.2-rc.2` after); resolved by hand by
+taking the new side. Lead: `v0.3.1` now sits on the same commit as `v0.3.1-rc.1`, so Copier's
+render of the old version may describe it as `v0.3.1` and no longer match the project's file
+(`kiln_ref` in `template/.github/workflows/ci.yml.jinja`, from `_commit`). It will come back at
+every promotion.
+- [ ] Reproduce in a test (template tagged `-rc.1`, then the release on the same commit).
+- [ ] Fix the cause, or let `kiln update` resolve by itself a conflict that only moves the
+  `@<tag>` of kiln's workflows.
+
+### T-19 · kiln has no pre-push hook: mypy errors reach `develop`
+- **Type**: improvement
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: XS · **Owner**: Claude · **Due**: —
+- **Origin**: CI of `develop` red after `feat/waivers`, 16 October 2026
+
+`base:fusion` says typing runs before the push (pre-push hook), but kiln's own checkout has
+none (`.git/hooks/` only has samples): 4 mypy errors in the waiver tests reached `develop` and
+made its CI red. Give kiln the same pre-push hook as the generated repos (`uv run mypy src
+tests`), installed by `kiln install`.
 
 ### T-05 · Check the first real run of the workflows on GitHub
 - **Type**: task
