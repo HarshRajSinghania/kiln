@@ -21,6 +21,7 @@ from kiln import (
     settings,
     ui,
     update,
+    waive,
 )
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
@@ -36,7 +37,7 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 # Écran d'accueil : commandes par section ; le rôle de chacune vient de son aide argparse.
 COMMAND_GROUPS = (
-    ("Projet", ("new", "install", "update", "set")),
+    ("Projet", ("new", "install", "update", "set", "waive")),
     ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor")),
     ("Tous les repos", ("status", "update --all", "version")),
 )
@@ -47,7 +48,7 @@ EXAMPLES = (
     "kiln set podman=true",
     "kiln set equipe=alice,bob     # hors d'un repo : réglages du poste",
 )
-NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor", "version"})
+NO_RECAP_COMMANDS = frozenset({"dev", "ci", "status", "doctor", "version", "waive"})
 HELP_FLAGS: tuple[list[str], ...] = ([], ["-h"], ["--help"])
 
 
@@ -78,7 +79,24 @@ def build_parser() -> argparse.ArgumentParser:
     set_parser.add_argument(
         "--poste", action="store_true", help="réglages du poste, même depuis un repo"
     )
+    _add_waive_command(commands)
     return parser
+
+
+def _add_waive_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    waive_parser = commands.add_parser(
+        "waive", help="déroger à une règle de kiln, ou figer un fichier (sans argument : lister)"
+    )
+    waive_parser.add_argument(
+        "target", nargs="?", metavar="RÈGLE|fichier", help="identifiant de règle, ou fichier généré"
+    )
+    waive_parser.add_argument("--reason", default="", help="pourquoi (obligatoire)")
+    waive_parser.add_argument("--paths", nargs="+", default=[], help="motifs git couverts")
+    waive_parser.add_argument(
+        "--renew", action="store_true", help="renouveler : palier suivant, raison redemandée"
+    )
+    waive_parser.add_argument("--permanent", action="store_true", help="écart sans échéance")
+    waive_parser.add_argument("--upstream", default="", help="issue ou PR ouverte chez kiln")
 
 
 def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -220,6 +238,8 @@ def dispatch(arguments: argparse.Namespace) -> None:
         _dispatch_ci(root, arguments)
     elif arguments.command == "contrat":
         contract.generate_api_contract(root, load_stack(root))
+    elif arguments.command == "waive":
+        _dispatch_waive(root, arguments)
     elif arguments.command == "set":
         if arguments.assignments:
             settings.apply_settings(root, arguments.assignments)
@@ -281,6 +301,23 @@ def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
     print("\n" + verdict.render(), end="")
     if not verdict.is_success:
         sys.exit(EXIT_FAILURE)
+
+
+def _dispatch_waive(root: Path, arguments: argparse.Namespace) -> None:
+    if arguments.target is None:
+        waive.show_waivers(root)
+        return
+    waive.waive(
+        root,
+        waive.WaiveRequest(
+            target=arguments.target,
+            reason=arguments.reason,
+            paths=tuple(arguments.paths),
+            renew=arguments.renew,
+            permanent=arguments.permanent,
+            upstream=arguments.upstream,
+        ),
+    )
 
 
 def _dispatch_fleet(arguments: argparse.Namespace) -> None:

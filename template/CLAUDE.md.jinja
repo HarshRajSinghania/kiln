@@ -133,14 +133,15 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
   seulement après avoir vérifié que kiln est à jour et que personne ne l'a déjà signalé. Une
   règle propre à ce dépôt, elle, s'amende ici.
 - **[DEROGATIONS]** Un écart assumé à une règle commune, le temps que kiln tranche ou parce que
-  ce dépôt s'en écarte sciemment, se déclare dans `kiln-waivers.toml` à la racine (kiln ne le
-  réécrit jamais) : règle (`rule`), chemins (`paths`, sinon tout le dépôt), raison, auteur,
-  début et échéance. Une semaine au plus la première fois, puis un mois, trois mois et six
-  mois à chaque renouvellement (`renewals`) ; une dérogation échue ne couvre plus rien et
-  `charte` échoue. [DONNEES-PERSO], [SECRETS], [PAS-SUR-MAIN] et [DEPENDANCES-FIGEES] ne se
-  dérogent pas. Une dérogation ne s'ajoute ni ne se renouvelle **sans l'accord explicite de
-  l'utilisateur**, jamais pour faire passer un contrôle ; ce qu'elle couvre ne se « corrige »
-  pas d'office.
+  ce dépôt s'en écarte sciemment, se déclare par `kiln waive` dans `kiln-waivers.toml` à la
+  racine (kiln ne le réécrit jamais) : règle (`rule`), chemins (`paths`, sinon tout le dépôt),
+  raison, auteur, début et échéance. Une semaine au plus la première fois, puis un mois, trois
+  mois et six mois à chaque renouvellement (`kiln waive --renew`) ; une dérogation échue ne
+  couvre plus rien et `charte` échoue. Un fichier généré se fige de même (`kiln waive
+  <fichier>`) : `kiln update` n'y touche plus et montre ce que kiln y change. [DONNEES-PERSO],
+  [SECRETS], [PAS-SUR-MAIN] et [DEPENDANCES-FIGEES] ne se dérogent pas. Une dérogation ne
+  s'ajoute ni ne se renouvelle **sans l'accord explicite de l'utilisateur**, jamais pour faire
+  passer un contrôle ; ce qu'elle couvre ne se « corrige » pas d'office.
 
 ---
 
