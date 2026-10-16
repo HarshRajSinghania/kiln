@@ -94,7 +94,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
 | `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, puis la fusion directe dans l'intégration (commit de fusion poussé) ; contrôles en échec, la branche est poussée sans être fusionnée. L'arbre principal ne change jamais de branche. |
 | `kiln doctor` | Diagnostic du poste (git, uv, gh connecté, pnpm, podman, Java, pre-commit, version de kiln, plugin Claude, configuration) et du repo courant (version du modèle, crochet pre-commit, dépendances, `backend/.env`) : ✓, ! à regarder ou ✗ bloquant, chaque fois avec la commande qui corrige. Ne modifie rien. |
-| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.3.5` en retard), stack. |
+| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.3.5` en retard), dérogations (`!` si l'une est échue), stack ; puis les règles dérogées, par nombre de repos. |
 | `kiln version` | Dans le dépôt de kiln : dernière version publique, candidates (âge, repos qui les ont adoptées, prêtes à promouvoir) et numéro de la prochaine. |
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 

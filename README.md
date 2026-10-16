@@ -138,7 +138,7 @@ make the opinions yours.
 | `kiln waive [RULE\|file]` | Waive a kiln rule (`--paths`, `--reason`), or freeze a generated file so `kiln update` leaves it alone; `--renew` moves to the next tier (a week, a month, three months, six months). No argument: list the waivers. |
 | `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), waivers, stack — for every kiln repo, then the most waived rules across them. |
 | `kiln version` | In kiln's own repo: latest public release, candidates (age, adopting repos, ready to promote) and the number the next release should take. |
 | `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |

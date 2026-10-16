@@ -130,3 +130,20 @@ def test_update_branch_is_merged_straight_into_integration(tmp_path: Path) -> No
     ).stdout.splitlines()
     assert log[0] == "Merge branch 'chore/kiln-update' into develop"
     assert "chore: maj" in log
+
+
+def test_status_counts_waivers_across_the_fleet(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(fleet, "latest_release", lambda: None)
+    waiver = (
+        '[[waiver]]\nrule = "TAILLE-FICHIER"\nreason = "r"\nby = "a"\n'
+        'since = 2026-10-16\nuntil = "never"\n'
+    )
+    for name in ("un", "deux"):
+        repo = make_repo(tmp_path / name, "https://github.com/antoine-tena/kiln.git")
+        (repo / "kiln-waivers.toml").write_text(waiver)
+
+    fleet.show_status(tmp_path)
+
+    assert "TAILLE-FICHIER (2)" in capsys.readouterr().out
