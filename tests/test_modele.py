@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -106,13 +107,15 @@ def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
     assert "{{ health?.status }}" in health_component
 
 
-def test_a_faire_is_always_there(tmp_path: Path) -> None:
+def test_backlog_is_always_there(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo", boussole="la démo en ligne", backend="fastapi")
 
-    a_faire = (project_dir / "docs/a-faire/a-faire.md").read_text()
-    assert "La boussole est **la démo en ligne**." in a_faire
-    assert "docs/a-faire/" in (project_dir / "CLAUDE.md").read_text()
-    urgent = (project_dir / "docs/a-faire/urgent.md").read_text()
+    backlog = (project_dir / "docs/backlog/backlog.md").read_text()
+    assert "North star: **la démo en ligne**." in backlog
+    assert "- **Type**: task" in backlog
+    assert "docs/backlog/" in (project_dir / "CLAUDE.md").read_text()
+    assert not (project_dir / "docs/a-faire").exists()
+    urgent = (project_dir / "docs/backlog/urgent.md").read_text()
     # La status line compte les lignes qui commencent par une case ouverte : aucune au départ.
     assert not [line for line in urgent.splitlines() if line.lstrip().startswith("- [ ]")]
 
@@ -125,7 +128,8 @@ def test_django_and_nuxt_share_a_typed_api_contract(tmp_path: Path) -> None:
     assert (project_dir / "frontend/app/composables/useApi.ts").is_file()
     assert "openapi.json linguist-generated" in (project_dir / ".gitattributes").read_text()
     workflow = yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
-    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@main")
+    # Hors version (modèle pris à un commit), les workflows sont cités à develop.
+    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@develop")
 
 
 def test_fastapi_front_keeps_its_plain_fetch(tmp_path: Path) -> None:
@@ -228,3 +232,15 @@ def test_team_gets_kiln_marketplace_and_base_plugin(tmp_path: Path) -> None:
     }
     assert settings["extraKnownMarketplaces"]["kiln"]["autoUpdate"] is True
     assert settings["enabledPlugins"] == {"base@kiln": True}
+
+
+def test_a_released_template_pins_its_workflows_to_its_version(tmp_path: Path) -> None:
+    clone = tmp_path / "kiln"
+    subprocess.run(["git", "clone", "-q", str(TEMPLATE_DIR), str(clone)], check=True)
+    subprocess.run(["git", "-C", str(clone), "tag", "v9.9.9"], check=True)
+    copier.run_copy(
+        str(clone), tmp_path / "demo", data=ANSWERS, defaults=True, vcs_ref="v9.9.9", quiet=True
+    )
+
+    workflow = yaml.safe_load((tmp_path / "demo/.github/workflows/ci.yml").read_text())
+    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@v9.9.9")

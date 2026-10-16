@@ -7,6 +7,7 @@ import copier
 from copier.errors import UserMessageError
 
 from kiln import ui
+from kiln.backlog import migrate_legacy_backlog
 from kiln.check import check_project
 from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
@@ -14,7 +15,7 @@ from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
 from kiln.stack import ANSWERS_FILE, load_stack, read_answers
 from kiln.template import DEFAULT_TEMPLATE_SOURCE, template_revision
-from kiln.versions import notes_between, read_changelog
+from kiln.versions import follows_candidates, notes_between, read_changelog
 
 PROTECTED_BRANCHES = ("main", "develop")
 # Ancienne adresse du modèle (init-repo, renommé kiln) : GitHub redirige, mais on la remplace.
@@ -57,6 +58,7 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
             root,
             data=dict(answers or {}),
             vcs_ref=template_revision(_template_source(root)),
+            use_prereleases=follows_candidates(),
             defaults=True,
             skip_answered=True,
             overwrite=True,
@@ -67,6 +69,8 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
         raise KilnError(f"mise à jour du modèle refusée : {error}") from error
     # Après Copier, qui exige un arbre propre et réécrit le fichier de réponses.
     replace_legacy_source(root)
+    if migrate_legacy_backlog(root):
+        ui.note("Suivi déplacé de docs/a-faire/ vers docs/backlog/ (tickets T-NN, en anglais).")
 
 
 def _template_source(root: Path) -> str:

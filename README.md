@@ -2,7 +2,7 @@
 
 # kiln 🔥
 
-**Generate a production-grade repo in one command — then keep it, and every other repo you own, up to date.**
+**Make Claude Code build production-grade repos — and keep them that way.**
 
 [![CI](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml/badge.svg?branch=develop)](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
@@ -19,9 +19,11 @@
 
 ---
 
-Project templates are great on day one and useless on day ninety: the template moves on, your
-repos don't. **kiln** is a project orchestrator built on [Copier](https://copier.readthedocs.io)
-that fixes the *day ninety* problem:
+Claude Code writes code fast, but a real repo needs more than a prompt: an up-to-date stack,
+rules the agent cannot talk its way around, a sane git workflow, and someone to stop the repo
+from going stale on day ninety. **kiln** brings all four. Built on
+[Copier](https://copier.readthedocs.io), it generates the repo, wires Claude Code into it, and
+keeps every repo you own current:
 
 - 🧱 **`kiln new`** — asks what you are building, recommends a stack, and generates a complete
   repo: code, tests, linters, CI, pre-commit, containers, a `CLAUDE.md` for AI agents, a GitHub
@@ -47,8 +49,10 @@ that fixes the *day ninety* problem:
 ## Quick start
 
 ```sh
-# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing)
-uv tool install git+https://github.com/antoine-tena/kiln
+# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing).
+#    macOS, Linux, and Windows through WSL. The PyPI package is kiln-cli, the command is kiln.
+uv tool install kiln-cli
+#    …or try it without installing anything: uvx kiln-cli new my-app
 
 # 2. Create a project — answer a few questions, or pass them as flags
 kiln new my-app
@@ -97,7 +101,7 @@ Each generated repo comes with:
 - **Optional production setups:** a hardened VPS deployment for Django (Caddy with automatic
   TLS, read-only containers, one image per commit, automatic rollback, daily backups with
   restore tests) and Vercel deployment for Nuxt fronts.
-- **A work tracker** (`docs/a-faire/`) that Claude Code's status line counts.
+- **A backlog** (`docs/backlog/`: typed `T-NN` tickets by priority) that Claude Code's status line counts.
 
 ## Why not just Copier / cookiecutter?
 
@@ -132,7 +136,8 @@ make the opinions yours.
 | `kiln set [key=value…]` | Show or change the repo's settings (team, frameworks, podman…); the repo is re-rendered. |
 | `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template release (`v2 → v3` when behind), stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), stack — for every kiln repo. |
+| `kiln version` | In kiln's own repo: latest public release, candidates (age, adopting repos, ready to promote) and the number the next release should take. |
 | `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |
 | `kiln contrat` | Django + Nuxt: export `openapi.json` and regenerate the front's API types. |
@@ -147,7 +152,7 @@ kiln's workflows work from any repository, kiln-generated or not:
 ```yaml
 jobs:
   backend:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@main   # main = latest release
+    uses: antoine-tena/kiln/.github/workflows/django.yml@v0.3.0   # a kiln release tag
 ```
 
 `django.yml`, `python.yml`, `maven.yml`, `pnpm.yml`, `charte.yml`, `securite.yml` (`uv audit`,
@@ -166,7 +171,7 @@ claude plugin install base@kiln
 
 | Plugin | What's inside |
 |---|---|
-| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `a-faire` = todo, `maj-kiln` = self-update); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line; condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
+| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `backlog`, `maj-kiln` = self-update), `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve) `contribution` (an outside contributor's PR handled like a well-run open-source project: untrusted code read before anything runs, triage, review, a merge that credits them, nothing posted without your yes) and `token` (a service token pasted once into a git-ignored `.<service>/` folder, never shown); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
 | `pile-django` | Migrations, API regeneration, read-only PostgreSQL. |
 | `pile-nuxt` | Nuxt / Vue / Vitest skills, UI polish, screenshots on three phones and a desktop (Playwright). |
 | `vps-podman` | Deploy, production logs, production dumps. |
@@ -177,10 +182,14 @@ Generated repos enable the right plugins for their stack automatically.
 
 ## Status
 
-kiln is used daily on a handful of real repos, including one in production. It is young:
-work lands on `develop`, and `main` only receives tagged releases (`vN`), each one described in
-[`CHANGELOG.md`](CHANGELOG.md). Projects are generated and updated from the latest release
-tag, never from `develop`; `kiln update` shows what changed in each release it applies.
+kiln is used daily on a handful of real repos, including one in production. It is young, so it
+numbers releases like Claude Code does: in `0.x`, every release bumps the patch, breaking changes
+included (`0.3.4 → 0.3.5`), listed first in the release notes and migrated by `kiln update`; the
+minor only moves for a milestone. Strict semver starts at 1.0. Each release is first a candidate
+(`v0.3.5-rc.1`) used on the author's own repos; it is promoted to `main` (`v0.3.5`) only once
+the next candidate is ready, so a release never needs an emergency fix. Projects are generated and updated from the latest release, pin kiln's workflows to
+that exact tag, and `kiln update` shows what changed in each release it applies (see
+[`CHANGELOG.md`](CHANGELOG.md)).
 Linux, WSL and macOS are supported.
 
 ## Contributing
@@ -189,6 +198,9 @@ Issues and pull requests are very welcome — see [CONTRIBUTING.md](CONTRIBUTING
 Small fixes can go straight to a PR; for bigger changes, open an issue first so we agree on
 the approach. Good places to start: the
 [`good first issue`](https://github.com/antoine-tena/kiln/labels/good%20first%20issue) label.
+Using Claude Code in a kiln repo? `/base:report-to-kiln` turns a kiln defect into a
+ready-to-post issue or PR: checked against the latest release and the existing issues, scrubbed
+of anything private, posted only once you approve.
 
 If kiln saves you time, a ⭐ helps other people find it.
 

@@ -27,7 +27,7 @@ def hook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     return module
 
 
-def released(tag: str = "v2", commit: str = "nouveau") -> Callable[[], tuple[str, str]]:
+def released(tag: str = "v0.4.0", commit: str = "nouveau") -> Callable[[], tuple[str, str]]:
     return lambda: (tag, commit)
 
 
@@ -42,11 +42,13 @@ def test_answers_are_read_without_yaml() -> None:
 def test_releases_order_by_number_not_by_text() -> None:
     hook = load_hook()
 
-    assert hook.release_key("v10") > hook.release_key("v9.3")
-    assert hook.release_key("v2-4-gabc1234") == (2, 0)
+    assert hook.release_key("v0.10.0") > hook.release_key("v0.9.3")
+    assert hook.release_key("v0.4.0") > hook.release_key("v0.4.0-rc.3")
+    assert hook.release_key("v0.4.0-2-gabc1234") == (0, 4, 0, hook.FINAL)
     assert hook.release_key("8e6427b") is None
-    assert hook.is_repo_late("8e6427b", "v1")
-    assert not hook.is_repo_late("v2", "v2")
+    assert hook.is_repo_late("8e6427b", "v0.3.0")
+    assert hook.is_repo_late("v0.4.0-rc.1", "v0.4.0")
+    assert not hook.is_repo_late("v0.4.0", "v0.4.0")
 
 
 def test_refusals_push_the_question_back_5_10_30_then_50_sessions(hook: ModuleType) -> None:
@@ -93,8 +95,8 @@ def test_up_to_date_tool_asks_only_for_the_repo(
 
     message = hook.instructions(".", {}, release=released())
 
-    assert message.startswith("kiln v2 est sortie ; annway part de 8e6427b")
-    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: (Path("annway"), "v2"))
+    assert message.startswith("kiln v0.4.0 est sortie ; annway part de 8e6427b")
+    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: (Path("annway"), "v0.4.0"))
     assert hook.instructions(".", {}, release=released()) == ""
 
 
@@ -148,3 +150,61 @@ def test_link_is_ignored_even_outside_kiln_repos(tmp_path: Path) -> None:
     assert (root / ".claude/kiln").is_symlink()
     assert status.stdout == ""
     assert (root / ".git/info/exclude").read_text().count(".claude/kiln") == 1
+
+
+def fake_tool(tool_dir: Path, name: str, dist_info: str, direct_url: str | None) -> None:
+    metadata = tool_dir / name / "lib/python3.14/site-packages" / dist_info
+    metadata.mkdir(parents=True)
+    (metadata / "METADATA").write_text("Metadata-Version: 2.4\nName: kiln-cli\nVersion: 0.4.0\n")
+    if direct_url is not None:
+        (metadata / "direct_url.json").write_text(direct_url)
+
+
+def uv_tool_dir(module: ModuleType, tool_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def run(*command: str) -> subprocess.CompletedProcess[str]:
+        assert command == ("uv", "tool", "dir")
+        return subprocess.CompletedProcess(command, 0, stdout=f"{tool_dir}\n")
+
+    monkeypatch.setattr(module, "run", run)
+
+
+def test_a_pypi_install_is_read_from_its_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook = load_hook()
+    fake_tool(tmp_path, "kiln-cli", "kiln_cli-0.4.0.dist-info", None)
+    uv_tool_dir(hook, tmp_path, monkeypatch)
+
+    assert hook.installed_kiln() == ("pypi", "v0.4.0")
+    assert not hook.has_legacy_tool()
+    assert not hook.is_tool_outdated(("pypi", "v0.4.0"), "v0.4.0", "abc")
+    assert hook.is_tool_outdated(("pypi", "v0.4.0"), "v0.4.1", "abc")
+
+
+def test_the_old_kiln_tool_is_still_found_and_removed_on_update(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook = load_hook()
+    fake_tool(
+        tmp_path, "kiln", "kiln-0.3.0.dist-info", '{"url": "x", "vcs_info": {"commit_id": "c0"}}'
+    )
+    uv_tool_dir(hook, tmp_path, monkeypatch)
+
+    assert hook.installed_kiln() == ("git", "c0")
+    command = hook.tool_update_command(("git", "c0"), "v0.4.0")
+    assert command.startswith('uv tool uninstall kiln && uv tool install --force "git+')
+
+
+def test_promoted_versions_come_from_pypi_and_candidates_from_github(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook = load_hook()
+    uv_tool_dir(hook, tmp_path, monkeypatch)
+
+    assert hook.tool_update_command(("pypi", "v0.4.0"), "v0.4.1").startswith(
+        'uv tool install --force "kiln-cli==0.4.1" && '
+    )
+    assert hook.tool_update_command(None, "v0.4.1").startswith('uv tool install --force "kiln-cli')
+    assert '"git+https://github.com/antoine-tena/kiln@v0.5.0-rc.1"' in hook.tool_update_command(
+        ("pypi", "v0.4.1"), "v0.5.0-rc.1"
+    )

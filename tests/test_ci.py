@@ -26,7 +26,7 @@ PROJECT_CI = """
 on: push
 jobs:
   backend-quality:
-    uses: antoine-tena/kiln/.github/workflows/django.yml@main
+    uses: antoine-tena/kiln/.github/workflows/django.yml@v0.3.0
     with:
       base: annski
       postgres: docker.io/library/postgres:18-alpine
@@ -35,7 +35,7 @@ jobs:
         DEBUG=True
         IDEMPOTENCY_REQUIRED=True
   infra:
-    uses: antoine-tena/kiln/.github/workflows/infra.yml@main
+    uses: antoine-tena/kiln/.github/workflows/infra.yml@v0.3.0
   end-to-end:
     runs-on: ubuntu-latest
     services:

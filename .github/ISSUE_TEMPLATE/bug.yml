@@ -19,7 +19,7 @@ body:
     id: version
     attributes:
       label: kiln version
-      description: Shown in the banner of `kiln status`, or `uv tool list | grep kiln`.
+      description: The `kiln` line of `kiln doctor` and, in a generated repo, its `modèle` line (template version).
   - type: input
     id: stack
     attributes:
@@ -30,3 +30,8 @@ body:
     attributes:
       label: OS
       options: [Linux, WSL, macOS, Other]
+  - type: input
+    id: claude-code
+    attributes:
+      label: Claude Code version
+      description: For a skill, hook or status line problem, `claude --version`.

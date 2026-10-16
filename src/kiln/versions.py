@@ -1,9 +1,12 @@
-"""Versions de kiln : tags `vN` (nouveautés) et `vN.M` (correctifs) sur `main`.
+"""Versions de kiln : semver à trois chiffres, `vMAJEUR.MINEUR.CORRECTIF`.
 
-`main` ne reçoit que des versions : une branche `release/vN` tirée de `develop`, fusionnée et
-taguée (skill `base:version`). Les projets suivent la dernière version (Copier prend le tag le
-plus récent), l'outil s'installe depuis `main` ; chaque version a son entrée dans
-`CHANGELOG.md`, que `kiln update` montre au passage d'une version à l'autre.
+En 0.x, chaque version monte le correctif, cassante comprise (`0.3.4 → 0.3.5`) ; la mineure ne
+monte que pour une étape (CLAUDE.md, Versions). Deux canaux : une version sort d'abord en
+candidate (`v0.3.5-rc.1`), suivie par les postes au canal `interne` (`kiln set canal=interne`) ;
+elle est promue (`v0.3.5`, fusion
+dans `main`) quand la suivante est prête. Le canal `public`, par
+défaut, ne voit que les versions promues. Chaque version a son entrée dans `CHANGELOG.md`, que
+`kiln update` montre au passage d'une version à l'autre.
 """
 
 import json
@@ -11,16 +14,21 @@ import re
 import subprocess
 from dataclasses import dataclass
 from importlib import resources
-from importlib.metadata import PackageNotFoundError, distribution
+from importlib.metadata import Distribution, PackageNotFoundError, distribution
 from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
+from kiln.config import INTERNAL_CHANNEL, load_config
+
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
+# Nom du paquet sur PyPI ; `kiln` avant, encore présent sur les postes pas mis à jour.
+PYPI_NAME = "kiln-cli"
+DISTRIBUTIONS = (PYPI_NAME, "kiln")
 CHANGELOG_FILE = "CHANGELOG.md"
-# `v3`, `v3.1`, et ce que `git describe` ajoute derrière (`v3-4-gabc1234`).
-RELEASE_TAG = re.compile(r"^v(\d+(?:\.\d+)?)(?:-(\d+)-g([0-9a-f]+))?$")
-RELEASE_HEADING = re.compile(r"^## (v\d+(?:\.\d+)?)(?:\s+[-—·]\s+(.+))?$")
+# `v0.4.0`, `v0.4.0-rc.2`, et ce que `git describe` ajoute derrière (`v0.4.0-3-gabc1234`).
+RELEASE_TAG = re.compile(r"^v(\d+\.\d+\.\d+(?:-rc\.\d+)?)(?:-(\d+)-g([0-9a-f]+))?$")
+RELEASE_HEADING = re.compile(r"^## (v\d+\.\d+\.\d+)(?:\s+[-—·]\s+(.+))?$")
 NETWORK_TIMEOUT = 5
 # Avant la première version, les projets suivaient un commit : tout est nouveau pour eux.
 BEFORE_FIRST_RELEASE = Version("0")
@@ -44,8 +52,16 @@ def release_version(ref: str) -> Version | None:
         return None
 
 
-def latest_release(source: str = KILN_GIT_URL) -> str | None:
-    """Tag de la version la plus récente du dépôt ; None sans réseau ou sans version."""
+def follows_candidates() -> bool:
+    """Le poste suit-il les candidates (canal `interne`) ?"""
+    return load_config().channel == INTERNAL_CHANNEL
+
+
+def latest_release(source: str = KILN_GIT_URL, *, candidates: bool | None = None) -> str | None:
+    """Tag de la version la plus récente du dépôt, candidates comprises au canal `interne` ;
+    None sans réseau ou sans version."""
+    if candidates is None:
+        candidates = follows_candidates()
     try:
         listing = subprocess.run(
             ["git", "ls-remote", "--tags", "--refs", source],
@@ -57,16 +73,47 @@ def latest_release(source: str = KILN_GIT_URL) -> str | None:
     except subprocess.TimeoutExpired, OSError:
         return None
     tags = [line.rsplit("refs/tags/", 1)[-1] for line in listing.splitlines()]
-    releases = [(version, tag) for tag in tags if (version := release_version(tag)) is not None]
+    releases = [
+        (version, tag)
+        for tag in tags
+        if (version := release_version(tag)) is not None
+        and (candidates or not version.is_prerelease)
+    ]
     return max(releases)[1] if releases else None
+
+
+def _installed_distribution() -> Distribution | None:
+    for name in DISTRIBUTIONS:
+        try:
+            return distribution(name)
+        except PackageNotFoundError:
+            continue
+    return None
+
+
+def install_source() -> str:
+    """D'où vient l'outil : `pypi`, `git` (une révision GitHub) ou `dossier` (un checkout)."""
+    dist = _installed_distribution()
+    direct_url = (dist.read_text("direct_url.json") or "") if dist else ""
+    if not direct_url:
+        return "pypi"
+    return "dossier" if _source_dir(direct_url) is not None else "git"
+
+
+def upgrade_command(version: str) -> str:
+    """Commande qui installe la version `vX.Y.Z` de l'outil, par où il a été installé : PyPI
+    n'a que les versions promues, une candidate passe par GitHub."""
+    release = release_version(version)
+    if install_source() == "pypi" and release is not None and not release.is_prerelease:
+        return f'uv tool install --force "{PYPI_NAME}=={release}"'
+    return f'uv tool install --force "git+{KILN_GIT_URL}@{version}"'
 
 
 def installed_version() -> str:
     """Version de l'outil : `v3`, et pour un outil installé depuis un dossier, ce que dit git
     (`v3 +4 · abc1234` : quatre commits après v3)."""
-    try:
-        dist = distribution("kiln")
-    except PackageNotFoundError:
+    dist = _installed_distribution()
+    if dist is None:
         return "v?"
     package_version = f"v{dist.version}"
     source = _source_dir(dist.read_text("direct_url.json") or "")
@@ -127,9 +174,11 @@ def notes_between(old_ref: str, new_ref: str, changelog: str) -> list[ReleaseNot
     new = release_version(new_ref)
     if new is None:
         return []
-    old = release_version(old_ref) or BEFORE_FIRST_RELEASE
+    # Une candidate porte déjà les nouveautés de sa version : on compare les versions finales.
+    old = Version((release_version(old_ref) or BEFORE_FIRST_RELEASE).base_version)
+    target = Version(new.base_version)
     return [
         notes
         for notes in parse_changelog(changelog)
-        if (version := release_version(notes.tag)) is not None and old < version <= new
+        if (version := release_version(notes.tag)) is not None and old < version <= target
     ]

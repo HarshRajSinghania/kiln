@@ -26,14 +26,21 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
 ANSWERS_FILE = ".copier-answers.yml"
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
-# `v3`, `v3.1`, et ce que `git describe` ajoute derrière (`v3-4-gabc1234`).
-RELEASE_TAG = re.compile(r"^v(\d+)(?:\.(\d+))?(?:-\d+-g[0-9a-f]+)?$")
+# `v0.4.0`, `v0.4.0-rc.2`, et ce que `git describe` ajoute derrière (`v0.4.0-3-gabc1234`).
+RELEASE_TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?(?:-\d+-g[0-9a-f]+)?$")
+# Une version promue passe après toutes ses candidates.
+FINAL = 10**9
+CONFIG_PATH = (
+    Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "kiln" / "config.toml"
+)
+INTERNAL_CHANNEL = "interne"
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
 STATE_PATH = STATE_DIR / "kiln" / "rappels.json"
 # Sessions à attendre avant de reposer la question, selon le nombre de « non » déjà reçus.
@@ -52,10 +59,22 @@ def answer(text: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def release_key(ref: str) -> tuple[int, int] | None:
-    """(N, M) d'une version `vN.M` ; None pour un simple commit (avant la première version)."""
+def release_key(ref: str) -> tuple[int, int, int, int] | None:
+    """Clé de tri d'une version (`v0.4.0-rc.2` → (0, 4, 0, 2)) ; None pour un simple commit."""
     match = RELEASE_TAG.match(ref.strip())
-    return (int(match.group(1)), int(match.group(2) or 0)) if match else None
+    if match is None:
+        return None
+    candidate = match.group(4)
+    return (*(int(match.group(i)) for i in (1, 2, 3)), int(candidate) if candidate else FINAL)
+
+
+def follows_candidates() -> bool:
+    """Le poste est-il au canal `interne` (`canal = "interne"` dans la config de kiln) ?"""
+    try:
+        values = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return False
+    return values.get("canal") == INTERNAL_CHANNEL
 
 
 def run(*command: str) -> subprocess.CompletedProcess[str]:
@@ -102,25 +121,50 @@ def record(state: dict[str, dict[str, int]], key: str, *, refused: bool) -> None
         entry["prochaine"] = 0
 
 
-# --- Outil : kiln installé par uv, depuis GitHub (commit) ou depuis un dossier (checkout) ---
+# --- Outil : kiln installé par uv, depuis PyPI, depuis GitHub (commit) ou un dossier (checkout) ---
+
+# Outils uv qui portent kiln : `kiln-cli` (nom du paquet PyPI), `kiln` (avant PyPI).
+TOOL_NAMES = ("kiln-cli", "kiln")
+PYPI_NAME = TOOL_NAMES[0]
 
 
 def installed_kiln() -> tuple[str, str] | None:
-    """("git", commit) ou ("dossier", chemin) de l'outil installé ; None s'il est absent."""
+    """("pypi", version), ("git", commit) ou ("dossier", chemin) de l'outil installé ; None
+    s'il est absent."""
     tool_dir = run("uv", "tool", "dir").stdout.strip()
     if not tool_dir:
         return None
-    pattern = "lib/python*/site-packages/kiln-*/direct_url.json"
-    for direct_url in Path(tool_dir, "kiln").glob(pattern):
-        origin = json.loads(direct_url.read_text())
-        if "vcs_info" in origin:
-            return ("git", str(origin["vcs_info"].get("commit_id", "")))
-        return ("dossier", str(origin.get("url", "")).removeprefix("file://"))
+    for name in TOOL_NAMES:
+        for metadata in Path(tool_dir, name).glob("lib/python*/site-packages/kiln*.dist-info"):
+            direct_url = metadata / "direct_url.json"
+            if not direct_url.exists():
+                version = next(
+                    (
+                        line.removeprefix("Version: ")
+                        for line in (metadata / "METADATA").read_text().splitlines()
+                        if line.startswith("Version: ")
+                    ),
+                    "",
+                )
+                return ("pypi", f"v{version}")
+            origin = json.loads(direct_url.read_text())
+            if "vcs_info" in origin:
+                return ("git", str(origin["vcs_info"].get("commit_id", "")))
+            return ("dossier", str(origin.get("url", "")).removeprefix("file://"))
     return None
 
 
+def has_legacy_tool() -> bool:
+    """L'outil uv `kiln` d'avant PyPI : à retirer avant d'installer `kiln-cli`, qui fournit la
+    même commande."""
+    tool_dir = run("uv", "tool", "dir").stdout.strip()
+    return bool(tool_dir) and Path(tool_dir, "kiln").is_dir()
+
+
 def latest_release() -> tuple[str, str] | None:
-    """(tag, commit) de la dernière version publiée ; None sans réseau ou sans version."""
+    """(tag, commit) de la dernière version, candidates comprises au canal `interne` ; None sans
+    réseau ou sans version."""
+    candidates = follows_candidates()
     commits: dict[str, str] = {}
     for line in run("git", "ls-remote", "--tags", f"{KILN_GIT_URL}.git").stdout.splitlines():
         commit, _, ref = line.partition("\t")
@@ -130,17 +174,24 @@ def latest_release() -> tuple[str, str] | None:
             commits[tag.removesuffix("^{}")] = commit
         else:
             commits.setdefault(tag, commit)
-    releases = [(key, tag) for tag in commits if (key := release_key(tag)) is not None]
+    releases = [
+        (key, tag)
+        for tag in commits
+        if (key := release_key(tag)) is not None and (candidates or key[3] == FINAL)
+    ]
     if not releases:
         return None
     tag = max(releases)[1]
     return tag, commits[tag]
 
 
-def is_tool_outdated(install: tuple[str, str] | None, release_commit: str) -> bool:
+def is_tool_outdated(install: tuple[str, str] | None, tag: str, release_commit: str) -> bool:
     if install is None:
         return True
     kind, where = install
+    if kind == "pypi":
+        current, latest = release_key(where), release_key(tag)
+        return latest is not None and (current is None or current < latest)
     if kind == "git":
         return where != release_commit
     return (
@@ -162,8 +213,15 @@ def tool_update_command(install: tuple[str, str] | None, tag: str) -> str:
         "|| true) && claude plugin marketplace update kiln && claude plugin install base@kiln "
         "--scope user"
     )
-    if install is None or install[0] == "git":
-        return f'uv tool install --force "git+{KILN_GIT_URL}@{tag}" && {plugins}'
+    legacy = "uv tool uninstall kiln && " if has_legacy_tool() else ""
+    key = release_key(tag)
+    final = key is not None and key[3] == FINAL
+    # PyPI n'a que les versions promues : une candidate (canal `interne`) passe par GitHub.
+    if final and (install is None or install[0] == "pypi"):
+        version = tag.removeprefix("v")
+        return f'{legacy}uv tool install --force "{PYPI_NAME}=={version}" && {plugins}'
+    if install is None or install[0] in ("git", "pypi"):
+        return f'{legacy}uv tool install --force "git+{KILN_GIT_URL}@{tag}" && {plugins}'
     return f'git -C "{install[1]}" pull --ff-only && uv tool install --reinstall "{install[1]}"'
 
 
@@ -238,7 +296,7 @@ def tool_question(entry: dict[str, int]) -> str:
         choices += ", « Désinstaller kiln »"
         extra = (
             " La question commence par « Ça fait longtemps que tu dis non : tu veux désinstaller "
-            "kiln ? ». Si « Désinstaller kiln » : `uv tool uninstall kiln && claude plugin "
+            "kiln ? ». Si « Désinstaller kiln » : `uv tool uninstall kiln-cli && claude plugin "
             f"uninstall base@kiln`, puis `{SCRIPT} accord {TOOL_KEY}`."
         )
     return (
@@ -289,7 +347,7 @@ def instructions(
         return ""
     tag, release_commit = latest
     repo_due = is_due(repo_entry) and is_repo_late(commit, tag)
-    if is_tool_outdated(installed_kiln(), release_commit):
+    if is_tool_outdated(installed_kiln(), tag, release_commit):
         follow_up = ""
         if repo_due:
             follow_up = " Une fois l'outil mis à jour avec succès : " + repo_question(
@@ -305,7 +363,7 @@ def tool_status() -> str:
     if latest is None:
         return "à jour"
     install = installed_kiln()
-    if is_tool_outdated(install, latest[1]):
+    if is_tool_outdated(install, *latest):
         return tool_update_command(install, latest[0])
     return "à jour"
 
