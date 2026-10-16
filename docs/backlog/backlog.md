@@ -53,23 +53,14 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
 `kiln version` says when it is ready.
 - [ ] Cut `v0.3.1-rc.1` from `develop` (gitleaks in CI, the `status` column, the `doctor` fix
   are already there), then `kiln update --all`: annway must no longer conflict on `ci.yml`
-  (its gitleaks job is now in the template, identical).
+  (its gitleaks job is now in the template, identical). Its `CHANGELOG.md` entry credits the
+  first outside contribution: `kiln --version` (#39, thanks @SakarPaisen).
 - [ ] As soon as `v0.3.1-rc.1` is out: tag `v0.3.0` on the commit of `v0.3.0-rc.1`, merge
   `release/v0.3.0` into `main`, merge back into `develop`, then `kiln update --all`.
 - [ ] Check the public install: `uv tool install git+https://github.com/antoine-tena/kiln@main`
   (the default branch stays `develop`, so install docs quote `@main`).
 
 ## 🟠 Important
-
-### T-02 · Review PR #39 (`kiln --version`) from an outside contributor
-- **Type**: task
-- **Status**: todo
-- **Opened**: 2026-10-15
-- **Effort**: XS · **Owner**: Claude · **Due**: —
-- **Origin**: https://github.com/antoine-tena/kiln/pull/39 (issue #35)
-
-The displayed version now comes from `versions.installed_version()`: the PR must use it.
-Only antoine-tena merges a PR (CONTRIBUTING.md); answer quickly and say thanks.
 
 ### T-03 · Launch kiln publicly, then list it in the Claude Code directories
 - **Type**: task
@@ -237,6 +228,10 @@ the tree's state.
 
 ## ✅ Done
 
+- **2026-10-16** · T-02 · Review PR #39 (`kiln --version`) from an outside contributor —
+  reviewed with the new skill `base:contribution`, version computed only on demand (commit
+  pushed on top of the contributor's), merged (`b71f91a`), issue #35 closed; credit to add to
+  the next changelog entry (T-01) · opened 2026-10-15
 - **2026-10-16** · Backlog in English: `docs/a-faire/` becomes `docs/backlog/` (`backlog.md`,
   `rejected.md`, `urgent.md`), `T-NN` tickets with a type and an opening date, skill
   `base:backlog`, status line reading both formats, old trackers converted by `kiln update`
