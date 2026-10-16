@@ -5,7 +5,8 @@ argument-hint: "[outil|depot]"
 ---
 
 Portée : `$ARGUMENTS` ; `outil` seul, `depot` seul, sinon les deux, l'outil d'abord.
-`<hook>` désigne `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kiln-a-jour.py"`.
+`<hook>` désigne `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kiln-a-jour.py"`, `<relances>`
+`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/relances.py"` (réponses aux questions de kiln).
 
 ## Outil
 
@@ -14,7 +15,7 @@ Portée : `$ARGUMENTS` ; `outil` seul, `depot` seul, sinon les deux, l'outil d'a
    `uv tool uninstall kiln` si l'outil porte encore son ancien nom, la marketplace kiln et le plugin `base` installé pour tous
    les repos du poste ; depuis un dossier : `git pull` de ce dossier et réinstallation). La lancer telle quelle ; si elle échoue (dossier kiln
    modifié, pas de réseau), s'arrêter et dire pourquoi.
-2. `<hook> accord outil`, puis dire de taper `/reload-plugins` : les skills et les hooks du
+2. `<relances> oui maj outil`, puis dire de taper `/reload-plugins` : les skills et les hooks du
    plugin ne changent qu'au rechargement.
 
 ## Dépôt
@@ -28,7 +29,7 @@ Portée : `$ARGUMENTS` ; `outil` seul, `depot` seul, sinon les deux, l'outil d'a
 4. Relire le diff, commiter en lots de 10 fichiers au plus (`chore: mise à jour kiln`, titre de
    50 caractères au plus), puis fusionner dans `develop` (skill `base:fusion`), sans PR ni
    approbation à attendre.
-5. `<hook> accord "<racine du repo>"`.
+5. `<relances> oui maj "<racine du repo>"`.
 
 ## Résumer
 

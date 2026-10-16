@@ -1,34 +1,42 @@
 #!/usr/bin/env python3
-"""SessionStart : propose de mettre kiln à jour, puis le repo, avec des relances espacées.
+"""SessionStart : propose kiln à jour dans un repo kiln, et kiln tout court dans un autre repo.
 
-Au lancement d'une session (pas à la reprise ni après /clear) dans un repo généré par kiln :
-1. Outil : si l'outil `kiln` installé est en retard sur la dernière version (tag `vN` ou `vN.M`
-   de `main`), Claude demande (oui/non) s'il faut le mettre à jour, avec les plugins de la
-   marketplace kiln.
-2. Repo : une fois l'outil à jour, si le repo part d'une version du modèle plus ancienne
-   (`_commit` de `.copier-answers.yml`), Claude demande s'il faut lancer `kiln update`.
+Au lancement d'une session (pas à la reprise ni après /clear) :
+1. Outil, dans un repo généré par kiln : si l'outil `kiln` installé est en retard sur la dernière
+   version (tag `vN.M.P` de `main`), Claude demande (oui/non) s'il faut le mettre à jour, avec
+   les plugins de la marketplace kiln.
+2. Repo, dans un repo généré par kiln : une fois l'outil à jour, si le repo part d'une version du
+   modèle plus ancienne (`_commit` de `.copier-answers.yml`), Claude demande s'il faut lancer
+   `kiln update`.
+3. Adoption, dans un repo où l'on a déjà commité et qui ne suit pas kiln (ni généré, ni adopté) :
+   Claude demande s'il faut l'adopter (`kiln adopt`, skill `base:adoption`).
 
-Un « non » repousse la question de 5 sessions, puis 10, 30 et 50 ; au-delà, la question propose
-aussi de désinstaller kiln (outil) ou de délier le repo de kiln (repo). Les réponses sont
-enregistrées par ce même script (`refus` ou `accord`), dans `~/.local/state/kiln/rappels.json`.
+Quand reposer une question après un « non », et à quel point l'utilisateur veut de kiln : module
+commun `relances.py` (note de bienveillance du poste, délais par genre de question). Après 4
+« non » à une mise à jour, la question propose aussi de désinstaller kiln (outil) ou de délier le
+repo de kiln (repo) ; l'adoption propose « Jamais pour ce repo » dès la première fois.
 
 Crée aussi `.claude/kiln` dans tout repo où tourne le plugin, kiln ou non : lien vers ce plugin tel
 qu'il est installé sur le poste (ignoré par git, au besoin par `.git/info/exclude`), pour voir ses
 skills et ses hooks dans l'éditeur. Claude Code ne charge pas les skills de
 ce dossier : rien n'est chargé deux fois.
 
-Jamais bloquant : trois secondes au plus par appel réseau, silence sans réseau ou hors d'un repo
-kiln. Un repo s'en exempte par `git config kiln-a-jour.desactive true`.
+Jamais bloquant : trois secondes au plus par appel réseau, silence sans réseau. Un repo s'en
+exempte par `git config kiln-a-jour.desactive true`.
 """
 
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import relances
 
 ANSWERS_FILE = ".copier-answers.yml"
 KILN_SOURCE_MARKERS = ("antoine-tena/kiln", "antoine-tena/init-repo")
@@ -41,14 +49,12 @@ CONFIG_PATH = (
     Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "kiln" / "config.toml"
 )
 INTERNAL_CHANNEL = "interne"
-STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
-STATE_PATH = STATE_DIR / "kiln" / "rappels.json"
-# Sessions à attendre avant de reposer la question, selon le nombre de « non » déjà reçus.
-DELAYS = (5, 10, 30, 50)
+CHARTER_FILE = "charte.toml"
+UPDATE = "maj"
+ADOPTION = "adoption"
 TIMEOUT_SECONDS = 3
 STARTUP_SOURCE = "startup"
 TOOL_KEY = "outil"
-SCRIPT = f'python3 "{Path(__file__).resolve()}"'
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_LINK = Path(".claude") / "kiln"
 
@@ -79,46 +85,6 @@ def follows_candidates() -> bool:
 
 def run(*command: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, timeout=TIMEOUT_SECONDS)
-
-
-# --- Relances : un compteur de sessions et une échéance par question ---
-
-
-def load_state() -> dict[str, dict[str, int]]:
-    try:
-        loaded = json.loads(STATE_PATH.read_text())
-        return loaded if isinstance(loaded, dict) else {}
-    except OSError, ValueError:
-        return {}
-
-
-def save_state(state: dict[str, dict[str, int]]) -> None:
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False))
-
-
-def count_session(state: dict[str, dict[str, int]], key: str) -> dict[str, int]:
-    entry = state.setdefault(key, {"sessions": 0, "refus": 0, "prochaine": 0})
-    entry["sessions"] += 1
-    return entry
-
-
-def is_due(entry: dict[str, int]) -> bool:
-    return entry["sessions"] >= entry["prochaine"]
-
-
-def is_long_refusal(entry: dict[str, int]) -> bool:
-    return entry["refus"] >= len(DELAYS)
-
-
-def record(state: dict[str, dict[str, int]], key: str, *, refused: bool) -> None:
-    entry = state.setdefault(key, {"sessions": 0, "refus": 0, "prochaine": 0})
-    if refused:
-        entry["refus"] += 1
-        entry["prochaine"] = entry["sessions"] + DELAYS[min(entry["refus"], len(DELAYS)) - 1]
-    else:
-        entry["refus"] = 0
-        entry["prochaine"] = 0
 
 
 # --- Outil : kiln installé par uv, depuis PyPI, depuis GitHub (commit) ou un dossier (checkout) ---
@@ -286,75 +252,138 @@ def ignore_locally(root: Path) -> None:
         exclude_file.write(f"\n# Lien vers le plugin kiln (hook kiln-a-jour)\n{PLUGIN_LINK}\n")
 
 
+# --- Adoption : un repo à soi qui ne suit pas encore kiln ---
+
+
+def is_adoptable(root: Path) -> bool:
+    """Repo ni généré ni adopté par kiln, ni modèle Copier, où l'utilisateur a déjà commité (pas
+    un clone pour lire le code d'un autre), sur un poste où la commande `kiln` est installée."""
+    if shutil.which("kiln") is None:
+        return False
+    if any((root / name).exists() for name in (ANSWERS_FILE, CHARTER_FILE, "copier.yml")):
+        return False
+    workflows = root / ".github" / "workflows"
+    if workflows.is_dir() and any(
+        marker in path.read_text(encoding="utf-8", errors="ignore")
+        for path in workflows.glob("*.y*ml")
+        for marker in KILN_SOURCE_MARKERS
+    ):
+        return False
+    email = run("git", "-C", str(root), "config", "user.email").stdout.strip()
+    if not email:
+        return False
+    mine = run("git", "-C", str(root), "log", "-1", "--format=%H", f"--author={email}")
+    return bool(mine.stdout.strip())
+
+
 # --- Consignes données à Claude ---
 
 
-def tool_question(entry: dict[str, int]) -> str:
+def answer_command(verdict: str, kind: str, key: Path | str) -> str:
+    return f'`{relances.SCRIPT} {verdict} {kind} "{key}"`'
+
+
+def tool_question(state: relances.State) -> str:
     choices = "« Oui », « Non »"
     extra = ""
-    if is_long_refusal(entry):
+    if relances.is_long_refusal(state, UPDATE, TOOL_KEY):
         choices += ", « Désinstaller kiln »"
         extra = (
             " La question commence par « Ça fait longtemps que tu dis non : tu veux désinstaller "
             "kiln ? ». Si « Désinstaller kiln » : `uv tool uninstall kiln-cli && claude plugin "
-            f"uninstall base@kiln`, puis `{SCRIPT} accord {TOOL_KEY}`."
+            f"uninstall base@kiln`, puis {answer_command('jamais', UPDATE, TOOL_KEY)}."
         )
     return (
         "L'outil kiln installé sur ce poste est en retard sur la dernière version. Avant toute "
         "autre chose, au début de ta première réponse, demande avec l'outil AskUserQuestion "
         f"s'il faut mettre kiln à jour ({choices}).{extra} Si « Oui » : skill "
         "`base:maj-kiln` avec l'argument `outil`. Si « Non » : "
-        f"`{SCRIPT} refus {TOOL_KEY}`, sans rien mettre à jour. Reprends ensuite sa demande."
+        f"{answer_command('non', UPDATE, TOOL_KEY)}, sans rien mettre à jour. Reprends ensuite "
+        "sa demande."
     )
 
 
-def repo_question(root: Path, commit: str, tag: str, entry: dict[str, int]) -> str:
+def repo_question(root: Path, commit: str, tag: str, state: relances.State) -> str:
     choices = "« Oui », « Non »"
     extra = ""
-    if is_long_refusal(entry):
+    if relances.is_long_refusal(state, UPDATE, str(root)):
         choices += f", « Délier {root.name} de kiln »"
         extra = (
             f" La question commence par « Ça fait longtemps que tu dis non : tu veux délier "
             f"{root.name} de kiln ? ». Si « Délier » : sur une branche dédiée, supprimer "
             f"`{ANSWERS_FILE}` (kiln ne mettra plus ce repo à jour), commiter et fusionner avec "
-            f'le skill `base:fusion`, puis `{SCRIPT} accord "{root}"`.'
+            f"le skill `base:fusion`, puis {answer_command('jamais', UPDATE, root)}."
         )
     return (
         f"kiln {tag} est sortie ; {root.name} part de {commit}. Avant toute "
         "autre chose, au début de ta réponse, demande avec l'outil AskUserQuestion s'il faut "
         f"mettre {root.name} à jour ({choices}).{extra} Si « Oui » : skill `base:maj-kiln` "
-        f'avec l\'argument `depot`. Si « Non » : `{SCRIPT} refus "{root}"`. Reprends ensuite '
-        "sa demande."
+        f"avec l'argument `depot`. Si « Non » : {answer_command('non', UPDATE, root)}. Reprends "
+        "ensuite sa demande."
     )
 
 
-def instructions(
-    cwd: str,
-    state: dict[str, dict[str, int]],
-    release: Callable[[], tuple[str, str] | None] = latest_release,
+def adoption_question(root: Path) -> str:
+    return (
+        f"{root.name} ne suit pas kiln. Au début de ta première réponse, en une phrase, propose "
+        "avec l'outil AskUserQuestion de l'adopter : sa charte vérifiée après chaque édition, "
+        "avant chaque commit et en CI, le suivi du travail dans docs/backlog/, le repo dans "
+        "`kiln status` (« Oui », « Plus tard », « Jamais pour ce repo »). Si « Oui » : skill "
+        f"`base:adoption`. Si « Plus tard » : {answer_command('non', ADOPTION, root)}. Si "
+        f"« Jamais pour ce repo » : {answer_command('jamais', ADOPTION, root)}. Ni insistance "
+        "ni rappel ensuite ; reprends sa demande."
+    )
+
+
+def update_instructions(
+    root: Path,
+    commit: str,
+    state: relances.State,
+    release: Callable[[], tuple[str, str] | None],
 ) -> str:
-    repo = kiln_repo(cwd)
-    if repo is None:
-        return ""
-    root, commit = repo
-    tool_entry = count_session(state, TOOL_KEY)
-    repo_entry = count_session(state, str(root))
+    relances.count_session(state, UPDATE, TOOL_KEY)
+    relances.count_session(state, UPDATE, str(root))
     # Un « non » à l'outil repousse aussi la question du repo : sans réseau d'ici l'échéance.
-    if not is_due(tool_entry):
+    if not relances.is_due(state, UPDATE, TOOL_KEY):
         return ""
     latest = release()
     if latest is None:
         return ""
     tag, release_commit = latest
-    repo_due = is_due(repo_entry) and is_repo_late(commit, tag)
+    repo_due = relances.is_due(state, UPDATE, str(root)) and is_repo_late(commit, tag)
     if is_tool_outdated(installed_kiln(), tag, release_commit):
         follow_up = ""
         if repo_due:
             follow_up = " Une fois l'outil mis à jour avec succès : " + repo_question(
-                root, commit, tag, repo_entry
+                root, commit, tag, state
             )
-        return tool_question(tool_entry) + follow_up
-    return repo_question(root, commit, tag, repo_entry) if repo_due else ""
+        return tool_question(state) + follow_up
+    return repo_question(root, commit, tag, state) if repo_due else ""
+
+
+def adoption_instructions(root: Path, state: relances.State) -> str:
+    if not is_adoptable(root):
+        return ""
+    relances.count_session(state, ADOPTION, str(root))
+    if not relances.is_due(state, ADOPTION, str(root)):
+        return ""
+    relances.mark_asked(state, ADOPTION)
+    return adoption_question(root)
+
+
+def instructions(
+    cwd: str,
+    state: relances.State,
+    release: Callable[[], tuple[str, str] | None] = latest_release,
+) -> str:
+    root = git_root(cwd)
+    if root is None:
+        return ""
+    relances.count_station_session(state)
+    repo = kiln_repo(cwd)
+    if repo is None:
+        return adoption_instructions(root, state)
+    return update_instructions(*repo, state, release)
 
 
 def tool_status() -> str:
@@ -368,20 +397,9 @@ def tool_status() -> str:
     return "à jour"
 
 
-def answer_cli(arguments: list[str]) -> None:
-    """`refus outil`, `accord outil`, `refus <racine du repo>`, `accord <racine du repo>`."""
-    verdict, key = arguments
-    state = load_state()
-    record(state, key, refused=verdict == "refus")
-    save_state(state)
-
-
 def main() -> None:
     if sys.argv[1:] == [TOOL_KEY]:
         print(tool_status())
-        return
-    if len(sys.argv) == 3:
-        answer_cli(sys.argv[1:])
         return
     try:
         payload = json.load(sys.stdin)
@@ -392,9 +410,9 @@ def main() -> None:
         root = git_root(cwd)
         if root is not None:
             link_plugin(root)
-        state = load_state()
+        state = relances.load()
         message = instructions(cwd, state)
-        save_state(state)
+        relances.save(state)
     except Exception:
         # Réseau absent, GitHub qui limite, repo illisible : la session démarre sans rien dire.
         return
