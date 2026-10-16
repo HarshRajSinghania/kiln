@@ -22,7 +22,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
     Why, what to do (as a `- [ ]` checklist when there are several steps), where to look.
 
 - **ID** `T-NN`: stable, never reused, quoted as is in commits and branches (tickets opened
-  before 16 October 2026 were `AF-NN`, same number). **Next free: T-20.**
+  before 16 October 2026 were `AF-NN`, same number). **Next free: T-21.**
 - **Type**, one of: `bug` (something is broken); `improvement` (it works, it could work
   better); `idea` (nothing exists yet, to be explored); `task` (work that is neither: a release,
   a decision, a check).
@@ -36,6 +36,8 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
   log: `- **YYYY-MM-DD** · T-NN · Title — what was done (branch) · opened YYYY-MM-DD`.
 - **Locations quoted are hints, not addresses.**
 - Overview: `grep -E '^(## |### T-|- \*\*Status)' docs/backlog/backlog.md`.
+- **Good first issues**: keep 3 open on GitHub, reserved for outside contributors (skill
+  `base:good-first-issues`); their tickets have **Owner**: `contributor — #NN`.
 
 ---
 
@@ -237,7 +239,18 @@ takes the nested worktrees as gitlinks; `.claude/worktrees/` is only ignored in
 - **Effort**: S · **Owner**: Claude · **Due**: —
 - **Origin**: interface redesign, 15 October 2026
 - [ ] `kiln check`: the step title and the `✓` line say the same thing (one command per step).
-- [ ] Bash completion (`kiln <Tab>`).
+- Bash completion moved to T-20.
+
+### T-20 · Bash completion (`kiln completion bash`)
+- **Type**: improvement
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: S · **Owner**: contributor — #40 · **Due**: —
+- **Origin**: split from T-10, good first issue #40
+
+`kiln completion bash` prints a script built from `build_parser()` (`src/kiln/cli.py`), with no
+new dependency; `eval "$(kiln completion bash)"` enables it. Left to an outside contributor:
+see https://github.com/antoine-tena/kiln/issues/40.
 
 ---
 
