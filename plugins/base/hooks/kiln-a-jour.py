@@ -121,21 +121,44 @@ def record(state: dict[str, dict[str, int]], key: str, *, refused: bool) -> None
         entry["prochaine"] = 0
 
 
-# --- Outil : kiln installé par uv, depuis GitHub (commit) ou depuis un dossier (checkout) ---
+# --- Outil : kiln installé par uv, depuis PyPI, depuis GitHub (commit) ou un dossier (checkout) ---
+
+# Outils uv qui portent kiln : `kiln-cli` (nom du paquet PyPI), `kiln` (avant PyPI).
+TOOL_NAMES = ("kiln-cli", "kiln")
+PYPI_NAME = TOOL_NAMES[0]
 
 
 def installed_kiln() -> tuple[str, str] | None:
-    """("git", commit) ou ("dossier", chemin) de l'outil installé ; None s'il est absent."""
+    """("pypi", version), ("git", commit) ou ("dossier", chemin) de l'outil installé ; None
+    s'il est absent."""
     tool_dir = run("uv", "tool", "dir").stdout.strip()
     if not tool_dir:
         return None
-    pattern = "lib/python*/site-packages/kiln-*/direct_url.json"
-    for direct_url in Path(tool_dir, "kiln").glob(pattern):
-        origin = json.loads(direct_url.read_text())
-        if "vcs_info" in origin:
-            return ("git", str(origin["vcs_info"].get("commit_id", "")))
-        return ("dossier", str(origin.get("url", "")).removeprefix("file://"))
+    for name in TOOL_NAMES:
+        for metadata in Path(tool_dir, name).glob("lib/python*/site-packages/kiln*.dist-info"):
+            direct_url = metadata / "direct_url.json"
+            if not direct_url.exists():
+                version = next(
+                    (
+                        line.removeprefix("Version: ")
+                        for line in (metadata / "METADATA").read_text().splitlines()
+                        if line.startswith("Version: ")
+                    ),
+                    "",
+                )
+                return ("pypi", f"v{version}")
+            origin = json.loads(direct_url.read_text())
+            if "vcs_info" in origin:
+                return ("git", str(origin["vcs_info"].get("commit_id", "")))
+            return ("dossier", str(origin.get("url", "")).removeprefix("file://"))
     return None
+
+
+def has_legacy_tool() -> bool:
+    """L'outil uv `kiln` d'avant PyPI : à retirer avant d'installer `kiln-cli`, qui fournit la
+    même commande."""
+    tool_dir = run("uv", "tool", "dir").stdout.strip()
+    return bool(tool_dir) and Path(tool_dir, "kiln").is_dir()
 
 
 def latest_release() -> tuple[str, str] | None:
@@ -162,10 +185,13 @@ def latest_release() -> tuple[str, str] | None:
     return tag, commits[tag]
 
 
-def is_tool_outdated(install: tuple[str, str] | None, release_commit: str) -> bool:
+def is_tool_outdated(install: tuple[str, str] | None, tag: str, release_commit: str) -> bool:
     if install is None:
         return True
     kind, where = install
+    if kind == "pypi":
+        current, latest = release_key(where), release_key(tag)
+        return latest is not None and (current is None or current < latest)
     if kind == "git":
         return where != release_commit
     return (
@@ -187,8 +213,15 @@ def tool_update_command(install: tuple[str, str] | None, tag: str) -> str:
         "|| true) && claude plugin marketplace update kiln && claude plugin install base@kiln "
         "--scope user"
     )
-    if install is None or install[0] == "git":
-        return f'uv tool install --force "git+{KILN_GIT_URL}@{tag}" && {plugins}'
+    legacy = "uv tool uninstall kiln && " if has_legacy_tool() else ""
+    key = release_key(tag)
+    final = key is not None and key[3] == FINAL
+    # PyPI n'a que les versions promues : une candidate (canal `interne`) passe par GitHub.
+    if final and (install is None or install[0] == "pypi"):
+        version = tag.removeprefix("v")
+        return f'{legacy}uv tool install --force "{PYPI_NAME}=={version}" && {plugins}'
+    if install is None or install[0] in ("git", "pypi"):
+        return f'{legacy}uv tool install --force "git+{KILN_GIT_URL}@{tag}" && {plugins}'
     return f'git -C "{install[1]}" pull --ff-only && uv tool install --reinstall "{install[1]}"'
 
 
@@ -263,7 +296,7 @@ def tool_question(entry: dict[str, int]) -> str:
         choices += ", « Désinstaller kiln »"
         extra = (
             " La question commence par « Ça fait longtemps que tu dis non : tu veux désinstaller "
-            "kiln ? ». Si « Désinstaller kiln » : `uv tool uninstall kiln && claude plugin "
+            "kiln ? ». Si « Désinstaller kiln » : `uv tool uninstall kiln-cli && claude plugin "
             f"uninstall base@kiln`, puis `{SCRIPT} accord {TOOL_KEY}`."
         )
     return (
@@ -314,7 +347,7 @@ def instructions(
         return ""
     tag, release_commit = latest
     repo_due = is_due(repo_entry) and is_repo_late(commit, tag)
-    if is_tool_outdated(installed_kiln(), release_commit):
+    if is_tool_outdated(installed_kiln(), tag, release_commit):
         follow_up = ""
         if repo_due:
             follow_up = " Une fois l'outil mis à jour avec succès : " + repo_question(
@@ -330,7 +363,7 @@ def tool_status() -> str:
     if latest is None:
         return "à jour"
     install = installed_kiln()
-    if is_tool_outdated(install, latest[1]):
+    if is_tool_outdated(install, *latest):
         return tool_update_command(install, latest[0])
     return "à jour"
 

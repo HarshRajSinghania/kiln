@@ -72,7 +72,7 @@ endroit, ce qu'on y trouve ; pas de copie du code.
 - `config/`, `scripts/` : déploiement et exploitation ; procédure dans
   [`docs/exploitation/production.md`](docs/exploitation/production.md).
 {% endif -%}
-- `docs/a-faire/` : suivi du travail ; `charte.toml` : règles contrôlées par `charte`.
+- `docs/backlog/` : suivi du travail (backlog, en anglais) ; `charte.toml` : règles contrôlées par `charte`.
 
 ## Langue
 
@@ -80,12 +80,12 @@ endroit, ce qu'on y trouve ; pas de copie du code.
 
 ## Où est l'état du projet
 
-- **`docs/a-faire/` est la seule source à jour** : [`a-faire.md`](docs/a-faire/a-faire.md), la
-  liste unique de ce qui reste, rangée par criticité (une entrée `AF-NN` par chose, avec son
-  état et son détail ; ce qui est terminé est dans sa section « Fait »),
-  [`ecarte.md`](docs/a-faire/ecarte.md), ce qui a été refusé, et
-  [`urgent.md`](docs/a-faire/urgent.md), ce que seul un humain de l'équipe peut faire (une case
-  par action). Skill `base:a-faire` ; la status line de Claude Code les compte.
+- **`docs/backlog/` est la seule source à jour** : [`backlog.md`](docs/backlog/backlog.md), la
+  liste unique de ce qui reste, rangée par priorité (un ticket `T-NN` par chose : type, état,
+  date d'ouverture et détail ; ce qui est terminé est dans sa section « Done »),
+  [`rejected.md`](docs/backlog/rejected.md), ce qui a été refusé, et
+  [`urgent.md`](docs/backlog/urgent.md), ce que seul un humain de l'équipe peut faire (une case
+  par action). Skill `base:backlog` ; la status line de Claude Code les compte.
 {%- if deploiement == 'vps' %}
 - L'exploitation (déploiement, retour arrière, sauvegardes) est dans
   [`docs/exploitation/production.md`](docs/exploitation/production.md).
@@ -122,12 +122,16 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 
 ### Ce qui vient de kiln
 - **[REMONTER-A-KILN]** Un défaut de ce que fournit kiln (fichier généré, règle commune de cette
-  charte, skill ou hook du plugin `base`, visibles dans `.claude/kiln`) ne se corrige pas dans
-  ce dépôt : `kiln update` écraserait la correction. Il remonte à kiln,
-  https://github.com/antoine-tena/kiln, qui n'appartient qu'à antoine-tena : **pull request**
-  quand la correction est claire et localisée (depuis un fork, PR vers `develop`, avec le test
-  qui l'aurait détecté) ; **issue** quand il faut trancher entre plusieurs voies, ou qu'on ne sait pas
-  corriger. Dans le doute, l'issue d'abord. Une règle propre à ce dépôt, elle, s'amende ici.
+  charte, skill ou hook d'un plugin kiln — ceux de `base` sont visibles dans `.claude/kiln` —,
+  workflow réutilisable) ne se corrige pas dans ce dépôt : `kiln update` écraserait la
+  correction. Il remonte à kiln, https://github.com/antoine-tena/kiln, par le skill
+  `base:report-to-kiln` : **pull request** quand la correction est claire et localisée (depuis
+  un fork, PR vers `develop`, avec le test qui l'aurait détecté) ; **issue** quand il faut
+  trancher entre plusieurs voies, ou qu'on ne sait pas corriger. Dans le doute, l'issue
+  d'abord. Ce qui part est public, sous le compte GitHub de l'utilisateur : rien sans son
+  accord explicite, rien de privé de ce dépôt (code, noms, données, secrets), en anglais, et
+  seulement après avoir vérifié que kiln est à jour et que personne ne l'a déjà signalé. Une
+  règle propre à ce dépôt, elle, s'amende ici.
 
 ---
 

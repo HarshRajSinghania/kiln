@@ -1,4 +1,4 @@
-"""kiln : orchestrateur de repos. Génère un projet, règle ses paramètres et le tient à jour."""
+"""kiln : l'atelier de Claude Code. Génère un projet, règle ses paramètres et le tient à jour."""
 
 import argparse
 import re
@@ -62,7 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("check", help="lancer les contrôles du projet")
     _add_ci_command(commands)
     commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
-    commands.add_parser("version", help="versions de kiln : publique, candidates, prochaine")
+    version_parser = commands.add_parser(
+        "version", help="versions de kiln : publique, candidates, prochaine"
+    )
+    version_parser.add_argument(
+        "--minor", action="store_true", help="la prochaine est une étape : monter la mineure"
+    )
     commands.add_parser("doctor", help="diagnostiquer le poste et le repo, avec les corrections")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
@@ -94,7 +99,7 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument(
         "--vps", metavar="UTILISATEUR@ADRESSE", help="déploiement sur ce serveur (Django + podman)"
     )
-    new_parser.add_argument("--goal", help="boussole du suivi docs/a-faire/")
+    new_parser.add_argument("--goal", help="boussole (north star) du suivi docs/backlog/")
     new_parser.add_argument("--prod-url", help="sonde de santé de la production (status line)")
     new_parser.add_argument(
         "--no-github", action="store_true", help="ne pas créer le dépôt GitHub (créé par défaut)"
@@ -189,7 +194,7 @@ def dispatch(arguments: argparse.Namespace) -> None:
         doctor.run_doctor(Path.cwd())
         return
     if arguments.command == "version":
-        release.show_release_status(repo_root(Path.cwd()))
+        release.show_release_status(repo_root(Path.cwd()), milestone=arguments.minor)
         return
     if arguments.command == "status" or (arguments.command == "update" and arguments.all):
         _dispatch_fleet(arguments)
