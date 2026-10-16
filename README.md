@@ -2,7 +2,7 @@
 
 # kiln 🔥
 
-**Generate a production-grade repo in one command — then keep it, and every other repo you own, up to date.**
+**Make Claude Code build production-grade repos — and keep them that way.**
 
 [![CI](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml/badge.svg?branch=develop)](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
@@ -19,9 +19,11 @@
 
 ---
 
-Project templates are great on day one and useless on day ninety: the template moves on, your
-repos don't. **kiln** is a project orchestrator built on [Copier](https://copier.readthedocs.io)
-that fixes the *day ninety* problem:
+Claude Code writes code fast, but a real repo needs more than a prompt: an up-to-date stack,
+rules the agent cannot talk its way around, a sane git workflow, and someone to stop the repo
+from going stale on day ninety. **kiln** brings all four. Built on
+[Copier](https://copier.readthedocs.io), it generates the repo, wires Claude Code into it, and
+keeps every repo you own current:
 
 - 🧱 **`kiln new`** — asks what you are building, recommends a stack, and generates a complete
   repo: code, tests, linters, CI, pre-commit, containers, a `CLAUDE.md` for AI agents, a GitHub
@@ -47,8 +49,10 @@ that fixes the *day ninety* problem:
 ## Quick start
 
 ```sh
-# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing)
-uv tool install git+https://github.com/antoine-tena/kiln
+# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing).
+#    macOS, Linux, and Windows through WSL. The PyPI package is kiln-cli, the command is kiln.
+uv tool install kiln-cli
+#    …or try it without installing anything: uvx kiln-cli new my-app
 
 # 2. Create a project — answer a few questions, or pass them as flags
 kiln new my-app
@@ -97,7 +101,7 @@ Each generated repo comes with:
 - **Optional production setups:** a hardened VPS deployment for Django (Caddy with automatic
   TLS, read-only containers, one image per commit, automatic rollback, daily backups with
   restore tests) and Vercel deployment for Nuxt fronts.
-- **A work tracker** (`docs/a-faire/`) that Claude Code's status line counts.
+- **A backlog** (`docs/backlog/`: typed `T-NN` tickets by priority) that Claude Code's status line counts.
 
 ## Why not just Copier / cookiecutter?
 
@@ -167,7 +171,7 @@ claude plugin install base@kiln
 
 | Plugin | What's inside |
 |---|---|
-| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `a-faire` = todo, `maj-kiln` = self-update), `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve) and `token` (a service token pasted once into a git-ignored `.<service>/` folder, never shown); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
+| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `backlog`, `maj-kiln` = self-update), `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve) and `token` (a service token pasted once into a git-ignored `.<service>/` folder, never shown); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
 | `pile-django` | Migrations, API regeneration, read-only PostgreSQL. |
 | `pile-nuxt` | Nuxt / Vue / Vitest skills, UI polish, screenshots on three phones and a desktop (Playwright). |
 | `vps-podman` | Deploy, production logs, production dumps. |

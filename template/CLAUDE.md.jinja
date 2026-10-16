@@ -72,7 +72,7 @@ endroit, ce qu'on y trouve ; pas de copie du code.
 - `config/`, `scripts/` : déploiement et exploitation ; procédure dans
   [`docs/exploitation/production.md`](docs/exploitation/production.md).
 {% endif -%}
-- `docs/a-faire/` : suivi du travail ; `charte.toml` : règles contrôlées par `charte`.
+- `docs/backlog/` : suivi du travail (backlog, en anglais) ; `charte.toml` : règles contrôlées par `charte`.
 
 ## Langue
 
@@ -80,12 +80,12 @@ endroit, ce qu'on y trouve ; pas de copie du code.
 
 ## Où est l'état du projet
 
-- **`docs/a-faire/` est la seule source à jour** : [`a-faire.md`](docs/a-faire/a-faire.md), la
-  liste unique de ce qui reste, rangée par criticité (une entrée `AF-NN` par chose, avec son
-  état et son détail ; ce qui est terminé est dans sa section « Fait »),
-  [`ecarte.md`](docs/a-faire/ecarte.md), ce qui a été refusé, et
-  [`urgent.md`](docs/a-faire/urgent.md), ce que seul un humain de l'équipe peut faire (une case
-  par action). Skill `base:a-faire` ; la status line de Claude Code les compte.
+- **`docs/backlog/` est la seule source à jour** : [`backlog.md`](docs/backlog/backlog.md), la
+  liste unique de ce qui reste, rangée par priorité (un ticket `T-NN` par chose : type, état,
+  date d'ouverture et détail ; ce qui est terminé est dans sa section « Done »),
+  [`rejected.md`](docs/backlog/rejected.md), ce qui a été refusé, et
+  [`urgent.md`](docs/backlog/urgent.md), ce que seul un humain de l'équipe peut faire (une case
+  par action). Skill `base:backlog` ; la status line de Claude Code les compte.
 {%- if deploiement == 'vps' %}
 - L'exploitation (déploiement, retour arrière, sauvegardes) est dans
   [`docs/exploitation/production.md`](docs/exploitation/production.md).

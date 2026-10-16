@@ -1,4 +1,4 @@
-"""kiln : orchestrateur de repos. Génère un projet, règle ses paramètres et le tient à jour."""
+"""kiln : l'atelier de Claude Code. Génère un projet, règle ses paramètres et le tient à jour."""
 
 import argparse
 import re
@@ -94,7 +94,7 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument(
         "--vps", metavar="UTILISATEUR@ADRESSE", help="déploiement sur ce serveur (Django + podman)"
     )
-    new_parser.add_argument("--goal", help="boussole du suivi docs/a-faire/")
+    new_parser.add_argument("--goal", help="boussole (north star) du suivi docs/backlog/")
     new_parser.add_argument("--prod-url", help="sonde de santé de la production (status line)")
     new_parser.add_argument(
         "--no-github", action="store_true", help="ne pas créer le dépôt GitHub (créé par défaut)"
