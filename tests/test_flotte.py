@@ -147,3 +147,35 @@ def test_status_counts_waivers_across_the_fleet(
     fleet.show_status(tmp_path)
 
     assert "TAILLE-FICHIER (2)" in capsys.readouterr().out
+
+
+def _clone_with_develop(tmp_path: Path) -> Path:
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "develop", str(origin)], check=True)
+    clone = tmp_path / "clone"
+    subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+    git = ["git", "-C", str(clone), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "init"], check=True)
+    subprocess.run([*git, "push", "-q", "origin", "HEAD:develop"], check=True)
+    return clone
+
+
+def test_worktree_left_empty_by_a_failed_run_is_reused(tmp_path: Path) -> None:
+    clone = _clone_with_develop(tmp_path)
+    worktree = clone / fleet.WORKTREES_DIR / "chore-kiln-update"
+    fleet._create_worktree(clone, worktree, "chore/kiln-update", "develop")
+
+    fleet._create_worktree(clone, worktree, "chore/kiln-update", "develop")
+
+    assert worktree.is_dir()
+
+
+def test_worktree_with_changes_is_never_touched(tmp_path: Path) -> None:
+    clone = _clone_with_develop(tmp_path)
+    worktree = clone / fleet.WORKTREES_DIR / "chore-kiln-update"
+    fleet._create_worktree(clone, worktree, "chore/kiln-update", "develop")
+    (worktree / "travail.txt").write_text("à garder\n")
+
+    with pytest.raises(KilnError, match="a laissé du travail"):
+        fleet._create_worktree(clone, worktree, "chore/kiln-update", "develop")
+    assert (worktree / "travail.txt").read_text() == "à garder\n"

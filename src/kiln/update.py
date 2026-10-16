@@ -5,6 +5,7 @@ from pathlib import Path
 
 import copier
 from copier.errors import UserMessageError
+from plumbum import ProcessExecutionError
 
 from kiln import ui
 from kiln.backlog import migrate_legacy_backlog
@@ -71,10 +72,25 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
         )
     except UserMessageError as error:
         raise KilnError(f"mise à jour du modèle refusée : {error}") from error
+    except ProcessExecutionError as error:
+        raise KilnError(git_failure(error)) from error
     # Après Copier, qui exige un arbre propre et réécrit le fichier de réponses.
     replace_legacy_source(root)
     if migrate_legacy_backlog(root):
         ui.note("Suivi déplacé de docs/a-faire/ vers docs/backlog/ (tickets T-NN, en anglais).")
+
+
+# Ce que git écrit quand le réseau ou GitHub ne répond pas.
+UNREACHABLE_MARKERS = ("could not resolve host", "unable to access", "connection timed out")
+
+
+def git_failure(error: ProcessExecutionError) -> str:
+    """Une ligne pour un git lancé par Copier (tags, clone du modèle) qui a échoué."""
+    stderr = str(error.stderr or "")
+    if any(marker in stderr.lower() for marker in UNREACHABLE_MARKERS):
+        return "GitHub injoignable : vérifier le réseau, puis relancer"
+    last_line = next((line for line in reversed(stderr.splitlines()) if line.strip()), "")
+    return f"git a échoué pendant la mise à jour du modèle : {last_line.strip() or error}"
 
 
 def _template_source(root: Path) -> str:

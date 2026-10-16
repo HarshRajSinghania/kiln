@@ -1,9 +1,11 @@
 import datetime
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 from packaging.version import Version
+from plumbum import ProcessExecutionError
 
 from kiln import cli, ui
 from kiln.banner import LOGO, _project_summary, render_logo
@@ -17,7 +19,7 @@ from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments, remove_replaced_artifacts
 from kiln.shell import KilnError
 from kiln.stack import Stack, answers_if_any, load_stack, stack_from_answers
-from kiln.update import replace_legacy_source
+from kiln.update import apply_template, git_failure, replace_legacy_source
 from kiln.versions import installed_version, notes_between, release_version
 
 
@@ -264,3 +266,27 @@ def test_version_flag_prints_the_installed_version(
 
     assert exit_request.value.code == 0
     assert capsys.readouterr().out.strip() == installed_version()
+
+
+def test_unreachable_github_gives_one_line(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".copier-answers.yml").write_text(
+        "_commit: v0.3.0\n_src_path: https://kiln.invalid/kiln.git\n"
+    )
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init"],
+        cwd=tmp_path,
+        check=True,
+    )
+
+    with pytest.raises(KilnError, match=r"^GitHub injoignable"):
+        apply_template(tmp_path)
+
+
+def test_other_git_failure_keeps_its_last_line() -> None:
+    error = ProcessExecutionError(["git", "clone"], 128, "", "fatal: ref inconnue\n\n")
+
+    assert (
+        git_failure(error) == "git a échoué pendant la mise à jour du modèle : fatal: ref inconnue"
+    )
