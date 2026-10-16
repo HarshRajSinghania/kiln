@@ -49,6 +49,17 @@ CLAUDE_MARGIN = 4  # colonnes que Claude Code garde autour de la status line
 STONE_LIGHT, STONE, STONE_DARK = (185, 185, 180), (140, 140, 135), (95, 95, 92)
 BRICK, FIRE, EMBER = (180, 75, 35), (247, 150, 40), (205, 50, 35)
 GLOW, WHITE, SOOT = (255, 225, 120), (255, 255, 255), (25, 25, 25)
+
+# états d'un ticket du suivi, en anglais (docs/backlog) ou en français (ancien docs/a-faire)
+STATES = (
+    ("in progress", "doing"),
+    ("en cours", "doing"),
+    ("blocked", "blocked"),
+    ("bloqué", "blocked"),
+    ("to verify", "review"),
+    ("à vérifier", "review"),
+)
+
 # tout va bien, à surveiller, à traiter, urgent
 LEVEL_COLORS = {0: STONE, 1: GLOW, 2: FIRE, 3: EMBER}
 BOLD, ITALIC, RESET, NORMAL = "\033[1m", "\033[3m", "\033[0m", "\033[22;23m"
@@ -208,6 +219,58 @@ def unmerged_branches(cwd: str, integ: str) -> int:
     return sum(1 for n in names if n and n != integ)
 
 
+def backlog_items(top: str) -> Group:
+    """Tickets de docs/backlog/backlog.md (`### T-NN ·`), à défaut de l'ancien
+    docs/a-faire/a-faire.md (`### AF-NN ·`, champs en français) : ceux d'avant la section
+    « Done » (« Fait »), dont les critiques (section 🔴) ; à défaut, l'ancien format
+    `N. **Titre**` ; puis les cases d'urgent.md, ce que seul l'utilisateur peut faire."""
+    tasks: Group = []
+    folder = "docs/backlog" if os.path.isdir(os.path.join(top, "docs/backlog")) else "docs/a-faire"
+    tracker = "backlog.md" if folder == "docs/backlog" else "a-faire.md"
+    try:
+        lines = read(os.path.join(top, folder, tracker)).splitlines()
+        entries, critical, section, states = 0, 0, "", {}
+        for line in lines:
+            if line.startswith("## "):
+                section = line
+                if "Done" in line or "Fait" in line:
+                    break
+            elif re.match(r"### [A-Z]+-\d+ ·", line):
+                entries += 1
+                critical += "🔴" in section
+            elif match := re.match(r"- \*\*(?:Status\*\*:|État\*\* :) (.*)", line):
+                for prefix, state in STATES:
+                    if match[1].startswith(prefix):
+                        states[state] = states.get(state, 0) + 1
+        if not entries:
+            entries = sum(
+                1
+                for line in lines
+                if re.match(r"\s*\d+\.\s+\*\*", line)
+                and "Fait" not in line
+                and "fait le" not in line.lower()
+            )
+        tasks.append(Item(f"{entries} tasks"))
+        if critical:
+            tasks.append(Item(f"crit{TIMES}{critical}", 2))
+        for state in ("doing", "blocked", "review"):
+            if states.get(state):
+                tasks.append(Item(f"{state}{TIMES}{states[state]}", short=""))
+    except OSError:
+        pass
+    try:
+        urgent = sum(
+            1
+            for line in read(os.path.join(top, folder, "urgent.md")).splitlines()
+            if line.lstrip().startswith("- [ ]")
+        )
+        if urgent:
+            tasks.insert(1 if tasks else 0, Item(f"urgent{TIMES}{urgent}", 3))
+    except OSError:
+        pass
+    return tasks
+
+
 def collect_repo(status: Status, cwd: str, top: str) -> str:
     main = (
         sh("git", "-C", cwd, "worktree", "list", "--porcelain")
@@ -287,55 +350,7 @@ def collect_repo(status: Status, cwd: str, top: str) -> str:
         status.repo.append(trees)
     status.commit = sh("git", "-C", cwd, "log", "-1", "--no-merges", "--format=%s")
 
-    # tâches de docs/a-faire/a-faire.md : entrées `### AF-NN ·` avant la section « Fait »,
-    # dont les critiques (section 🔴) ; à défaut, l'ancien format `N. **Titre**` ; et les cases
-    # de docs/a-faire/urgent.md, ce que seul l'utilisateur peut faire
-    tasks: Group = []
-    try:
-        lines = read(os.path.join(top, "docs/a-faire/a-faire.md")).splitlines()
-        entries, critical, section, states = 0, 0, "", {}
-        for line in lines:
-            if line.startswith("## "):
-                section = line
-                if "Fait" in line:
-                    break
-            elif re.match(r"### [A-Z]+-\d+ ·", line):
-                entries += 1
-                critical += "🔴" in section
-            elif line.startswith("- **État** : "):
-                for prefix in ("en cours", "bloqué", "à vérifier"):
-                    if line.removeprefix("- **État** : ").startswith(prefix):
-                        states[prefix] = states.get(prefix, 0) + 1
-        if not entries:
-            entries = sum(
-                1
-                for line in lines
-                if re.match(r"\s*\d+\.\s+\*\*", line)
-                and "Fait" not in line
-                and "fait le" not in line.lower()
-            )
-        tasks.append(Item(f"{entries} tasks"))
-        if critical:
-            tasks.append(Item(f"crit{TIMES}{critical}", 2))
-        for state, label in (
-            ("en cours", "doing"),
-            ("bloqué", "blocked"),
-            ("à vérifier", "review"),
-        ):
-            if states.get(state):
-                tasks.append(Item(f"{label}{TIMES}{states[state]}", short=""))
-    except OSError:
-        pass
-    try:
-        urgent = sum(
-            1
-            for line in read(os.path.join(top, "docs/a-faire/urgent.md")).splitlines()
-            if line.lstrip().startswith("- [ ]")
-        )
-        if urgent:
-            tasks.insert(1 if tasks else 0, Item(f"urgent{TIMES}{urgent}", 3))
-    except OSError:
-        pass
+    tasks = backlog_items(top)
     if tasks:
         status.tasks.append(tasks)
 

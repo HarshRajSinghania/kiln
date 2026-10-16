@@ -69,7 +69,7 @@ def show_banner(action: str, root: Path | None = None) -> None:
 
 def show_home(groups: Sequence[CommandGroup], examples: Sequence[str]) -> None:
     """`kiln` seul ou `kiln --help` : bannière, commandes par section, exemples."""
-    show_banner("orchestrateur de repos")
+    show_banner("atelier de Claude Code")
     width = max(len(name) for _, commands in groups for name, _ in commands) + 3
     usage = ui.paint("<commande> [options]", ui.STONE)
     print(f"{INDENT}{ui.paint('Usage', bold=True)}  kiln {usage}")

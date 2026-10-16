@@ -2,8 +2,11 @@
 
 *[English](README.md) · Français*
 
-Orchestrateur de repos : génère un projet complet en une commande, règle ses paramètres à tout
-moment et le tient à jour (architecture et dépendances). Jamais pip ni docker : uv pour Python,
+L'atelier de Claude Code : kiln lui donne de quoi construire des repos de qualité production et
+les garder ainsi. Le savoir (stacks à jour, consignes par repo, documentation des bibliothèques),
+les garde-fous (règles vérifiées par la machine, hooks, branches protégées), les façons de
+travailler (branche, fusion, version, suivi) et la fraîcheur : un projet complet en une
+commande, des paramètres réglables à tout moment, tenu à jour (architecture et dépendances). Jamais pip ni docker : uv pour Python,
 pnpm pour JavaScript, podman pour les conteneurs.
 
 Un projet généré contient :
@@ -15,8 +18,8 @@ Un projet généré contient :
   `.gitattributes`, `.gitignore`, modèle de PR, `CODEOWNERS`, pre-commit (ruff, ESLint, charte,
   refus de commiter sur `main` et `develop`) ;
 - la CI GitHub (`.github/workflows/ci.yml`), qui appelle les workflows réutilisables de kiln ;
-- le suivi du travail, d'office : `docs/a-faire/` (`a-faire.md`, `ecarte.md`, `urgent.md`,
-  skill `base:a-faire`), que la status line de Claude Code compte ;
+- le suivi du travail, d'office : `docs/backlog/` (`backlog.md`, `rejected.md`, `urgent.md`,
+  en anglais, skill `base:backlog`), que la status line de Claude Code compte ;
 - les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
   `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
 - d'office (`--no-github` pour s'en passer) : le dépôt GitHub privé, avec `main` verrouillée (seul le commit initial)
@@ -27,7 +30,7 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 ([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) :
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
-  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `a-faire`,
+  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `backlog`,
   `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur) ; hooks garde de branche, fichiers protégés, contrôle du fichier
   modifié, mise à jour proposée à l'ouverture de session (oui/non : l'outil kiln s'il est en
   retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
@@ -63,12 +66,15 @@ pour le dépôt GitHub, que `kiln new` crée d'office (si `gh` n'est pas connect
 connexion et affiche le lien https://github.com/login/device).
 
 ```sh
-uv tool install git+https://github.com/antoine-tena/kiln
+uv tool install kiln-cli
 ```
 
-Installe deux commandes, `kiln` et `charte`, à la dernière version (branche `main`). Quand une
-version sort, le hook de début de session propose de mettre à jour l'outil, puis chaque repo ;
-à la main : `uv tool upgrade kiln`, puis `kiln update` dans le repo.
+Installe deux commandes, `kiln` et `charte`, à la dernière version publiée sur PyPI (le paquet
+s'appelle `kiln-cli`, `kiln` y étant pris ; `uvx kiln-cli new mon-app` l'essaie sans
+l'installer). Pour suivre les candidates (canal `interne`) ou un commit précis :
+`uv tool install git+https://github.com/antoine-tena/kiln@<tag>`. macOS, Linux, et Windows par
+WSL. Quand une version sort, le hook de début de session propose de mettre à jour l'outil, puis
+chaque repo ; à la main : `uv tool upgrade kiln-cli`, puis `kiln update` dans le repo.
 Python 3.14 est requis ; uv le télécharge au besoin. Au premier `kiln install`, kiln demande le
 système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.toml`, avec
 `proprietaire` et `equipe` par défaut si on les y ajoute.
@@ -83,7 +89,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
 | `kiln ci [commit]` | Rejoue sur le poste la CI du `ci.yml` pour ce commit (défaut `HEAD`) et pose le verdict en note git sur origin, que le script de déploiement accepte comme une CI verte. `--statut` : le verdict seul. Voir « CI rejouée sur le poste ». |
 | `kiln contrat` | Django + Nuxt : exporte `openapi.json` depuis le code, puis régénère les types du front (`app/types/api.d.ts`). `kiln update` le fait aussi. |
-| `kiln set` | Dans un repo : sans argument, affiche ses paramètres ; `kiln set clé=valeur…` les change (équipe, frameworks, podman, a-faire…) : le repo est régénéré, un framework retiré emporte ses fichiers. Hors d'un repo, ou avec `--poste` : les réglages du poste (`systeme`, `proprietaire`, `equipe`, `dossier_code`, dans `~/.config/kiln/config.toml`). |
+| `kiln set` | Dans un repo : sans argument, affiche ses paramètres ; `kiln set clé=valeur…` les change (équipe, frameworks, podman, boussole…) : le repo est régénéré, un framework retiré emporte ses fichiers. Hors d'un repo, ou avec `--poste` : les réglages du poste (`systeme`, `proprietaire`, `equipe`, `dossier_code`, dans `~/.config/kiln/config.toml`). |
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
 | `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, puis la fusion directe dans l'intégration (commit de fusion poussé) ; contrôles en échec, la branche est poussée sans être fusionnée. L'arbre principal ne change jamais de branche. |
 | `kiln doctor` | Diagnostic du poste (git, uv, gh connecté, pnpm, podman, Java, pre-commit, version de kiln, plugin Claude, configuration) et du repo courant (version du modèle, crochet pre-commit, dépendances, `backend/.env`) : ✓, ! à regarder ou ✗ bloquant, chaque fois avec la commande qui corrige. Ne modifie rien. |
@@ -205,7 +211,9 @@ Le travail s'intègre dans `develop` ; `main` ne reçoit que des versions.
 - **Clients** : ils se mettent à jour à chaque version, correctif compris. Le hook de début de
   session propose l'outil puis le repo ; `kiln update` applique la version, montre ses
   nouveautés et fait avancer le tag auquel le `ci.yml` du repo cite les workflows de kiln.
-- **Outil** : `uv tool install git+https://github.com/antoine-tena/kiln` suit `main` ;
+- **Outil** : `uv tool install kiln-cli` prend les versions promues, publiées sur PyPI par le
+  workflow `pypi.yml` au tag `vX.Y.Z` ; `uv tool install git+https://github.com/antoine-tena/kiln@<tag>`
+  prend aussi les candidates ;
   `kiln status` dit de quelle version part chaque repo (`v0.3.2 → v0.3.5`), la bannière celle
   de l'outil (`v0.3.5 +3 · abc1234` : trois commits après v0.3.5, installé depuis un dossier).
 

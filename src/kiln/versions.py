@@ -14,7 +14,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from importlib import resources
-from importlib.metadata import PackageNotFoundError, distribution
+from importlib.metadata import Distribution, PackageNotFoundError, distribution
 from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
@@ -22,6 +22,9 @@ from packaging.version import InvalidVersion, Version
 from kiln.config import INTERNAL_CHANNEL, load_config
 
 KILN_GIT_URL = "https://github.com/antoine-tena/kiln"
+# Nom du paquet sur PyPI ; `kiln` avant, encore présent sur les postes pas mis à jour.
+PYPI_NAME = "kiln-cli"
+DISTRIBUTIONS = (PYPI_NAME, "kiln")
 CHANGELOG_FILE = "CHANGELOG.md"
 # `v0.4.0`, `v0.4.0-rc.2`, et ce que `git describe` ajoute derrière (`v0.4.0-3-gabc1234`).
 RELEASE_TAG = re.compile(r"^v(\d+\.\d+\.\d+(?:-rc\.\d+)?)(?:-(\d+)-g([0-9a-f]+))?$")
@@ -79,12 +82,38 @@ def latest_release(source: str = KILN_GIT_URL, *, candidates: bool | None = None
     return max(releases)[1] if releases else None
 
 
+def _installed_distribution() -> Distribution | None:
+    for name in DISTRIBUTIONS:
+        try:
+            return distribution(name)
+        except PackageNotFoundError:
+            continue
+    return None
+
+
+def install_source() -> str:
+    """D'où vient l'outil : `pypi`, `git` (une révision GitHub) ou `dossier` (un checkout)."""
+    dist = _installed_distribution()
+    direct_url = (dist.read_text("direct_url.json") or "") if dist else ""
+    if not direct_url:
+        return "pypi"
+    return "dossier" if _source_dir(direct_url) is not None else "git"
+
+
+def upgrade_command(version: str) -> str:
+    """Commande qui installe la version `vX.Y.Z` de l'outil, par où il a été installé : PyPI
+    n'a que les versions promues, une candidate passe par GitHub."""
+    release = release_version(version)
+    if install_source() == "pypi" and release is not None and not release.is_prerelease:
+        return f'uv tool install --force "{PYPI_NAME}=={release}"'
+    return f'uv tool install --force "git+{KILN_GIT_URL}@{version}"'
+
+
 def installed_version() -> str:
     """Version de l'outil : `v3`, et pour un outil installé depuis un dossier, ce que dit git
     (`v3 +4 · abc1234` : quatre commits après v3)."""
-    try:
-        dist = distribution("kiln")
-    except PackageNotFoundError:
+    dist = _installed_distribution()
+    if dist is None:
         return "v?"
     package_version = f"v{dist.version}"
     source = _source_dir(dist.read_text("direct_url.json") or "")
