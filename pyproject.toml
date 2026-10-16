@@ -1,7 +1,7 @@
 [project]
 name = "kiln"
 version = "0.2.0"
-description = "Generate production-grade repos in one command, then keep every one of them up to date"
+description = "Make Claude Code build production-grade repos, and keep them that way"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

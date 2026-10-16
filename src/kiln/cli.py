@@ -1,4 +1,4 @@
-"""kiln : orchestrateur de repos. Génère un projet, règle ses paramètres et le tient à jour."""
+"""kiln : l'atelier de Claude Code. Génère un projet, règle ses paramètres et le tient à jour."""
 
 import argparse
 import re

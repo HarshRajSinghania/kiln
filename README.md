@@ -2,7 +2,7 @@
 
 # kiln 🔥
 
-**Generate a production-grade repo in one command — then keep it, and every other repo you own, up to date.**
+**Make Claude Code build production-grade repos — and keep them that way.**
 
 [![CI](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml/badge.svg?branch=develop)](https://github.com/antoine-tena/kiln/actions/workflows/kiln.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
@@ -19,9 +19,11 @@
 
 ---
 
-Project templates are great on day one and useless on day ninety: the template moves on, your
-repos don't. **kiln** is a project orchestrator built on [Copier](https://copier.readthedocs.io)
-that fixes the *day ninety* problem:
+Claude Code writes code fast, but a real repo needs more than a prompt: an up-to-date stack,
+rules the agent cannot talk its way around, a sane git workflow, and someone to stop the repo
+from going stale on day ninety. **kiln** brings all four. Built on
+[Copier](https://copier.readthedocs.io), it generates the repo, wires Claude Code into it, and
+keeps every repo you own current:
 
 - 🧱 **`kiln new`** — asks what you are building, recommends a stack, and generates a complete
   repo: code, tests, linters, CI, pre-commit, containers, a `CLAUDE.md` for AI agents, a GitHub
