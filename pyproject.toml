@@ -1,7 +1,7 @@
 [project]
 # Sur PyPI, `kiln` est pris : la distribution s'appelle kiln-cli, la commande reste `kiln`.
 name = "kiln-cli"
-version = "0.2.0"
+version = "0.3.2"
 description = "Make Claude Code build production-grade repos, and keep them that way"
 readme = "README.md"
 license = "MIT"

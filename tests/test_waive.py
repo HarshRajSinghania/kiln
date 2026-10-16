@@ -37,6 +37,16 @@ def test_first_waiver_lasts_one_week(repo: Path) -> None:
     assert entry["renewals"] == 0 and entry["reason"] == "repris tel quel"
 
 
+def test_author_is_unknown_without_git_user(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    empty = repo.parent / "gitconfig-vide"
+    empty.write_text("")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(empty))
+
+    waive(repo, WaiveRequest("TAILLE-FICHIER", "repris tel quel"), TODAY)
+
+    assert entries(repo)[0]["by"] == "inconnu"
+
+
 def test_renewal_moves_to_the_next_tier_and_keeps_comments(repo: Path) -> None:
     waive(repo, WaiveRequest("TAILLE-FICHIER", "repris"), TODAY)
     (repo / "kiln-waivers.toml").write_text("# à moi\n" + (repo / "kiln-waivers.toml").read_text())

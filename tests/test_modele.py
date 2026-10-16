@@ -236,7 +236,7 @@ def test_team_gets_kiln_marketplace_and_base_plugin(tmp_path: Path) -> None:
 
 def test_a_released_template_pins_its_workflows_to_its_version(tmp_path: Path) -> None:
     clone = tmp_path / "kiln"
-    subprocess.run(["git", "clone", "-q", str(TEMPLATE_DIR), str(clone)], check=True)
+    subprocess.run(["git", "clone", "-q", "--no-tags", str(TEMPLATE_DIR), str(clone)], check=True)
     subprocess.run(["git", "-C", str(clone), "tag", "v9.9.9"], check=True)
     copier.run_copy(
         str(clone), tmp_path / "demo", data=ANSWERS, defaults=True, vcs_ref="v9.9.9", quiet=True
