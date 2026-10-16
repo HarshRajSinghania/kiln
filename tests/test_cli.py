@@ -1,3 +1,4 @@
+import argparse
 import sys
 from pathlib import Path
 
@@ -82,3 +83,19 @@ def test_status_outside_a_terminal_is_plain_text(
     assert "\033[" not in out
     assert out.splitlines()[0].startswith("kiln v")
     assert "REPO" in out
+
+
+def test_bash_completion_script_lists_commands_and_options(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert run_kiln(monkeypatch, "completion", "bash") == 0
+    out = capsys.readouterr().out
+    parser = cli.build_parser()
+    subparsers = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction))
+    for name in subparsers.choices:
+        assert name in out
+    # a few known options
+    assert "--size" in out
+    assert "--all" in out
+    assert "--containers" in out
+    assert "complete -F _kiln_completion kiln" in out
