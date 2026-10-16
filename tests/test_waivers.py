@@ -1,4 +1,5 @@
-"""Dérogations de `kiln-waivers.toml` : paliers, échéance, cibles, effet sur la charte."""
+"""Dérogations de `kiln-waivers.toml` : paliers, échéance, cibles, effet sur la charte, fichiers
+figés laissés tels quels par `kiln update`."""
 
 import datetime
 import json
@@ -6,11 +7,14 @@ import subprocess
 import tomllib
 from pathlib import Path
 
+import copier
 import pytest
 
 from kiln.charte.charte import verifier
 from kiln.charte.moteur import Depot
 from kiln.charte.waivers import load
+from kiln.frozen import report_frozen_drift
+from kiln.update import apply_template, template_commit
 
 TODAY = datetime.date(2026, 10, 16)
 CHARTE = """
@@ -144,3 +148,56 @@ def test_waiver_of_an_unknown_rule_fails(repo: Path, capsys: pytest.CaptureFixtu
 
 def _config(repo: Path) -> dict:
     return tomllib.loads((repo / "charte.toml").read_text())
+
+
+def git(root: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+
+
+def template_version(template: Path, tag: str, ci: str) -> None:
+    (template / "ci.yml").write_text(ci)
+    (template / "autre.txt").write_text(f"{tag}\n")
+    git(template, "add", "-A")
+    git(template, "commit", "-qm", tag)
+    git(template, "tag", tag)
+
+
+@pytest.fixture
+def generated(tmp_path: Path) -> Path:
+    """Un repo généré à la v1 d'un petit modèle, `ci.yml` modifié et figé ; le modèle est en v2."""
+    template, project = tmp_path / "modele", tmp_path / "projet"
+    template.mkdir()
+    git(template, "init", "-q")
+    (template / "copier.yml").write_text("_answers_file: .copier-answers.yml\n")
+    (template / "{{_copier_conf.answers_file}}.jinja").write_text(
+        "{{ _copier_answers | to_nice_yaml }}"
+    )
+    template_version(template, "v1", "a\nb\n")
+    copier.run_copy(str(template), project, vcs_ref="v1", defaults=True, quiet=True)
+    (project / "ci.yml").write_text("a\nlocal\n")
+    today = datetime.date.today()
+    write(project, waiver(rule=None, file="ci.yml", since=today, until=today))
+    git(project, "init", "-q")
+    git(project, "add", "-A")
+    git(project, "commit", "-qm", "init")
+    template_version(template, "v2", "a\nb2\n")
+    return project
+
+
+def test_update_leaves_frozen_files_alone(generated: Path) -> None:
+    apply_template(generated)
+
+    assert (generated / "ci.yml").read_text() == "a\nlocal\n"
+    assert (generated / "autre.txt").read_text() == "v2\n"
+
+
+def test_update_reports_what_kiln_changed_in_frozen_files(
+    generated: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    template = str(generated.parent / "modele")
+    apply_template(generated)
+
+    report_frozen_drift(generated, template, "v1", template_commit(generated))
+
+    out = capsys.readouterr().out
+    assert "ci.yml" in out and "-b\n+b2" in out

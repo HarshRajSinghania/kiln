@@ -16,7 +16,7 @@ un dossier ou un module.
   `install.py`, `dev.py`, `check.py`, `settings.py` (`kiln set`, clés réglables), `update.py`,
   `contract.py`, `release.py` (`kiln version`), `doctor.py` (diagnostic du poste et du repo), `fleet.py` (`status`, `update --all`) ; socle : `stack.py` (stack lue dans
   `.copier-answers.yml`), `template.py`, `deps.py`, `github.py`, `rules.py` (règles non
-  vérifiées), `statusline.py`, `versions.py` (tags, journal des versions), `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
+  vérifiées), `statusline.py`, `versions.py` (tags, journal des versions), `frozen.py` (fichiers figés par `kiln-waivers.toml`, épargnés par `update`), `banner.py` (bannière, écran d'accueil), `ui.py` (palette pierre et feu, étapes,
   roue animée, bilan, succès, erreurs), `shell.py`, `config.py` (`~/.config/kiln/config.toml`).
 - `src/kiln/ci/` : `kiln ci` (CI rejouée sur le poste, verdict en note git) ;
   `src/kiln/charte/` : moteur de `charte` (`interdictions.py`, `cliquets.py`,

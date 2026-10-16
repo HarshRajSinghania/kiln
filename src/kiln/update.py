@@ -11,6 +11,7 @@ from kiln.backlog import migrate_legacy_backlog
 from kiln.check import check_project
 from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
+from kiln.frozen import frozen_files, report_frozen_drift
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
 from kiln.stack import ANSWERS_FILE, load_stack, read_answers
@@ -37,6 +38,7 @@ def update_project(
         previous = template_commit(root)
         apply_template(root)
         show_release_notes(previous, template_commit(root))
+        report_frozen_drift(root, _template_source(root), previous, template_commit(root))
     stack = load_stack(root)
     if should_update_deps:
         update_dependencies(root, stack, allow_major=allow_major)
@@ -52,13 +54,15 @@ def update_project(
 
 def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> None:
     """Modèle réappliqué (révision la plus récente, réponses éventuellement changées), sans
-    écraser les modifications locales : les conflits sont marqués dans les fichiers."""
+    écraser les modifications locales : les conflits sont marqués dans les fichiers. Les
+    fichiers figés (`kiln-waivers.toml`) sont laissés tels quels."""
     try:
         copier.run_update(
             root,
             data=dict(answers or {}),
             vcs_ref=template_revision(_template_source(root)),
             use_prereleases=follows_candidates(),
+            exclude=frozen_files(root),
             defaults=True,
             skip_answered=True,
             overwrite=True,

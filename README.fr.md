@@ -263,6 +263,9 @@ six mois à chaque renouvellement ; `until = "never"` pour un écart permanent, 
 `charte` liste les dérogations actives, prévient dans la seconde moitié de la période, et
 échoue sur une dérogation échue, mal formée, qui ne vise plus rien, ou qui porte sur une règle
 non dérogeable (`DONNEES-PERSO`, `SECRETS`, `PAS-SUR-MAIN`, `DEPENDANCES-FIGEES`).
+Une dérogation `file = "…"` (au lieu de `rule`) fige un fichier généré : `kiln update` et
+`kiln set` n'y touchent plus, et `kiln update` montre ce que kiln y a changé entre les deux
+versions, à reporter à la main ou à reprendre en levant la dérogation.
 
 ```toml
 [[waiver]]
