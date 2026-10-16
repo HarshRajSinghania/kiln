@@ -42,8 +42,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def settings(home: Path) -> dict:
-    return json.loads((home / ".claude" / "settings.json").read_text())
+def settings(home: Path) -> dict[str, Any]:
+    loaded: dict[str, Any] = json.loads((home / ".claude" / "settings.json").read_text())
+    return loaded
 
 
 def test_statusline_choice_is_checked() -> None:
