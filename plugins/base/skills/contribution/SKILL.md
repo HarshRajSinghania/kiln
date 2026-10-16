@@ -81,22 +81,33 @@ On the diff and the local run, from the most to the least serious:
    docs and `CHANGELOG.md` when the change is visible.
 6. **Scope**: one subject per PR; anything unrelated goes to another PR.
 
-Sort what you find: **blocking** (must change before merge), **suggestion** (would be better,
-their call, prefixed `suggestion:`), **nit** (style detail, prefixed `nit:`; never blocks).
-Few nits on a first contribution: fix them yourself at merge rather than send them back.
+Sort what you find: **blocking** (must change before merge), **suggestion** (would be
+better), **nit** (style detail). They are all fixed by the maintainer, not sent back to the
+contributor (section 5); the list is what the fix-up commit does and what the review says.
 
 ## 5. Decide
 
 Propose one outcome to the user, with the reason:
-- **Approve and merge**: no blocking point, checks green.
-- **Request changes**: blocking points the contributor can fix. If they are small and
-  `maintainerCanModify` is true, offer instead to push the fix onto their branch: their
-  commits stay theirs, the PR merges sooner. Large projects do this all the time for good
-  contributions with a last detail.
-- **Take it over**: a good contribution whose author stopped answering (two weeks after a
-  reminder) or that needs work beyond what can be asked: finish it on a branch of the repo
-  that keeps their commits, open or merge it saying so, credit them.
+The user's choice: **the maintainer fixes, the contributor is not asked to.** Like the
+"fix up and merge" of large projects, the PR merges sooner, the contributor has no second
+round to do, and their commits keep their name.
+- **Merge as is**: nothing to change, checks green.
+- **Fix up and merge** (the usual case): commit the changes yourself on top of their
+  commits, never by rewriting them. With `maintainerCanModify` true, push to their branch
+  (`git push https://github.com/<login>/<repo> pr-<n>:<headRefName>` from the `pr-<n>`
+  worktree), so the PR shows the fix; otherwise merge first, then commit the fix on a
+  branch of the repo right after, and say so in the PR. One commit per subject, the repo's
+  conventions, the checks run again.
+- **Ask first, then fix**: when the fix changes *what* the PR does, not only how (another
+  approach, a smaller feature, a behaviour they did not intend). Do not rewrite their idea
+  behind their back: say what you propose and why, wait a few days for an objection, then
+  do it. Their silence is a yes.
+- **Take it over**: the fix would be most of the work. Finish it on a branch of the repo
+  that keeps their commits, open or merge it saying so, credit them, close theirs.
 - **Close**: the triage cases above.
+
+Never block a PR on the contributor coming back: nothing in this skill waits on them, except
+the objection window above.
 
 ## 6. Write the answer
 
@@ -104,23 +115,23 @@ One review, not a stream of comments: a summary, then inline comments on the lin
 summary:
 - opens with a real thanks, specific to what they did (`Thanks for this, and for the
   regression test`), plus a welcome on a first contribution;
-- says the outcome plainly (`Looks good, merging` / `One thing to change before merging`);
-- explains each blocking point: what, why, and how, with a GitHub suggestion block
-  (` ```suggestion `) when the fix is a few lines; a question rather than an order when you
-  might be wrong;
-- ends with the next step and who takes it; no promised dates.
+- says the outcome plainly (`Merging` / `I pushed a small fix on top, merging`);
+- explains each change made in the fix-up: what and why, briefly, so they learn from it
+  without having to do anything; for an "ask first" change, what you propose and that you
+  will do it unless they object;
+- ends with the next step; no promised dates.
 
 No jargon of the repo they cannot know, no `@` of anyone else, nothing about how it was
 written with Claude. Show the user the full text (and each inline comment with its file and
 line), say it will be public under their account, and post only after an explicit yes:
 
-    gh pr review <n> --approve | --request-changes | --comment --body-file <file>
+    gh pr review <n> --approve | --comment --body-file <file>
 
 Inline comments go in the same review, through the API:
 
     gh api repos/{owner}/{repo}/pulls/<n>/reviews --input <review.json>
 
-with `{"event": "COMMENT" | "APPROVE" | "REQUEST_CHANGES", "body": "…", "comments": [{"path": "…", "line": <n>, "side": "RIGHT", "body": "…"}]}`.
+with `{"event": "COMMENT" | "APPROVE", "body": "…", "comments": [{"path": "…", "line": <n>, "side": "RIGHT", "body": "…"}]}`.
 
 ## 7. Merge
 
@@ -128,7 +139,7 @@ Only after the yes, with the checks green on GitHub and the PR based on the inte
 branch (`develop` if it exists, else the default branch; retarget with
 `gh pr edit <n> --base develop` otherwise, which is fine to do and to mention).
 - **Their name stays on it.** Merge on GitHub, never by copying the diff into a commit of
-  yours: `gh pr merge <n> --merge` keeps their commits as they are, the right choice when
+  yours (the fix-up commits sit on top of theirs): `gh pr merge <n> --merge` keeps their commits as they are, the right choice when
   they are clean. If they are not (`wip`, `fix typo`, titles that break the repo's
   conventions), `gh pr merge <n> --squash --subject "<conventional title> (#<n>)"`: GitHub
   keeps them as the commit's author.
