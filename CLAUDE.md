@@ -24,7 +24,7 @@ un dossier ou un module.
 - `copier.yml` : questions du modèle ; `template/` : le modèle (`CLAUDE.md.jinja`, chartes de
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
-  (skills `worktree`, `fusion`, `version`, `nettoyage`, `backlog`, `maj-kiln`,
+  (skills `worktree`, `fusion`, `version`, `nettoyage`, `relecture` (commits et diff d'une branche avant la fusion, dépôt entier avant une version), `backlog`, `maj-kiln`,
   `report-to-kiln` (défaut de kiln remonté en issue ou PR), `token` (jeton d'un service dans
   `.<service>/`), `contribution` (PR d'un contributeur extérieur : sécurité, tri, revue,
   fusion créditée) ; `hooks/` ; `scripts/statusline.py`),
