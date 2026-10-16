@@ -22,7 +22,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
     Why, what to do (as a `- [ ]` checklist when there are several steps), where to look.
 
 - **ID** `T-NN`: stable, never reused, quoted as is in commits and branches (tickets opened
-  before 16 October 2026 were `AF-NN`, same number). **Next free: T-17.**
+  before 16 October 2026 were `AF-NN`, same number). **Next free: T-18.**
 - **Type**, one of: `bug` (something is broken); `improvement` (it works, it could work
   better); `idea` (nothing exists yet, to be explored); `task` (work that is neither: a release,
   a decision, a check).
@@ -191,6 +191,23 @@ After the crash of T-15, annway kept `.claude/worktrees/chore-kiln-update-<date>
 reuse the worktree when it is clean and its branch has no commit of its own, or remove it
 first; never touch one that has changes. Same for a fetch that fails before the worktree is
 used (vision).
+
+### T-17 · Tests fail when run from the main checkout while other worktrees exist
+- **Type**: bug
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: S · **Owner**: Claude · **Due**: —
+- **Origin**: merge of `feat/relecture`, 16 October 2026
+
+`uv run pytest` from `~/code/kiln` during a merge (tree not clean), with other sessions'
+worktrees in `.claude/worktrees/`: 97 tests fail in `copier` with `fatal: No url found for
+submodule path '.claude/worktrees/chore-versions' in .gitmodules`. The same commit passes
+(236 tests) in a clean worktree. Lead to check: with a dirty template, copier copies it and
+runs `git add -A`, which takes the nested worktrees as gitlinks; `.claude/worktrees/` is only
+ignored in `.git/info/exclude`, which the copy does not carry.
+- [ ] Reproduce, confirm the cause.
+- [ ] Fix: `.claude/worktrees/` in kiln's `.gitignore` (and the template's?), or tests that
+  render from a clean source (`vcs_ref="HEAD"` as in `test_deploiement.py`).
 
 ### T-05 · Check the first real run of the workflows on GitHub
 - **Type**: task
