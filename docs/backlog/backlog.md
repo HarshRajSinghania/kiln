@@ -148,7 +148,7 @@ is in English, the command, the skills and the generated files are in French. Th
 (`docs/backlog/`, skill `base:backlog`) is already in English.
 - [ ] Command messages in English, French as an option (a `kiln set` setting).
 - [ ] Skills and hooks of the plugins (`plugins/`) in English, with English names (`fusion`,
-  `nettoyage`, `maj-kiln`…): breaking, in the same minor release as the backlog rename.
+  `nettoyage`, `maj-kiln`…): breaking, in the same release as the backlog rename.
 - [ ] Generated files (`CLAUDE.md`, charters) in the language chosen at `kiln new` (T-13).
 
 ### T-13 · Ask the project's language at `kiln new`, with a per-use option
@@ -170,7 +170,7 @@ kiln itself is all English; a generated repo is written in its team's language. 
   `Status`, `todo`, section names) stay English in every language, a single format for the
   status line and the skill.
 - [ ] `kiln set langue=…` (and the per-use keys), `kiln new --language`.
-- [ ] Ship in the same minor release as T-06 and the backlog rename.
+- [ ] Ship in the same release as T-06 and the backlog rename.
 
 ## 🟡 Normal
 
@@ -204,7 +204,7 @@ tag's, and that `.kiln` is removed before the project's checks.
 - **Effort**: M · **Owner**: Claude · **Due**: —
 - **Origin**: move to semver, 15 October 2026
 
-In 0.x, a minor release can break. Copier can run a migration when a version is crossed
+In 0.x, any release can break (patch-first numbering, CLAUDE.md "Versions"). Copier can run a migration when a version is crossed
 (`_migrations` in `copier.yml`), but `kiln update` runs Copier with `unsafe=False`, so they do
 not run: today a migration lives in kiln's Python code, after Copier (see `src/kiln/backlog.py`
 for `docs/a-faire/` → `docs/backlog/`). Watch out: Copier deletes a file the template no longer
