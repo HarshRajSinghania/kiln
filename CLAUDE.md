@@ -47,12 +47,27 @@ Linux), et le 0.x du semver, prévu pour un début où tout peut casser (comme u
 qu'un quatrième chiffre. Les clients se mettent à jour à chaque version, correctif compris.
 Suivi de ce qui reste : `docs/a-faire/a-faire.md`.
 
-Semver à trois chiffres, `vMAJEUR.MINEUR.CORRECTIF` ; en 0.x (aujourd'hui), un changement cassant
-monte la mineure, tout le reste le correctif. Est cassant ce qui touche l'API publique de kiln :
-commandes et options de la CLI, questions de `copier.yml`, arborescence générée, entrées des
-workflows et actions réutilisables, noms des skills et hooks, identifiants de règles de la charte
-(commit `feat!:` ou `BREAKING CHANGE`). `kiln version` (module `release.py`) propose le numéro et
-dit quelles candidates sont prêtes.
+**Numérotation** (choix d'antoine, 16 octobre 2026) : comme Claude Code (2.1.301 en octobre
+2026), pas comme Vercel CLI (64 majeures, un numéro qui ne dit plus rien). Personne ne dépend de
+kiln par une plage de versions (`^0.3`) : les repos citent ses workflows au tag exact et
+n'avancent que par `kiln update`, qui convertit ce qui casse. Le numéro date une version ; c'est
+la note de version qui dit ce qui change. De Next.js, on prend la discipline (candidates,
+changements cassants en tête des notes, migration automatique), pas la numérotation.
+
+`vMAJEUR.MINEUR.CORRECTIF`. En 0.x (aujourd'hui) :
+- **chaque version monte le correctif**, nouveautés et changements cassants compris (`v0.3.1`,
+  `v0.3.2`… `v0.3.192` s'il le faut) ;
+- **la mineure ne monte que pour une étape** décidée par antoine (par exemple kiln tout en
+  anglais) : `kiln version --minor` ; ne jamais la proposer d'office ;
+- **un changement cassant** reste marqué au commit (`feat!:` ou `BREAKING CHANGE`), ouvre la
+  note de version dans `CHANGELOG.md`, et livre sa conversion dans `kiln update`. Est cassant
+  ce qui touche l'API publique de kiln : commandes et options de la CLI, questions de
+  `copier.yml`, arborescence générée, entrées des workflows et actions réutilisables, noms des
+  skills et hooks, identifiants de règles de la charte.
+
+À partir de 1.0 (l'engagement de stabilité public, plus tard), semver strict comme Next.js :
+cassant → majeure (rare et planifiée), `feat` → mineure, le reste → correctif. `kiln version`
+(module `release.py`) propose le numéro et dit quelles candidates sont prêtes.
 
 Deux temps, par la skill `base:version` (pas de déploiement : le tag publie) :
 1. **Candidate** : branche `release/vX.Y.Z` tirée de `develop`, entrée `## vX.Y.Z — date` en tête

@@ -87,7 +87,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
 | `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, puis la fusion directe dans l'intégration (commit de fusion poussé) ; contrôles en échec, la branche est poussée sans être fusionnée. L'arbre principal ne change jamais de branche. |
 | `kiln doctor` | Diagnostic du poste (git, uv, gh connecté, pnpm, podman, Java, pre-commit, version de kiln, plugin Claude, configuration) et du repo courant (version du modèle, crochet pre-commit, dépendances, `backend/.env`) : ✓, ! à regarder ou ✗ bloquant, chaque fois avec la commande qui corrige. Ne modifie rien. |
-| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.4.0` en retard), stack. |
+| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, version du modèle (`v0.3.2 → v0.3.5` en retard), stack. |
 | `kiln version` | Dans le dépôt de kiln : dernière version publique, candidates (âge, repos qui les ont adoptées, prêtes à promouvoir) et numéro de la prochaine. |
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
@@ -189,14 +189,16 @@ sécurité.
 
 ## Versions
 
-kiln suit le semver à trois chiffres (`vMAJEUR.MINEUR.CORRECTIF`). En 0.x, le développement
-initial, un changement cassant monte la mineure (`0.3.4 → 0.4.0`) et tout le reste le correctif.
+kiln numérote ses versions `vMAJEUR.MINEUR.CORRECTIF`, comme Claude Code : en 0.x, chaque
+version monte le correctif, changements cassants compris (`0.3.4 → 0.3.5`), signalés en tête de
+leur note et convertis par `kiln update` ; la mineure ne monte que pour une étape
+(`kiln version --minor`). À partir de 1.0, semver strict.
 Le travail s'intègre dans `develop` ; `main` ne reçoit que des versions.
 
-- **Candidate** (`v0.4.0-rc.1`) : tirée de `develop` sur une branche `release/v0.4.0`, avec son
+- **Candidate** (`v0.3.5-rc.1`) : tirée de `develop` sur une branche `release/v0.3.5`, avec son
   entrée en tête de [`CHANGELOG.md`](CHANGELOG.md). Seuls les postes au canal `interne` la
   suivent (`kiln set canal=interne`).
-- **Promotion** (`v0.4.0`) : quand une candidate plus récente est prête et que celle-ci a tenu
+- **Promotion** (`v0.3.5`) : quand une candidate plus récente est prête et que celle-ci a tenu
   3 jours (7 après la 1.0) dans les repos du canal interne, le même commit est tagué et fusionné
   dans `main`. `kiln version` montre les candidates, leur âge, qui les a adoptées, lesquelles
   sont prêtes et le numéro de la prochaine.
@@ -204,8 +206,8 @@ Le travail s'intègre dans `develop` ; `main` ne reçoit que des versions.
   session propose l'outil puis le repo ; `kiln update` applique la version, montre ses
   nouveautés et fait avancer le tag auquel le `ci.yml` du repo cite les workflows de kiln.
 - **Outil** : `uv tool install git+https://github.com/antoine-tena/kiln` suit `main` ;
-  `kiln status` dit de quelle version part chaque repo (`v0.3.2 → v0.4.0`), la bannière celle
-  de l'outil (`v0.4.0 +3 · abc1234` : trois commits après v0.4.0, installé depuis un dossier).
+  `kiln status` dit de quelle version part chaque repo (`v0.3.2 → v0.3.5`), la bannière celle
+  de l'outil (`v0.3.5 +3 · abc1234` : trois commits après v0.3.5, installé depuis un dossier).
 
 ## Faire évoluer le modèle
 

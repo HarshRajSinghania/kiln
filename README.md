@@ -132,7 +132,7 @@ make the opinions yours.
 | `kiln set [key=value…]` | Show or change the repo's settings (team, frameworks, podman…); the repo is re-rendered. |
 | `kiln update` | Move to the latest kiln release (with a box listing what's new in each release crossed), compatible dependency upgrades, then checks. `--major`, `--no-template`, `--no-deps`. |
 | `kiln update --all` | Update every kiln repo in your code folder, one worktree each, merged only if checks pass. |
-| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.4.0` when behind), stack — for every kiln repo. |
+| `kiln status` | Branch, clean tree, template release (`v0.3.2 → v0.3.5` when behind), stack — for every kiln repo. |
 | `kiln version` | In kiln's own repo: latest public release, candidates (age, adopting repos, ready to promote) and the number the next release should take. |
 | `kiln doctor` | Check the machine (git, uv, gh login, pnpm, podman, Java, pre-commit, kiln release, Claude plugin) and the current repo; each problem comes with the command that fixes it. Changes nothing. |
 | `kiln ci [commit]` | Replay the repo's GitHub CI locally against throwaway PostgreSQL/Redis, and push the verdict as a git note. |
@@ -179,10 +179,11 @@ Generated repos enable the right plugins for their stack automatically.
 ## Status
 
 kiln is used daily on a handful of real repos, including one in production. It is young, so it
-follows semver in its `0.x` form: a breaking change bumps the minor (`0.3.4 → 0.4.0`), anything
-else the patch. Each release is first a candidate (`v0.4.0-rc.1`) used on the author's own repos;
-it is promoted to `main` (`v0.4.0`) only once the next candidate is ready and it has held for
-three days. Projects are generated and updated from the latest release, pin kiln's workflows to
+numbers releases like Claude Code does: in `0.x`, every release bumps the patch, breaking changes
+included (`0.3.4 → 0.3.5`), listed first in the release notes and migrated by `kiln update`; the
+minor only moves for a milestone. Strict semver starts at 1.0. Each release is first a candidate
+(`v0.3.5-rc.1`) used on the author's own repos; it is promoted to `main` (`v0.3.5`) only once
+the next candidate is ready and it has held for three days. Projects are generated and updated from the latest release, pin kiln's workflows to
 that exact tag, and `kiln update` shows what changed in each release it applies (see
 [`CHANGELOG.md`](CHANGELOG.md)).
 Linux, WSL and macOS are supported.
