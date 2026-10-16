@@ -42,8 +42,8 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 # Écran d'accueil : commandes par section ; le rôle de chacune vient de son aide argparse.
 COMMAND_GROUPS = (
     ("Projet", ("new", "adopt", "install", "update", "set", "waive")),
-    ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor")),
-    ("Tous les repos", ("status", "update --all", "version", "completion")),
+    ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor", "completion")),
+    ("Tous les repos", ("status", "update --all", "version")),
 )
 FLEET_UPDATE_ROLE = "mettre à jour chaque repo kiln, fusion directe"
 EXAMPLES = (
@@ -107,57 +107,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_waive_command(commands)
     completion_parser = commands.add_parser(
-        "completion", help="générer le script de complétion pour un shell"
+        "completion", help="script de complétion du shell (eval dans ~/.bashrc)"
     )
-    completion_parser.add_argument("shell", choices=["bash"], help="shell cible (bash)")
+    completion_parser.add_argument("shell", choices=["bash"], help="shell visé")
     return parser
 
 
 def generate_bash_completion() -> str:
-    """Génère un script de complétion bash à partir du parser argparse."""
-    parser = build_parser()
+    """Script de complétion bash tiré du parser : commandes, puis options et choix de chacune."""
     subparsers = next(
-        (a for a in parser._actions if isinstance(a, argparse._SubParsersAction)), None
+        action
+        for action in build_parser()._actions
+        if isinstance(action, argparse._SubParsersAction)
     )
-    if subparsers is None:
-        return ""
-    commands: list[str] = []
-    options_map: dict[str, list[str]] = {}
-    for name, subparser in subparsers.choices.items():
-        commands.append(name)
-        opts: list[str] = []
-        for act in subparser._actions:
-            opts.extend(act.option_strings)
-        options_map[name] = opts
-    cmds = " ".join(sorted(commands))
     cases: list[str] = []
-    for name, opts in sorted(options_map.items()):
-        unique_opts = sorted(set(opts))
-        if unique_opts:
-            optstr = " ".join(unique_opts)
-            cases.append(
-                f"            {name})\n"
-                f'                COMPREPLY=( $(compgen -W "{optstr}" -- "$cur") )\n'
-                f"                ;;"
-            )
-    cases_str = "\n".join(cases)
-    return f"""# kiln bash completion
+    for name, subparser in sorted(subparsers.choices.items()):
+        words: set[str] = set()
+        for action in subparser._actions:
+            words.update(action.option_strings)
+            if not action.option_strings and action.choices:
+                words.update(str(choice) for choice in action.choices)
+        cases.append(
+            f"        {name})\n"
+            f'            COMPREPLY=( $(compgen -W "{" ".join(sorted(words))}" -- "$cur") )\n'
+            f"            ;;"
+        )
+    commands = " ".join(sorted(subparsers.choices))
+    return f"""# kiln bash completion: eval "$(kiln completion bash)"
 _kiln_completion() {{
-    local cur prev words cword
+    local cur="${{COMP_WORDS[COMP_CWORD]}}"
     COMPREPLY=()
-    cur="${{COMP_WORDS[COMP_CWORD]}}"
     if [[ $COMP_CWORD -eq 1 ]]; then
-        COMPREPLY=( $(compgen -W "{cmds}" -- "$cur") )
+        COMPREPLY=( $(compgen -W "{commands}" -- "$cur") )
         return 0
     fi
     case "${{COMP_WORDS[1]}}" in
-{cases_str}
-        *)
-            ;;
+{"\n".join(cases)}
     esac
 }}
-complete -F _kiln_completion kiln
-"""
+complete -F _kiln_completion kiln"""
 
 
 def _add_waive_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -190,41 +178,43 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument("--type", dest="project_type", choices=PROJECT_TYPES, help="conseil")
     new_parser.add_argument("--backend", choices=BACKENDS, help="backend (sinon conseillé)")
     new_parser.add_argument("--frontend", choices=FRONTENDS, help="frontend (sinon conseillé)")
-    new_parser.add_argument("--podman", action="store_true", help="conteneurs Podman")
-    new_parser.add_argument("--vps", help="hôte VPS pour le déploiement")
-    new_parser.add_argument("--goal", help="boussole du projet")
-    new_parser.add_argument("--prod-url", help="URL de santé en production")
-    new_parser.add_argument("--template", help="source du modèle (chemin ou URL git)")
+    new_parser.add_argument("--podman", action="store_true", help="conteneurs podman")
     new_parser.add_argument(
-        "--no-install", action="store_true", help="ne pas installer les dépendances"
+        "--vps", metavar="UTILISATEUR@ADRESSE", help="déploiement sur ce serveur (Django + podman)"
     )
-    new_parser.add_argument("--no-github", action="store_true", help="ne pas créer le dépôt GitHub")
-
-
-def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    update_parser = commands.add_parser("update", help="mettre à jour le projet ou tous les repos")
-    update_parser.add_argument("--all", action="store_true", help="tous les repos kiln")
-    update_parser.add_argument("--major", action="store_true", help="autoriser les majeures")
-    update_parser.add_argument(
-        "--no-template", action="store_true", help="ne pas mettre à jour le modèle"
+    new_parser.add_argument("--goal", help="boussole (north star) du suivi docs/backlog/")
+    new_parser.add_argument("--prod-url", help="sonde de santé de la production (status line)")
+    new_parser.add_argument(
+        "--no-github", action="store_true", help="ne pas créer le dépôt GitHub (créé par défaut)"
     )
-    update_parser.add_argument("--no-deps", action="store_true", help="ne pas mettre à jour les dépendances")
+    new_parser.add_argument("--no-install", action="store_true", help="ne rien installer")
+    new_parser.add_argument("--template", help="source du modèle (chemin ou URL git)")
 
 
 def _add_ci_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    ci_parser = commands.add_parser("ci", help="lancer la CI locale")
-    ci_parser.add_argument("revision", nargs="?", help="révision à tester")
-    ci_parser.add_argument("--sauter", nargs="*", default=[], help="jobs à sauter")
-    ci_parser.add_argument("--sans-pousser", action="store_true", help="ne pas pousser")
-    ci_parser.add_argument("--garder", action="store_true", help="garder les conteneurs")
-    ci_parser.add_argument("--statut", action="store_true", help="afficher le statut")
+    ci_parser = commands.add_parser("ci", help="rejouer la CI d'un commit sur le poste")
+    ci_parser.add_argument("revision", nargs="?", default="HEAD", help="commit (défaut : HEAD)")
+    ci_parser.add_argument(
+        "--sauter", action="append", default=[], metavar="JOB", help="job du ci.yml à écarter"
+    )
+    ci_parser.add_argument("--sans-pousser", action="store_true", help="note gardée en local")
+    ci_parser.add_argument("--garder", action="store_true", help="garder le worktree du commit")
+    ci_parser.add_argument("--statut", action="store_true", help="verdict seul, sans rejouer")
+
+
+def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    update_parser = commands.add_parser("update", help="mettre à jour modèle et dépendances")
+    update_parser.add_argument("--no-template", action="store_true", help="garder l'architecture")
+    update_parser.add_argument("--no-deps", action="store_true", help="garder les dépendances")
+    update_parser.add_argument("--major", action="store_true", help="versions majeures comprises")
+    update_parser.add_argument(
+        "--all", action="store_true", help="tous les repos kiln, fusion directe"
+    )
 
 
 def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest:
-    directory = arguments.directory or Path(_ask_project_name())
-    answers: dict[str, object] = {}
-    if arguments.name:
-        answers["nom"] = arguments.name
+    directory = arguments.directory or Path(arguments.name or _ask_project_name())
+    answers: dict[str, object] = {"nom": arguments.name or directory.name}
     if arguments.title:
         answers["titre"] = arguments.title
     if arguments.description:
@@ -281,8 +271,7 @@ BANNER_ACTIONS = {
 
 def dispatch(arguments: argparse.Namespace) -> None:
     if arguments.command == "completion":
-        if arguments.shell == "bash":
-            print(generate_bash_completion())
+        print(generate_bash_completion())
         return
     _show_banner(arguments)
     if arguments.command == "new":
@@ -365,12 +354,13 @@ def _show_banner(arguments: argparse.Namespace) -> None:
     if arguments.command in ("new", "status", "doctor") or getattr(arguments, "all", False):
         banner.show_banner(action if arguments.command != "update" else "mise à jour des repos")
         return
-    banner.show_banner(action, root=_repo_root_or_hint())
+    banner.show_banner(action, _repo_root_or_hint())
 
 
 def _dispatch_ci(root: Path, arguments: argparse.Namespace) -> None:
     if arguments.statut:
-        print(ci.status(root, arguments.revision))
+        if not ci.show_verdict(root, arguments.revision):
+            sys.exit(EXIT_FAILURE)
         return
     skipped_jobs = frozenset(arguments.sauter)
     ci.require_known_jobs(root, skipped_jobs)
