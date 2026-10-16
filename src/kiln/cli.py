@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import NoReturn
 
 from kiln import (
+    adopt,
     banner,
     check,
     ci,
@@ -39,7 +40,7 @@ FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 # Écran d'accueil : commandes par section ; le rôle de chacune vient de son aide argparse.
 COMMAND_GROUPS = (
-    ("Projet", ("new", "install", "update", "set")),
+    ("Projet", ("new", "adopt", "install", "update", "set")),
     ("Au quotidien", ("dev", "check", "ci", "contrat", "doctor")),
     ("Tous les repos", ("status", "update --all", "version")),
 )
@@ -77,6 +78,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action=_VersionAction)
     commands = parser.add_subparsers(dest="command")
     _add_new_command(commands)
+    adopt_parser = commands.add_parser("adopt", help="faire suivre kiln à un repo existant")
+    adopt_parser.add_argument("--size", choices=SIZES, help="envergure du projet (défaut : ember)")
+    adopt_parser.add_argument("--template", help="source du modèle (chemin ou URL git)")
     commands.add_parser("install", help="préparer le poste après un clone")
     _add_update_command(commands)
     dev_parser = commands.add_parser("dev", help="lancer le projet en local")
@@ -200,6 +204,7 @@ def _ask_project_name() -> str:
 
 BANNER_ACTIONS = {
     "new": "nouveau projet",
+    "adopt": "adoption",
     "install": "installation",
     "update": "mise à jour",
     "status": "état des repos",
@@ -225,7 +230,11 @@ def dispatch(arguments: argparse.Namespace) -> None:
         poste.run_poste(arguments.assignments)
         return
     root = _repo_root_or_hint()
-    if arguments.command == "install":
+    if arguments.command == "adopt":
+        adopt.adopt_project(
+            root, size=arguments.size or adopt.DEFAULT_SIZE, template=arguments.template
+        )
+    elif arguments.command == "install":
         install.install_project(root)
     elif arguments.command == "update":
         update.update_project(

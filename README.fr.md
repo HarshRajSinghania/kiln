@@ -31,11 +31,15 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
   `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `backlog`,
-  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur), `contribution` (la PR d'un contributeur extérieur : code relu avant d'en rien lancer, tri, revue, fusion qui le crédite, rien publié sans accord) ; hooks garde de branche, fichiers protégés, contrôle du fichier
-  modifié, mise à jour proposée à l'ouverture de session (oui/non : l'outil kiln s'il est en
-  retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de 5, 10,
-  30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé ;
-  `git config kiln-a-jour.desactive true` pour s'en passer), sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
+  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `adoption` (`kiln adopt` dans un repo existant, passif de la charte trié avec l'utilisateur), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur), `contribution` (la PR d'un contributeur extérieur : code relu avant d'en rien lancer, tri, revue, fusion qui le crédite, rien publié sans accord) ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  modifié, questions à l'ouverture de session : dans un repo kiln, sa mise à jour (l'outil kiln s'il
+  est en retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de
+  5, 10, 30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé) ; dans
+  un repo à soi qui ne suit pas kiln, son adoption (« Oui », « Plus tard », « Jamais pour ce
+  repo »), dès la 3e session, au plus une fois toutes les 10 sessions du poste. Toutes passent
+  par `relances.py` : une note de bienveillance du poste monte à chaque « oui » et baisse à
+  chaque « non », et étire ou raccourcit tous les délais (doublés au plus méfiant, de moitié au
+  plus enthousiaste) ; `git config kiln-a-jour.desactive true` pour s'en passer, sorties de commandes condensées par [rtk](https://github.com/rtk-ai/rtk) quand il
   est installé (`mise use -g github:rtk-ai/rtk`, sans `rtk init` : le hook est fourni ici) ; MCP context7 ; status line commune (`plugins/base/scripts/statusline.py`,
   en anglais, aux couleurs de kiln), posée par `kiln install` dans `~/.claude/settings.json` ; son
   style se choisit par poste : `kiln set statusline=sobre|bandeau|classique|classique-fond`,
@@ -84,6 +88,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | Commande | Rôle |
 |---|---|
 | `kiln new [dossier]` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`, puis `develop` où tout le travail se fait. |
+| `kiln adopt` | Fait suivre kiln à un repo existant qu'il n'a pas généré, sur une branche de travail : `charte.toml` (envergure par `--size`, règles valables partout, vérifiées après chaque édition), `docs/backlog/` s'il n'existe pas, puis le passif que la charte relève. Ne touche à aucun fichier existant ; le repo apparaît dans `kiln status` comme adopté, `kiln update` le laisse. |
 | `kiln install` | Prépare un poste après un clone : outils (pre-commit avec pre-commit-uv, podman-compose), dépendances, `backend/.env`, migrations, pre-commit. Relançable. |
 | `kiln dev` | Lance les serveurs de la stack, leurs sorties entrelacées et préfixées par service en couleur (`django │ …`) ; `--containers` : toute la pile dans podman. |
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |

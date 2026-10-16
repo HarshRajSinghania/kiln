@@ -3,6 +3,7 @@ import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -22,6 +23,7 @@ def load_hook() -> ModuleType:
 def hook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     """Le hook sur un repo kiln fictif, sans réseau ni outil installé réels."""
     module = load_hook()
+    monkeypatch.setattr(module, "git_root", lambda cwd: tmp_path / "annway")
     monkeypatch.setattr(module, "kiln_repo", lambda cwd: (tmp_path / "annway", "8e6427b"))
     monkeypatch.setattr(module, "installed_kiln", lambda: ("git", "ancien"))
     return module
@@ -51,22 +53,23 @@ def test_releases_order_by_number_not_by_text() -> None:
     assert not hook.is_repo_late("v0.4.0", "v0.4.0")
 
 
-def test_refusals_push_the_question_back_5_10_30_then_50_sessions(hook: ModuleType) -> None:
-    state: dict[str, dict[str, int]] = {}
+def test_refusals_push_the_question_back_further_and_further(hook: ModuleType) -> None:
+    state: dict[str, Any] = {}
     asked_at = []
-    for session in range(1, 120):
+    for session in range(1, 130):
         if hook.instructions(".", state, release=released()):
             asked_at.append(session)
-            hook.record(state, hook.TOOL_KEY, refused=True)
+            hook.relances.record(state, "maj", hook.TOOL_KEY, "non")
 
-    assert asked_at == [1, 6, 16, 46, 96]
+    # 5, 10, 30 puis 50 sessions, étirées à mesure que la note de bienveillance baisse.
+    assert asked_at == [1, 7, 19, 56, 122]
 
 
 def test_after_four_refusals_uninstalling_is_offered(hook: ModuleType) -> None:
-    state: dict[str, dict[str, int]] = {}
+    state: dict[str, Any] = {}
     for _ in range(4):
-        hook.record(state, hook.TOOL_KEY, refused=True)
-    state[hook.TOOL_KEY]["prochaine"] = 0
+        hook.relances.record(state, "maj", hook.TOOL_KEY, "non")
+    state["questions"]["maj:outil"]["prochaine"] = 0
 
     assert "Désinstaller kiln" in hook.instructions(".", state, release=released())
 
@@ -81,9 +84,9 @@ def test_repo_question_follows_a_tool_update(hook: ModuleType) -> None:
 
 
 def test_refused_tool_update_also_silences_the_repo(hook: ModuleType) -> None:
-    state: dict[str, dict[str, int]] = {}
+    state: dict[str, Any] = {}
     hook.instructions(".", state, release=released())
-    hook.record(state, hook.TOOL_KEY, refused=True)
+    hook.relances.record(state, "maj", hook.TOOL_KEY, "non")
 
     assert hook.instructions(".", state, release=released()) == ""
 
@@ -104,13 +107,41 @@ def test_no_release_means_no_question(hook: ModuleType) -> None:
     assert hook.instructions(".", {}, release=lambda: None) == ""
 
 
-def test_agreeing_resets_the_reminders(hook: ModuleType) -> None:
-    state: dict[str, dict[str, int]] = {}
-    hook.record(state, hook.TOOL_KEY, refused=True)
-    hook.record(state, hook.TOOL_KEY, refused=False)
+def test_a_repo_of_ones_own_outside_kiln_is_offered_adoption(
+    hook: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(hook, "kiln_repo", lambda cwd: None)
+    monkeypatch.setattr(hook, "is_adoptable", lambda root: True)
+    state: dict[str, Any] = {}
 
-    assert state[hook.TOOL_KEY]["refus"] == 0
-    assert state[hook.TOOL_KEY]["prochaine"] == 0
+    messages = [hook.instructions(".", state, release=released()) for _ in range(3)]
+
+    assert messages[:2] == ["", ""]
+    assert "annway ne suit pas kiln" in messages[2]
+    assert "`base:adoption`" in messages[2]
+    assert "Jamais pour ce repo" in messages[2]
+
+
+def test_adoption_skips_kiln_repos_clones_and_templates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook = load_hook()
+    monkeypatch.setattr(hook.shutil, "which", lambda name: "/usr/bin/kiln")
+    root = tmp_path / "outil"
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    git = ["git", "-C", str(root), "-c", "user.name=N", "-c", "commit.gpgsign=false"]
+    subprocess.run(["git", "-C", str(root), "config", "user.email", "nathan@example.com"])
+    subprocess.run(
+        [*git, "-c", "user.email=autre@example.com", "commit", "-q", "--allow-empty", "-m", "a"],
+        check=True,
+    )
+    assert not hook.is_adoptable(root)
+
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "b"], check=True)
+    assert hook.is_adoptable(root)
+
+    (root / "charte.toml").write_text("")
+    assert not hook.is_adoptable(root)
 
 
 def test_plugin_link_follows_the_installed_plugin(tmp_path: Path) -> None:
