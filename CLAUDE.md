@@ -28,8 +28,9 @@ un dossier ou un module.
   `report-to-kiln` (défaut de kiln remonté en issue ou PR), `token` (jeton d'un service dans
   `.<service>/`) ; `hooks/` ; `scripts/statusline.py`),
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
-- `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
-  actions composites (`charte`, `services`).
+- `.github/workflows/` : workflows réutilisables appelés par les repos générés, plus ceux de
+  kiln (`kiln.yml` contrôles, `pypi.yml` publication du paquet `kiln-cli` au tag promu) ;
+  `actions/` : actions composites (`charte`, `services`).
 - Vitrine publique, en anglais : `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`
   (MIT), `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` ; capture de l'écran
   d'accueil `docs/assets/kiln-accueil.svg`. Référence complète en français : `README.fr.md`.
@@ -56,7 +57,8 @@ workflows et actions réutilisables, noms des skills et hooks, identifiants de r
 (commit `feat!:` ou `BREAKING CHANGE`). `kiln version` (module `release.py`) propose le numéro et
 dit quelles candidates sont prêtes.
 
-Deux temps, par la skill `base:version` (pas de déploiement : le tag publie) :
+Deux temps, par la skill `base:version` (pas de déploiement : le tag publie, et le tag promu
+publie sur PyPI le paquet `kiln-cli` par `pypi.yml`) :
 1. **Candidate** : branche `release/vX.Y.Z` tirée de `develop`, entrée `## vX.Y.Z — date` en tête
    de `CHANGELOG.md`, `version = "X.Y.Z"` dans `pyproject.toml`, contrôle complet (les trois
    commandes ci-dessous), tag `vX.Y.Z-rc.1` poussé. Les postes au canal `interne` (`kiln set

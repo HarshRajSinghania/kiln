@@ -10,7 +10,8 @@ Portée : `$ARGUMENTS` ; `outil` seul, `depot` seul, sinon les deux, l'outil d'a
 ## Outil
 
 1. `<hook> outil` affiche `à jour`, ou la commande qui met à jour l'outil installé (depuis
-   GitHub : `uv tool upgrade kiln`, la marketplace kiln et le plugin `base` installé pour tous
+   PyPI ou GitHub : `uv tool install --force kiln-cli==…` ou `…git+…@<tag>`, précédé de
+   `uv tool uninstall kiln` si l'outil porte encore son ancien nom, la marketplace kiln et le plugin `base` installé pour tous
    les repos du poste ; depuis un dossier : `git pull` de ce dossier et réinstallation). La lancer telle quelle ; si elle échoue (dossier kiln
    modifié, pas de réseau), s'arrêter et dire pourquoi.
 2. `<hook> accord outil`, puis dire de taper `/reload-plugins` : les skills et les hooks du

@@ -66,12 +66,15 @@ pour le dépôt GitHub, que `kiln new` crée d'office (si `gh` n'est pas connect
 connexion et affiche le lien https://github.com/login/device).
 
 ```sh
-uv tool install git+https://github.com/antoine-tena/kiln
+uv tool install kiln-cli
 ```
 
-Installe deux commandes, `kiln` et `charte`, à la dernière version (branche `main`). Quand une
-version sort, le hook de début de session propose de mettre à jour l'outil, puis chaque repo ;
-à la main : `uv tool upgrade kiln`, puis `kiln update` dans le repo.
+Installe deux commandes, `kiln` et `charte`, à la dernière version publiée sur PyPI (le paquet
+s'appelle `kiln-cli`, `kiln` y étant pris ; `uvx kiln-cli new mon-app` l'essaie sans
+l'installer). Pour suivre les candidates (canal `interne`) ou un commit précis :
+`uv tool install git+https://github.com/antoine-tena/kiln@<tag>`. macOS, Linux, et Windows par
+WSL. Quand une version sort, le hook de début de session propose de mettre à jour l'outil, puis
+chaque repo ; à la main : `uv tool upgrade kiln-cli`, puis `kiln update` dans le repo.
 Python 3.14 est requis ; uv le télécharge au besoin. Au premier `kiln install`, kiln demande le
 système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.toml`, avec
 `proprietaire` et `equipe` par défaut si on les y ajoute.
@@ -206,7 +209,9 @@ Le travail s'intègre dans `develop` ; `main` ne reçoit que des versions.
 - **Clients** : ils se mettent à jour à chaque version, correctif compris. Le hook de début de
   session propose l'outil puis le repo ; `kiln update` applique la version, montre ses
   nouveautés et fait avancer le tag auquel le `ci.yml` du repo cite les workflows de kiln.
-- **Outil** : `uv tool install git+https://github.com/antoine-tena/kiln` suit `main` ;
+- **Outil** : `uv tool install kiln-cli` prend les versions promues, publiées sur PyPI par le
+  workflow `pypi.yml` au tag `vX.Y.Z` ; `uv tool install git+https://github.com/antoine-tena/kiln@<tag>`
+  prend aussi les candidates ;
   `kiln status` dit de quelle version part chaque repo (`v0.3.2 → v0.4.0`), la bannière celle
   de l'outil (`v0.4.0 +3 · abc1234` : trois commits après v0.4.0, installé depuis un dossier).
 

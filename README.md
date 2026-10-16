@@ -49,8 +49,10 @@ keeps every repo you own current:
 ## Quick start
 
 ```sh
-# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing)
-uv tool install git+https://github.com/antoine-tena/kiln
+# 1. Install (needs uv and git; Python 3.14 is fetched by uv if missing).
+#    macOS, Linux, and Windows through WSL. The PyPI package is kiln-cli, the command is kiln.
+uv tool install kiln-cli
+#    …or try it without installing anything: uvx kiln-cli new my-app
 
 # 2. Create a project — answer a few questions, or pass them as flags
 kiln new my-app
