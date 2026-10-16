@@ -40,7 +40,7 @@ un dossier ou un module.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_deploiement.py`, `test_statusline.py` (choix du
-  poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier).
+  poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier), `test_garde_branche.py` (hook garde-branche).
 
 ## Versions
 
