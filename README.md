@@ -130,6 +130,7 @@ make the opinions yours.
 | Command | What it does |
 |---|---|
 | `kiln new [dir]` | Questionnaire, generation, lockfiles, install, first commit on `main`, then `develop` where all work happens. |
+| `kiln adopt` | Bring an existing repo that kiln did not generate under kiln, on a work branch: `charte.toml` (size via `--size`, rules that apply anywhere, checked after each edit), `docs/backlog/` if missing, then the existing debt the charter finds. Never touches an existing file. |
 | `kiln install` | Set up a machine after a clone: tools, dependencies, `.env`, migrations, pre-commit. Re-runnable. |
 | `kiln dev` | Start the stack's dev servers, their output interleaved and prefixed by service in colour (`django │ …`); `--containers` runs everything in podman. |
 | `kiln check` | Ruff, mypy, pytest for each Python project, ESLint and type checks for the front, then `charte`. |
@@ -171,7 +172,7 @@ claude plugin install base@kiln
 
 | Plugin | What's inside |
 |---|---|
-| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `backlog`, `maj-kiln` = self-update), `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve) `contribution` (an outside contributor's PR handled like a well-run open-source project: untrusted code read before anything runs, triage, review, a merge that credits them, nothing posted without your yes) and `token` (a service token pasted once into a git-ignored `.<service>/` folder, never shown); hooks that guard protected branches and files, check each edited file, and offer kiln updates at session start; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
+| `base` | Skills for the git workflow (`worktree`, `fusion` = merge, `version` = release, `nettoyage` = cleanup, `backlog`, `maj-kiln` = self-update, `adoption` = bring an existing repo under kiln), `report-to-kiln` (a kiln defect met in your repo becomes an issue or a PR, posted once you approve) `contribution` (an outside contributor's PR handled like a well-run open-source project: untrusted code read before anything runs, triage, review, a merge that credits them, nothing posted without your yes) and `token` (a service token pasted once into a git-ignored `.<service>/` folder, never shown); hooks that guard protected branches and files, check each edited file, and ask at session start: kiln updates in kiln repos, adoption in your other repos ("Yes", "Later", "Never for this repo"), all paced by one goodwill score that each yes raises and each no lowers; a shared status line in four styles (`kiln set statusline=…`, or `aucune` / `perso` to keep your own); condensed command output with [rtk](https://github.com/rtk-ai/rtk). |
 | `pile-django` | Migrations, API regeneration, read-only PostgreSQL. |
 | `pile-nuxt` | Nuxt / Vue / Vitest skills, UI polish, screenshots on three phones and a desktop (Playwright). |
 | `vps-podman` | Deploy, production logs, production dumps. |
