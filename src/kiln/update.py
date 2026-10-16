@@ -7,6 +7,7 @@ import copier
 from copier.errors import UserMessageError
 
 from kiln import ui
+from kiln.backlog import migrate_legacy_backlog
 from kiln.check import check_project
 from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
@@ -68,6 +69,8 @@ def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> N
         raise KilnError(f"mise à jour du modèle refusée : {error}") from error
     # Après Copier, qui exige un arbre propre et réécrit le fichier de réponses.
     replace_legacy_source(root)
+    if migrate_legacy_backlog(root):
+        ui.note("Suivi déplacé de docs/a-faire/ vers docs/backlog/ (tickets T-NN, en anglais).")
 
 
 def _template_source(root: Path) -> str:
