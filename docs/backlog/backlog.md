@@ -43,7 +43,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
 
 ### T-14 · Promote v0.3.1, the first release on PyPI
 - **Type**: task
-- **Status**: blocked — waiting for antoine (token scoped to `kiln-cli`)
+- **Status**: blocked — waiting for antoine (delete the old token)
 - **Opened**: 2026-10-16
 - **Effort**: XS · **Owner**: antoine, then Claude · **Due**: —
 - **Origin**: promotion of v0.3.0, 16 October 2026
@@ -55,10 +55,9 @@ candidate followed by annway, sweep and vision.
 - [x] Promote `v0.3.1`, `pypi` run green, `uvx --from kiln-cli==0.3.1 kiln` works on an empty
   uv cache.
 - [x] README (English and French): `uv tool install kiln-cli` as the main install.
-- [ ] Replace the account-wide token with one scoped to `kiln-cli`: antoine creates it on
-  https://pypi.org/manage/account/token/ (scope: project `kiln-cli`) and pastes it into
-  `.pypi/token`; Claude updates the `PYPI_TOKEN` secret (`gh secret set PYPI_TOKEN --env pypi`);
-  antoine deletes the old token on the same page.
+- [x] Token scoped to `kiln-cli` in `.pypi/token`, `PYPI_TOKEN` secret updated (16 October
+  2026); it is first used by the promotion of `v0.3.2`.
+- [ ] antoine deletes the old account-wide token on https://pypi.org/manage/account/token/
 
 ## 🟠 Important
 
