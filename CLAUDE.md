@@ -24,7 +24,8 @@ un dossier ou un module.
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
   (skills `worktree`, `fusion`, `version`, `nettoyage`, `a-faire`, `maj-kiln`,
-  `report-to-kiln` (défaut de kiln remonté en issue ou PR) ; `hooks/` ; `scripts/statusline.py`),
+  `report-to-kiln` (défaut de kiln remonté en issue ou PR), `token` (jeton d'un service dans
+  `.<service>/`) ; `hooks/` ; `scripts/statusline.py`),
   `pile-django/`, `pile-nuxt/`, `vps-podman/`, `stripe/`, `serena/`.
 - `.github/workflows/` : workflows réutilisables appelés par les repos générés ; `actions/` :
   actions composites (`charte`, `services`).
