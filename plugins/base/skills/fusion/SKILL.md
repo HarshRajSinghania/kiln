@@ -11,6 +11,9 @@ La fusion se fait ici, directement : ni pull request ni approbation à attendre 
 Une PR déjà ouverte pour la branche passe d'elle-même à « Merged » sur GitHub au push du 4.
 
 1. Sur la branche : tout est commité (`git status --porcelain` vide), sinon s'arrêter et le dire.
+   Puis relire la branche (`base:relecture <branche>`) : après le push du 4, ses commits sont
+   publics pour de bon. Ce qu'elle range sur la branche se fait avant la fusion ; ce qu'elle
+   laisse à l'utilisateur, le lui dire et attendre sa décision.
 2. Mettre à jour l'intégration (`git pull --ff-only origin <intégration>`) puis
    `git merge --no-ff <branche> -m "Merge branch '<branche>' into <intégration>"`, depuis
    l'arbre principal s'il est sur l'intégration, sinon `git -C` sur un worktree qui l'est ;

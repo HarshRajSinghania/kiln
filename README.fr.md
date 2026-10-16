@@ -30,8 +30,9 @@ Les plugins Claude Code vivent dans [`plugins/`](plugins/), catalogue `kiln`
 ([`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)) :
 
 - `base`, pour tous les projets, installé au niveau utilisateur : skills `worktree`, `fusion`,
-  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`, `backlog`,
-  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `adoption` (`kiln adopt` dans un repo existant, passif de la charte trié avec l'utilisateur), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur), `contribution` (la PR d'un contributeur extérieur : code relu avant d'en rien lancer, tri, revue, fusion qui le crédite, rien publié sans accord) ; hooks garde de branche, fichiers protégés, contrôle du fichier
+  `version` (release/vN, contrôle complet, annonce, main tagué, déploiement), `nettoyage`,
+  `relecture` (commits et diff d'une branche relus et rangés avant la fusion, dépôt entier avant une version), `backlog`,
+  `maj-kiln` (l'outil kiln et ses plugins, puis le repo ouvert), `adoption` (`kiln adopt` dans un repo existant, passif de la charte trié avec l'utilisateur), `report-to-kiln` (un défaut de kiln remonté en issue ou en PR, avec l'accord de l'utilisateur), `contribution` (la PR d'un contributeur extérieur : code relu avant d'en rien lancer, tri, revue, fusion qui le crédite, rien publié sans accord) ; hooks garde de branche (et refus d'un message de commit signé Claude), fichiers protégés, contrôle du fichier
   modifié, questions à l'ouverture de session : dans un repo kiln, sa mise à jour (l'outil kiln s'il
   est en retard sur GitHub, puis le repo par `kiln update` ; un « non » repousse la question de
   5, 10, 30 puis 50 sessions, après quoi désinstaller kiln ou délier le repo est proposé) ; dans

@@ -24,7 +24,7 @@ un dossier ou un module.
 - `copier.yml` : questions du modèle ; `template/` : le modèle (`CLAUDE.md.jinja`, chartes de
   `backend/` et `frontend/` par stack, `.claude/settings.json.jinja`, CI…) ; `macros.jinja`.
 - `plugins/` : plugins Claude Code, catalogue `.claude-plugin/marketplace.json` ; `base/`
-  (skills `worktree`, `fusion`, `version`, `nettoyage`, `backlog`, `maj-kiln`, `adoption`,
+  (skills `worktree`, `fusion`, `version`, `nettoyage`, `relecture` (commits et diff d'une branche avant la fusion, dépôt entier avant une version), `backlog`, `maj-kiln`, `adoption`,
   `report-to-kiln` (défaut de kiln remonté en issue ou PR), `token` (jeton d'un service dans
   `.<service>/`), `contribution` (PR d'un contributeur extérieur : sécurité, tri, revue,
   fusion créditée) ; `hooks/` (dont `relances.py`, politique commune des questions de kiln) ; `scripts/statusline.py`),
@@ -40,7 +40,7 @@ un dossier ou un module.
 - `tests/` : `test_modele.py` (rendu du modèle pour chaque stack), `test_cli.py` (la commande :
   accueil, erreurs, bilan, sorties hors terminal), `test_unites.py`,
   `test_ci.py`, `test_flotte.py`, `test_waivers.py` (dérogations), `test_waive.py`, `test_deploiement.py`, `test_statusline.py` (choix du
-  poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier), `test_adopt.py`,
+  poste et rendu du script), `test_plugins.py` (skills cités présents, nommés comme leur dossier), `test_garde_branche.py` (hook garde-branche), `test_adopt.py`,
   `test_relances.py`, `test_hook_kiln_a_jour.py`.
 
 ## Versions

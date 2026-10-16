@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse (Bash) : refuse un `git commit` sur une branche principale (main, master, develop).
+"""PreToolUse (Bash) : refuse un `git commit` sur une branche principale (main, master, develop),
+et un message de commit qui signe Claude (`Co-Authored-By: Claude`, `Claude-Session:`) :
+une fois poussé dans l'intégration, il ne s'efface plus.
 
 Seule exception : le commit qui conclut une fusion en cours (MERGE_HEAD présent), par exemple
 après la résolution d'un conflit de `git merge --no-ff`.
@@ -8,11 +10,13 @@ Un repo où l'on commite directement sur la branche principale s'en exempte par
 `git config garde-branche.desactive true`.
 """
 
+import contextlib
 import json
 import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 PROTECTED_BRANCHES = {"main", "master", "develop"}
 
@@ -34,6 +38,21 @@ for part in re.split(r"&&|\|\||[;|\n]", cmd):
     if m:
         c = re.findall(r"-C\s+(\S+)", m.group(1))
         targets.append(os.path.join(cwd, *(p.strip("'\"") for p in c)) if c else cwd)
+
+# Le message est dans la commande (-m, heredoc) ou dans un fichier (-F, --file).
+SIGNATURE = re.compile(r"co-authored-by:\s*claude|claude-session:", re.I)
+if targets:
+    message = cmd
+    for path in re.findall(r"(?:-F\s*|--file[=\s])(\S+)", cmd):
+        with contextlib.suppress(OSError):
+            message += Path(cwd, path.strip("'\"")).read_text()
+    if SIGNATURE.search(message):
+        print(
+            "Commit refusé : pas de Co-Authored-By: Claude ni de Claude-Session: "
+            "dans un message de commit. Les retirer.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 for target in targets:
     try:
