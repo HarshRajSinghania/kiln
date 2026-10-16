@@ -1,0 +1,40 @@
+name: Maven
+
+# Qualité d'un projet Java construit par Maven, sans framework : `./mvnw verify` compile avec les
+# avertissements bloquants, lance les tests JUnit et vérifie le plancher de couverture JaCoCo du
+# pom.xml. Maven vient du wrapper du projet (version et somme SHA-256 figées), jamais du runner.
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: backend
+      java:
+        description: Version du JDK
+        type: string
+        default: "25"
+
+jobs:
+  maven:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java }}
+          cache: maven
+          cache-dependency-path: ${{ inputs.dossier }}/pom.xml
+
+      - name: mvnw verify
+        run: ./mvnw -B verify
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Publier la couverture
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.dossier }}-coverage
+          path: ${{ inputs.dossier }}/target/site/jacoco/jacoco.xml
+          if-no-files-found: ignore

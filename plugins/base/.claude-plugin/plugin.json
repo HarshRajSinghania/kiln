@@ -1,0 +1,8 @@
+{
+  "name": "base",
+  "version": "0.8.0",
+  "description": "Pour tous les projets : worktrees, fusion, version, nettoyage, mise à jour de kiln, garde de branche, modèle kiln à jour, fichiers protégés, context7",
+  "author": {
+    "name": "antoine-tena"
+  }
+}

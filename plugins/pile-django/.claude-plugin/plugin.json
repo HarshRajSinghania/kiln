@@ -1,0 +1,6 @@
+{
+  "name": "pile-django",
+  "version": "0.1.0",
+  "description": "Repos Django : migrations, contrat OpenAPI, MCP postgres en lecture seule sur la base de test",
+  "author": { "name": "antoine-tena" }
+}

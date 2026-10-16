@@ -1,0 +1,85 @@
+# Contributing to kiln
+
+*English · [Français](#en-français)*
+
+Thanks for wanting to help! Bug reports, ideas, docs fixes and code are all welcome.
+
+## Issue or pull request?
+
+- **Pull request directly** for anything small and obvious: a typo, a broken link, a clear bug
+  with a local fix, a missing check. Add the test that would have caught the bug.
+- **Issue first** for anything bigger: a new stack, a new command, a change to what generated
+  repos look like. kiln is a generator — a change in `template/` lands in every repo built from
+  it — so it is worth agreeing on the approach before you write code.
+- Not sure? Open an issue, or a draft PR with a short explanation. Both are fine.
+
+Fork the repo and open your PR against `develop` (the default branch); `main` only receives
+releases. The maintainer is the only one who merges.
+
+## Development setup
+
+You need [uv](https://docs.astral.sh/uv/) and git. Python 3.14 is downloaded by uv if needed.
+
+```sh
+git clone https://github.com/antoine-tena/kiln
+cd kiln
+uv sync
+uv run kiln                      # the CLI, straight from your checkout
+KILN_TEMPLATE=$PWD uv run kiln new /tmp/demo --no-github   # try your template changes
+```
+
+Checks (the same ones CI runs):
+
+```sh
+uv run ruff check . && uv run ruff format --check src tests
+uv run mypy src tests
+uv run pytest -q                 # renders every stack combination, takes ~2 minutes
+```
+
+## Where things live
+
+| Path | What |
+|---|---|
+| `src/kiln/` | The `kiln` CLI, one module per command (`new.py`, `update.py`, `settings.py`…). |
+| `src/kiln/charte/` | The `charte` rule engine. |
+| `copier.yml`, `template/` | The Copier template: questions and generated files. |
+| `.github/workflows/` | Reusable workflows called by generated repos. |
+| `plugins/` | Claude Code plugins (`base`, `pile-django`, `pile-nuxt`…). |
+| `tests/` | `test_modele.py` renders the template for each stack. |
+
+## Good first contributions
+
+- **Translate the CLI to English.** Messages, prompts and generated docs are in French today.
+  An `i18n` layer (English by default, French kept) is the most impactful contribution right
+  now — please open an issue to agree on the approach first.
+- **A new stack** (backend or frontend) following an existing one in `template/`.
+- **Docs:** examples, a tutorial, fixing anything that confused you.
+- Look at issues labelled
+  [`good first issue`](https://github.com/antoine-tena/kiln/labels/good%20first%20issue) and
+  [`help wanted`](https://github.com/antoine-tena/kiln/labels/help%20wanted).
+
+## Conventions
+
+- Small, focused commits; prefixed titles (`feat:`, `fix:`, `docs:`, `chore:`), 50 chars max.
+- No `pip`, no `docker` anywhere: uv for Python, pnpm for JavaScript, podman for containers.
+- Never commit secrets or real personal data.
+- Code identifiers are in English; comments and docs are in French in most of the codebase —
+  English is fine in your contributions.
+
+## Code of conduct
+
+Be kind and assume good intent. Harassment or personal attacks are not tolerated; report them
+privately to the maintainer (see [SECURITY.md](SECURITY.md) for how to reach them).
+
+---
+
+## En français
+
+- **PR directe** quand la correction est claire et localisée (depuis un fork sans droits
+  d'écriture), avec le test qui l'aurait détectée.
+- **Issue d'abord** quand il faut trancher entre plusieurs voies ou qu'on ne sait pas corriger :
+  une PR sur un choix pas encore fait risque d'être refaite. C'est la règle [REMONTER-A-KILN]
+  des chartes générées.
+- Les PR visent `develop` ; `main` ne reçoit que les versions.
+- Contrôles : `uv run pytest -q`, `uv run ruff check`, `uv run ruff format --check`,
+  `uv run mypy src tests`.

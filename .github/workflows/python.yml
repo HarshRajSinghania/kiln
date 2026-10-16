@@ -1,0 +1,93 @@
+name: Python
+
+# Qualité d'un projet Python géré par uv, quel que soit son framework (FastAPI, données,
+# Streamlit, Dash) : ruff, mypy (configuration stricte du pyproject.toml), pytest avec un plancher
+# de couverture. PostgreSQL lancé par podman au besoin. Un dépôt peut en appeler plusieurs, un par
+# dossier (backend Python et frontend Streamlit, par exemple).
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: backend
+      base:
+        description: Nom de la base PostgreSQL de test
+        type: string
+        default: app
+      postgres:
+        description: Image PostgreSQL (vide = pas de base)
+        type: string
+        default: ""
+      env:
+        description: Variables du projet pour toutes les étapes, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+      mypy:
+        description: Lancer mypy dans le dossier
+        type: boolean
+        default: true
+      plancher:
+        description: Couverture minimale des lignes, en pour cent (0 = pas de plancher)
+        type: number
+        default: 80
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # kiln à la version exacte de ce workflow : ses actions et la commande charte en viennent
+      # (retiré aussitôt, pour que les contrôles du projet ne le voient pas).
+      - uses: actions/checkout@v7
+        with:
+          repository: antoine-tena/kiln
+          ref: ${{ job.workflow_sha || 'develop' }}
+          path: .kiln
+      - uses: ./.kiln/actions/services
+        if: inputs.postgres != ''
+        with:
+          base: ${{ inputs.base }}
+          postgres: ${{ inputs.postgres }}
+      - name: Retrait de kiln du dossier du projet
+        run: rm -rf .kiln
+
+      - name: Variables du projet
+        if: inputs.env != ''
+        env:
+          VARIABLES: ${{ inputs.env }}
+        run: printf '%s\n' "$VARIABLES" | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.dossier }}
+
+      - name: Dépendances
+        run: uv sync --locked
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: mypy
+        if: inputs.mypy
+        run: uv run mypy .
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: pytest
+        run: >-
+          uv run pytest --cov --cov-branch --cov-report=xml --cov-report=term:skip-covered
+          --cov-fail-under=${{ inputs.plancher }}
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Publier la couverture
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.dossier }}-coverage
+          path: ${{ inputs.dossier }}/coverage.xml
+          if-no-files-found: ignore

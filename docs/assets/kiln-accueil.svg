@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792" height="604" viewBox="0 0 792 604" role="img" aria-label="kiln welcome screen">
+<rect width="100%" height="100%" rx="10" fill="#1c1b19"/>
+<circle cx="20" cy="18" r="6" fill="#ff5f57"/><circle cx="40" cy="18" r="6" fill="#febc2e"/><circle cx="60" cy="18" r="6" fill="#28c840"/>
+<g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="14" fill="#e6e3dc" xml:space="preserve">
+<rect x="64.0" y="55.0" width="8.7" height="9.3" fill="#b9b9b4"/>
+<rect x="72.4" y="55.0" width="8.7" height="9.3" fill="#b9b9b4"/>
+<rect x="80.8" y="55.0" width="8.7" height="9.3" fill="#b9b9b4"/>
+<rect x="89.2" y="55.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="97.6" y="55.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="106.0" y="55.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="122.8" y="46.0" width="8.7" height="18.3" fill="#5f5f5c"/>
+<rect x="122.8" y="46.0" width="8.7" height="9.3" fill="#b44b23"/>
+<rect x="131.2" y="46.0" width="8.7" height="18.3" fill="#5f5f5c"/>
+<rect x="131.2" y="46.0" width="8.7" height="9.3" fill="#b44b23"/>
+<rect x="47.2" y="73.0" width="8.7" height="9.3" fill="#b9b9b4"/>
+<rect x="55.6" y="64.0" width="8.7" height="18.3" fill="#b9b9b4"/>
+<rect x="64.0" y="64.0" width="8.7" height="18.3" fill="#ffffff"/>
+<rect x="72.4" y="64.0" width="8.7" height="18.3" fill="#191919"/>
+<rect x="80.8" y="64.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="89.2" y="64.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="97.6" y="64.0" width="8.7" height="18.3" fill="#ffffff"/>
+<rect x="106.0" y="64.0" width="8.7" height="18.3" fill="#191919"/>
+<rect x="114.4" y="64.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="122.8" y="64.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="122.8" y="64.0" width="8.7" height="9.3" fill="#5f5f5c"/>
+<rect x="131.2" y="64.0" width="8.7" height="18.3" fill="#5f5f5c"/>
+<rect x="139.6" y="73.0" width="8.7" height="9.3" fill="#5f5f5c"/>
+<text x="181.6" y="77.5" textLength="33.6" font-weight="bold">kiln</text>
+<text x="223.6" y="77.5" textLength="50.4" fill="#8c8c87">v0.2.0</text>
+<rect x="47.2" y="82.0" width="8.7" height="18.3" fill="#b9b9b4"/>
+<rect x="55.6" y="82.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="64.0" y="82.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="64.0" y="82.0" width="8.7" height="9.3" fill="#e68278"/>
+<rect x="80.8" y="82.0" width="8.7" height="18.3" fill="#cd3223"/>
+<rect x="89.2" y="82.0" width="8.7" height="18.3" fill="#f79628"/>
+<rect x="89.2" y="82.0" width="8.7" height="9.3" fill="#cd3223"/>
+<rect x="97.6" y="91.0" width="8.7" height="9.3" fill="#cd3223"/>
+<rect x="114.4" y="82.0" width="8.7" height="9.3" fill="#e68278"/>
+<rect x="122.8" y="82.0" width="8.7" height="18.3" fill="#8c8c87"/>
+<rect x="131.2" y="82.0" width="8.7" height="18.3" fill="#5f5f5c"/>
+<rect x="139.6" y="82.0" width="8.7" height="18.3" fill="#5f5f5c"/>
+<text x="181.6" y="95.5" textLength="184.8" fill="#f79628">orchestrateur de repos</text>
+<rect x="38.8" y="109.0" width="8.7" height="9.3" fill="#b44b23"/>
+<rect x="47.2" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="47.2" y="100.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="55.6" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="55.6" y="100.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="64.0" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="64.0" y="100.0" width="8.7" height="9.3" fill="#8c8c87"/>
+<rect x="72.4" y="109.0" width="8.7" height="9.3" fill="#b44b23"/>
+<rect x="80.8" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="80.8" y="100.0" width="8.7" height="9.3" fill="#f79628"/>
+<rect x="89.2" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="89.2" y="100.0" width="8.7" height="9.3" fill="#ffe178"/>
+<rect x="97.6" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="97.6" y="100.0" width="8.7" height="9.3" fill="#ffe178"/>
+<rect x="106.0" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="106.0" y="100.0" width="8.7" height="9.3" fill="#f79628"/>
+<rect x="114.4" y="109.0" width="8.7" height="9.3" fill="#b44b23"/>
+<rect x="122.8" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="122.8" y="100.0" width="8.7" height="9.3" fill="#5f5f5c"/>
+<rect x="131.2" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="131.2" y="100.0" width="8.7" height="9.3" fill="#5f5f5c"/>
+<rect x="139.6" y="100.0" width="8.7" height="18.3" fill="#b44b23"/>
+<rect x="139.6" y="100.0" width="8.7" height="9.3" fill="#5f5f5c"/>
+<rect x="148.0" y="109.0" width="8.7" height="9.3" fill="#b44b23"/>
+<text x="181.6" y="113.5" textLength="117.6" fill="#8c8c87">~/code/atelier</text>
+<text x="38.8" y="149.5" textLength="42.0" font-weight="bold">Usage</text>
+<text x="97.6" y="149.5" textLength="33.6">kiln</text>
+<text x="139.6" y="149.5" textLength="168.0" fill="#8c8c87">&lt;commande&gt; [options]</text>
+<text x="38.8" y="185.5" textLength="50.4" fill="#f79628" font-weight="bold">PROJET</text>
+<text x="55.6" y="203.5" textLength="25.2" fill="#b9b9b4" font-weight="bold">new</text>
+<text x="181.6" y="203.5" textLength="277.2">Générer un nouveau projet complet</text>
+<text x="55.6" y="221.5" textLength="58.8" fill="#b9b9b4" font-weight="bold">install</text>
+<text x="181.6" y="221.5" textLength="268.8">Préparer le poste après un clone</text>
+<text x="55.6" y="239.5" textLength="50.4" fill="#b9b9b4" font-weight="bold">update</text>
+<text x="181.6" y="239.5" textLength="294.0">Mettre à jour modèle et dépendances</text>
+<text x="55.6" y="257.5" textLength="25.2" fill="#b9b9b4" font-weight="bold">set</text>
+<text x="181.6" y="257.5" textLength="588.0">Afficher ou changer les paramètres du repo (hors d&#x27;un repo : du poste)</text>
+<text x="38.8" y="293.5" textLength="100.8" fill="#f79628" font-weight="bold">AU QUOTIDIEN</text>
+<text x="55.6" y="311.5" textLength="25.2" fill="#b9b9b4" font-weight="bold">dev</text>
+<text x="181.6" y="311.5" textLength="210.0">Lancer le projet en local</text>
+<text x="55.6" y="329.5" textLength="42.0" fill="#b9b9b4" font-weight="bold">check</text>
+<text x="181.6" y="329.5" textLength="252.0">Lancer les contrôles du projet</text>
+<text x="55.6" y="347.5" textLength="16.8" fill="#b9b9b4" font-weight="bold">ci</text>
+<text x="181.6" y="347.5" textLength="319.2">Rejouer la CI d&#x27;un commit sur le poste</text>
+<text x="55.6" y="365.5" textLength="58.8" fill="#b9b9b4" font-weight="bold">contrat</text>
+<text x="181.6" y="365.5" textLength="369.6">Régénérer openapi.json et les types du front</text>
+<text x="38.8" y="401.5" textLength="117.6" fill="#f79628" font-weight="bold">TOUS LES REPOS</text>
+<text x="55.6" y="419.5" textLength="50.4" fill="#b9b9b4" font-weight="bold">status</text>
+<text x="181.6" y="419.5" textLength="319.2">État des repos kiln du dossier de code</text>
+<text x="55.6" y="437.5" textLength="100.8" fill="#b9b9b4" font-weight="bold">update --all</text>
+<text x="181.6" y="437.5" textLength="386.4">Mettre à jour chaque repo kiln, fusion directe</text>
+<text x="38.8" y="473.5" textLength="67.2" fill="#f79628" font-weight="bold">EXEMPLES</text>
+<text x="55.6" y="491.5" textLength="8.4" fill="#5f5f5c">$</text>
+<text x="72.4" y="491.5" textLength="394.8">kiln new atelier --size ember --backend fastapi</text>
+<text x="55.6" y="509.5" textLength="8.4" fill="#5f5f5c">$</text>
+<text x="72.4" y="509.5" textLength="159.6">kiln update --major</text>
+<text x="55.6" y="527.5" textLength="8.4" fill="#5f5f5c">$</text>
+<text x="72.4" y="527.5" textLength="168.0">kiln set podman=true</text>
+<text x="55.6" y="545.5" textLength="8.4" fill="#5f5f5c">$</text>
+<text x="72.4" y="545.5" textLength="554.4">kiln set equipe=alice,bob     # hors d&#x27;un repo : réglages du poste</text>
+<text x="38.8" y="581.5" textLength="184.8" font-weight="bold">kiln &lt;commande&gt; --help</text>
+<text x="232.0" y="581.5" textLength="394.8" fill="#8c8c87">pour les options · github.com/antoine-tena/kiln</text>
+</g></svg>

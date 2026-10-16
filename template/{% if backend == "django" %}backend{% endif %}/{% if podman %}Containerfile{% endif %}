@@ -1,0 +1,21 @@
+# Image de backend/ : API Django servie par gunicorn, fichiers statiques compris (WhiteNoise).
+# Construite depuis la racine du dépôt (compose.yaml, ou podman build -f backend/Containerfile .).
+# Aucune migration au démarrage : le déploiement les applique avant la bascule ; en local,
+# compose.yaml les lance avec le serveur de développement.
+# uv seul, jamais pip ; utilisateur non-root ([CONTENEUR-DURCI]).
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never PYTHONUNBUFFERED=1
+WORKDIR /srv/backend
+COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
+RUN uv sync --locked --no-dev --no-install-project
+COPY backend/ ./
+# collectstatic ne lit aucun secret : une clé de construction suffit, elle ne sert à rien d'autre.
+RUN uv sync --locked --no-dev \
+    && DJANGO_SECRET_KEY=construction-de-l-image .venv/bin/python manage.py collectstatic --no-input \
+    && useradd --system --create-home app && chown -R app /srv
+# L'environnement de l'image en tête du PATH : `python` et `gunicorn` sans passer par uv, qui
+# voudrait écrire son cache dans un système de fichiers en lecture seule.
+ENV PATH="/srv/backend/.venv/bin:$PATH"
+USER app
+EXPOSE 8000
+CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-"]

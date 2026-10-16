@@ -1,0 +1,184 @@
+# Modèle de projet de kiln : les fichiers sont dans template/, seuls les `.jinja` sont
+# interprétés (les gabarits Vue, React et Astro gardent leurs accolades). Un dossier nommé
+# `{% if … %}nom{% endif %}` n'est créé que si la condition tient : c'est ainsi que chaque
+# framework apporte ses fichiers, et que `kiln set` les retire quand on en change.
+_subdirectory: template
+_templates_suffix: .jinja
+_answers_file: .copier-answers.yml
+_min_copier_version: "9.4"
+
+# Première question : l'envergure du projet, en quatre crans nommés d'après le feu du four.
+# Elle règle les valeurs par défaut des questions suivantes (podman pour l'instant) et se change
+# plus tard par `kiln set envergure=…`.
+envergure:
+  type: str
+  help: How hot does this one burn? (envergure du projet)
+  choices:
+    "Spark : un script, un outil perso, une analyse ponctuelle": spark
+    "Ember : une petite app ou un site, une ou deux personnes, peu d'enjeu": ember
+    "Flame : une app en production, de vrais utilisateurs, plusieurs contributeurs": flame
+    "Blaze : plusieurs équipes ou services, de gros enjeux": blaze
+  default: ember
+
+nom:
+  type: str
+  help: Nom court du projet (minuscules, chiffres, tirets), préfixe des paquets
+  validator: >-
+    {% if not (nom | regex_search('^[a-z][a-z0-9-]*$')) %}Minuscules, chiffres et tirets seulement.{% endif %}
+
+titre:
+  type: str
+  help: Titre affiché du projet
+  default: "{{ nom | replace('-', ' ') | title }}"
+
+description:
+  type: str
+  help: Une phrase qui dit ce que fait le projet
+  default: "{{ titre }}."
+
+proprietaire:
+  type: str
+  help: Compte ou organisation GitHub propriétaire du dépôt
+  default: antoine-tena
+
+equipe:
+  type: yaml
+  help: Logins GitHub de l'équipe (relecteurs), en liste YAML
+  default: "[{{ proprietaire }}]"
+
+# Le type de projet ne sert qu'à conseiller : il précoche le backend et le frontend ci-dessous,
+# que l'on peut changer. Table des conseils : docs du README de kiln, « Conseil de stack ».
+type_projet:
+  type: str
+  help: Quel type de projet ? (sert à conseiller la stack)
+  choices:
+    Application complète (API et interface web): app
+    API seule: api
+    Site de contenu (vitrine, documentation, blog): site
+    Tableau de bord de données: tableau
+    Analyse de données (notebooks, figures): analyse
+    Outil en ligne de commande (script, utilitaire du poste): outil
+  default: app
+
+backend:
+  type: str
+  help: >-
+    Backend (conseillé pour ce type :
+    {% if type_projet == 'app' %}Django{% elif type_projet == 'api' %}FastAPI{% elif type_projet in ['tableau', 'analyse'] %}Données Python{% elif type_projet == 'outil' %}outil en ligne de commande{% else %}aucun{% endif %})
+  choices:
+    Django + Django Ninja (API complète, administration, ORM): django
+    FastAPI (API légère, asynchrone): fastapi
+    Données Python (polars, marimo, Plotly): data
+    Outil en ligne de commande (Python, argparse, sans serveur): cli
+    Java 25 (Maven, JUnit, sans framework): java
+    Aucun: aucun
+  default: >-
+    {% if type_projet == 'app' %}django{% elif type_projet == 'api' %}fastapi{% elif type_projet in ['tableau', 'analyse'] %}data{% elif type_projet == 'outil' %}cli{% else %}aucun{% endif %}
+
+frontend:
+  type: str
+  help: >-
+    Frontend (conseillé pour ce type :
+    {% if type_projet == 'app' %}Nuxt{% elif type_projet == 'site' %}Astro{% elif type_projet == 'tableau' %}Streamlit{% else %}aucun{% endif %})
+  choices:
+    Nuxt + Vue (application web): nuxt
+    Next.js + React (application web): next
+    Astro (site de contenu, statique): astro
+    Streamlit (tableau de bord Python): streamlit
+    Dash (tableau de bord Python, interactif): dash
+    Aucun: aucun
+  default: >-
+    {% if type_projet == 'app' %}nuxt{% elif type_projet == 'site' %}astro{% elif type_projet == 'tableau' %}streamlit{% else %}aucun{% endif %}
+  validator: >-
+    {% if backend == 'aucun' and frontend == 'aucun' %}Il faut au moins un backend ou un frontend.{% endif %}
+
+podman:
+  type: bool
+  help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
+  default: "{{ envergure in ['flame', 'blaze'] and not (backend in ['cli', 'java'] and frontend == 'aucun') }}"
+  # Un outil en ligne de commande, ou un backend Java sans framework, n'a pas encore de serveur à
+  # conteneuriser ; son front éventuel, si.
+  validator: >-
+    {% if podman and backend in ['cli', 'java'] and frontend == 'aucun' %}{{ 'Un backend Java sans framework' if backend == 'java' else 'Un outil en ligne de commande' }} seul n'a rien à mettre dans podman.{% endif %}
+
+# Serena (plugin serena@kiln) : navigation par symboles en lecture seule, pour que Claude Code
+# lise une fonction plutôt qu'un fichier entier. Rentable sur un gros code (des milliers de
+# fichiers) ; son index et ses définitions d'outils coûtent plus qu'ils ne rapportent ailleurs.
+serena:
+  type: bool
+  help: Serena pour Claude Code (navigation par symboles, gros code) ? Activable plus tard par `kiln set serena=true`.
+  default: false
+
+# Production sur un serveur à soi : `vps` ajoute config/vps/ (Caddy, pile de production, bascule
+# avec retour arrière, sauvegardes testées), scripts/ops/ et docs/exploitation/. Backend Django
+# seulement, servi par podman. Activable plus tard par `kiln set deploiement=vps`.
+deploiement:
+  type: str
+  help: Déploiement en production ?
+  choices:
+    Aucun pour l'instant: aucun
+    Serveur VPS (podman, Caddy, sauvegardes): vps
+  default: aucun
+  when: "{{ backend == 'django' }}"
+  validator: >-
+    {% if deploiement == 'vps' and backend != 'django' %}Le déploiement VPS est fait pour le backend Django.{% elif deploiement == 'vps' and not podman %}Le déploiement VPS demande les conteneurs : podman=true.{% endif %}
+
+vps_hote:
+  type: str
+  help: Connexion SSH du serveur (utilisateur@adresse)
+  default: root@203.0.113.10
+  when: "{{ deploiement == 'vps' }}"
+
+domaine_api:
+  type: str
+  help: Domaine public de l'API (Caddy en obtient le certificat TLS)
+  default: "api.{{ nom }}.fr"
+  when: "{{ deploiement == 'vps' }}"
+
+url_site:
+  type: str
+  help: Adresse publique du site, autorisée par CORS et visée par le test de fumée
+  default: "https://www.{{ nom }}.fr"
+  when: "{{ deploiement == 'vps' }}"
+
+branche_deploiement:
+  type: str
+  help: Branche déployée en production
+  default: develop
+  when: "{{ deploiement == 'vps' }}"
+
+# Front Nuxt sur Vercel : `vercel` ajoute scripts/ops/deploy-frontend.sh, qui ne déploie qu'un
+# commit poussé dont la CI est verte. Activable plus tard par `kiln set front_deploiement=vercel`.
+front_deploiement:
+  type: str
+  help: Déploiement du front ?
+  choices:
+    Aucun pour l'instant: aucun
+    Vercel: vercel
+  default: aucun
+  when: "{{ frontend == 'nuxt' }}"
+
+# Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
+boussole:
+  type: str
+  help: L'objectif qui ordonne les priorités de docs/a-faire/
+  default: "{{ titre }} en service"
+
+date_creation:
+  type: str
+  help: Date de création du suivi (AAAA-MM-JJ)
+  default: "{{ '%Y-%m-%d' | strftime }}"
+
+# Status line de Claude Code (~/.claude/statusline.py) : réglages posés en `git config` par
+# `kiln install`, `kiln new` et `kiln set`, jamais à la main.
+statusline_ci:
+  type: bool
+  help: Afficher l'état de la CI dans la status line de Claude Code ?
+  default: true
+
+url_sante_prod:
+  type: str
+  help: >-
+    Sonde de santé de la production, qui renvoie {"version": "<sha>"} (vide s'il n'y a pas de
+    production) ; la status line affiche « prod ✔ » ou le retard
+  default: ""

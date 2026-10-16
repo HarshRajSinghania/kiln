@@ -1,0 +1,31 @@
+# Fins de ligne normalisées en LF dans le dépôt, quel que soit le poste (Windows compris).
+* text=auto eol=lf
+{%- if backend == 'java' %}
+# Scripts Windows du wrapper Maven : fins de ligne CRLF, que cmd.exe attend.
+*.cmd text eol=crlf
+{%- endif %}
+
+# Binaires.
+*.png binary
+*.jpg binary
+*.ico binary
+*.npz binary
+
+# Fichiers générés, exemptés de [TAILLE-FICHIER] (CLAUDE.md).
+{%- if backend in ['django', 'fastapi', 'data', 'cli'] %}
+backend/uv.lock linguist-generated=true
+{%- endif %}
+{%- if frontend in ['streamlit', 'dash'] %}
+frontend/uv.lock linguist-generated=true
+{%- elif frontend != 'aucun' %}
+frontend/pnpm-lock.yaml linguist-generated=true
+{%- endif %}
+{%- if backend == 'django' and frontend == 'nuxt' %}
+# Contrat d'API : `kiln contrat` les régénère, la CI (contrat-api.yml) vérifie leur dérive.
+openapi.json linguist-generated=true
+frontend/app/types/api.d.ts linguist-generated=true
+{%- endif %}
+{%- if backend == 'data' %}
+# Modèles entraînés : régénérés par leur commande d'entraînement (data/README.md).
+backend/data/models/** linguist-generated=true
+{%- endif %}

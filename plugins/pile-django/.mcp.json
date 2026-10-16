@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@toolbox-sdk/server@1.13.1", "--prebuilt", "postgres", "--stdio"],
+      "env": {
+        "POSTGRES_HOST": "127.0.0.1",
+        "POSTGRES_PORT": "${PROJET_PG_PORT:-55432}",
+        "POSTGRES_DATABASE": "${PROJET_PG_BASE:-postgres}",
+        "POSTGRES_USER": "${PROJET_NOM:-projet}_mcp_lecture",
+        "POSTGRES_PASSWORD": "${PROJET_NOM:-projet}_mcp_lecture"
+      }
+    }
+  }
+}

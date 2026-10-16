@@ -1,0 +1,7 @@
+"""`python -m {{ nom | replace('-', '_') }}` : même point d'entrée que la commande installée."""
+
+import sys
+
+from {{ nom | replace('-', '_') }}.cli import main
+
+sys.exit(main())

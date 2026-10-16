@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "PROJET_NOM": "{{ nom }}",
+    "PROJET_BACK": "{{ 'backend' if backend != 'aucun' else '' }}",
+    "PROJET_FRONT": "{{ 'frontend' if frontend != 'aucun' else '' }}",
+    "PROJET_ENV_TEST": "{{ 'backend/.env' if backend in ['django', 'fastapi'] else '' }}"
+  },
+{#- La marketplace kiln, sur GitHub (dépôt public), et le plugin base : Claude Code les propose à
+    qui ouvre le dépôt, puis les met à jour en arrière-plan à chaque lancement (autoUpdate, désactivé
+    par défaut pour une marketplace tierce). Une marketplace « kiln » déjà installée depuis un
+    dossier local garde sa source. #}
+  "extraKnownMarketplaces": {
+    "kiln": {
+      "source": {
+        "source": "github",
+        "repo": "antoine-tena/kiln"
+      },
+      "autoUpdate": true
+    }
+  },
+{%- set plugins = ['base@kiln'] + (['pile-django@kiln'] if backend == 'django' else []) + (['pile-nuxt@kiln'] if frontend == 'nuxt' else []) + (['serena@kiln'] if serena else []) %}
+{%- if plugins %}
+  "enabledPlugins": {
+{%- for plugin in plugins %}
+    "{{ plugin }}": true{{ "," if not loop.last }}
+{%- endfor %}
+  },
+{%- endif %}
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)"
+{%- if backend == 'java' %},
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)"
+{%- endif %}
+    ]
+  }
+}

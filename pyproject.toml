@@ -1,0 +1,76 @@
+[project]
+name = "kiln"
+version = "0.3.0"
+description = "Generate production-grade repos in one command, then keep every one of them up to date"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "antoine-tena" }]
+keywords = [
+    "copier", "project-template", "scaffolding", "generator", "boilerplate", "uv", "django",
+    "nuxt", "fastapi", "github-actions", "claude-code", "developer-tools",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Build Tools",
+]
+requires-python = ">=3.14"
+dependencies = ["copier>=9.4,<10", "packaging>=24"]
+
+[project.urls]
+Homepage = "https://github.com/antoine-tena/kiln"
+Changelog = "https://github.com/antoine-tena/kiln/blob/develop/CHANGELOG.md"
+Issues = "https://github.com/antoine-tena/kiln/issues"
+
+[project.scripts]
+kiln = "kiln.cli:main"
+charte = "kiln.charte.charte:lancer"
+
+# Le journal des versions voyage avec l'outil : `kiln update` en montre les nouveautés.
+[tool.hatch.build.targets.wheel.force-include]
+"CHANGELOG.md" = "kiln/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "pytest",
+    "pytest-xdist>=3.8.0",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Le rendu du modèle (une génération par stack) se répartit sur tous les cœurs.
+addopts = "-n auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+# Les fichiers du modèle sont vérifiés dans les projets générés (tests et kiln check).
+extend-exclude = ["template"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
+
+[tool.ruff.lint.per-file-ignores]
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["copier", "copier.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true

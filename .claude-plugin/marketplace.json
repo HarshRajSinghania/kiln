@@ -1,0 +1,39 @@
+{
+  "name": "kiln",
+  "description": "Plugins Claude Code des repos kiln",
+  "owner": {
+    "name": "antoine-tena"
+  },
+  "plugins": [
+    {
+      "name": "base",
+      "source": "./plugins/base",
+      "description": "Pour tous les projets : worktrees, fusion, nettoyage, a-faire, garde de branche, fichiers protégés, contrôle du fichier modifié, context7"
+    },
+    {
+      "name": "pile-nuxt",
+      "source": "./plugins/pile-nuxt",
+      "description": "Nuxt, Vue, Vitest, audit visuel (polish) et le serveur MCP playwright"
+    },
+    {
+      "name": "pile-django",
+      "source": "./plugins/pile-django",
+      "description": "Django : migrations, contrat OpenAPI, MCP postgres en lecture seule"
+    },
+    {
+      "name": "vps-podman",
+      "source": "./plugins/vps-podman",
+      "description": "VPS en podman-compose : déploiement, diagnostic, copie de la base de prod"
+    },
+    {
+      "name": "stripe",
+      "source": "./plugins/stripe",
+      "description": "MCP Stripe en mode test seulement"
+    },
+    {
+      "name": "serena",
+      "source": "./plugins/serena",
+      "description": "MCP Serena en lecture seule : navigation par symboles pour les gros repos"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+# Garde-fous et contrôles de la CI rejoués avant chaque commit.
+#
+# Installation, une fois, à la racine du dépôt :
+#   kiln install       (ou : uv tool install pre-commit && pre-commit install)
+# Le crochet vaut pour l'arbre principal et tous les worktrees. Tout rejouer :
+#   pre-commit run --all-files
+# Les crochets locaux appellent les outils du projet (uv) et `charte`, installée avec kiln.
+# Le typage, trop lent pour chaque commit, se joue avant chaque push : `develop` ne reçoit plus
+# la CI complète, qui ne tourne qu'au passage d'une version (skill `base:version`).
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # [PAS-SUR-MAIN] : refuse tout commit fait sur main ou develop. GitHub refuse aussi
+      # tout push direct sur ces branches (ruleset « Protection main et develop »).
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, develop]
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+        # Le lockfile de pnpm contient plusieurs documents YAML.
+        args: [--allow-multiple-documents]
+      - id: check-json
+
+  - repo: local
+    hooks:
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- for dossier in python_dirs %}
+      - id: ruff-check-{{ dossier }}
+        name: ruff check ({{ dossier }})
+        entry: bash -c 'cd {{ dossier }} && uv run ruff check --fix --force-exclude "${@#{{ dossier }}/}"' --
+        language: system
+        types: [python]
+        files: ^{{ dossier }}/
+
+      - id: ruff-format-{{ dossier }}
+        name: ruff format ({{ dossier }})
+        entry: bash -c 'cd {{ dossier }} && uv run ruff format --force-exclude "${@#{{ dossier }}/}"' --
+        language: system
+        types: [python]
+        files: ^{{ dossier }}/
+{% endfor %}
+{%- if frontend in ['nuxt', 'next'] %}
+      - id: eslint
+        name: eslint (frontend)
+        entry: bash -c 'cd frontend && pnpm exec eslint --fix "${@#frontend/}"' --
+        language: system
+        files: ^frontend/.*\.(vue|ts|tsx|mjs)$
+{% endif %}
+{%- if backend in ['django', 'fastapi', 'data', 'cli'] %}
+      - id: typage-backend
+        name: typage mypy (backend, avant push)
+        entry: {% if backend == 'django' %}charte types{% else %}bash -c 'cd backend && uv run mypy .'{% endif %}
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+{% endif %}
+{%- if backend == 'java' %}
+      - id: compilation-backend
+        name: compilation Java (backend, avant push)
+        entry: bash -c 'cd backend && ./mvnw -q -B -DskipTests compile'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+{% endif %}
+{%- if frontend in ['nuxt', 'next', 'astro'] %}
+      - id: typage-frontend
+        name: typage TypeScript (frontend, avant push)
+        entry: pnpm --dir frontend typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+{% endif %}
+      - id: charte
+        name: charte (charte.toml)
+        entry: charte
+        language: system
+        pass_filenames: false
+        always_run: true

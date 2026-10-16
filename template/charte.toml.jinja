@@ -1,0 +1,163 @@
+# Règles impératives de CLAUDE.md vérifiées par la commande `charte` (installée avec kiln) :
+# après chaque édition (hook Claude), avant chaque commit (pre-commit) et en CI.
+# Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
+# baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
+{%- set python_files = (['backend/*.py', 'backend/**/*.py'] if backend in ['django', 'fastapi', 'data', 'cli'] else []) + (['frontend/*.py', 'frontend/**/*.py'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set java_files = ['backend/src/**/*.java'] if backend == 'java' else [] %}
+{%- set front_files = {'nuxt': ['frontend/app/**'], 'next': ['frontend/app/**', 'frontend/components/**', 'frontend/lib/**'], 'astro': ['frontend/src/**']}.get(frontend, []) %}
+
+exclus = ["/migrations/", "/notebooks/"]
+regles_non_verifiees = "scripts/ci/charte-non-verifiee.txt"
+{%- if python_files %}
+
+[interdictions.journalisation]
+id = "JOURNALISATION"
+fichiers = {{ python_files | tojson }}
+
+[interdictions.temps-constant]
+id = "TEMPS-CONSTANT"
+fichiers = {{ python_files | tojson }}
+
+[interdictions.donnees-perso]
+id = "DONNEES-PERSO"
+fichiers = {{ python_files | tojson }}
+{%- endif %}
+{%- if backend == 'django' %}
+
+[interdictions.signaux-django]
+id = "SIGNAUX"
+
+[interdictions.migrations-django]
+id = "MIGRATIONS"
+branche = "develop"
+{%- endif %}
+{%- if frontend == 'nuxt' %}
+
+[interdictions.style-vue]
+id = "STYLE-1"
+{%- endif %}
+
+[interdictions.outils-interdits]
+id = "UV-PODMAN"
+
+# Les renvois à un rapport d'audit (« audit H36 », « (CART-06) ») pourrissent avec lui. Ajouter
+# à `prefixes` les préfixes des constats des audits du projet, à mesure qu'ils arrivent.
+[interdictions.renvois-audit]
+id = "RENVOIS-AUDIT"
+prefixes = "AUDIT"
+exclus = '(^docs/|^charte\.toml$|/migrations/|-lock\.yaml$|\.lock$)'
+
+[cliquets.taille-fichier]
+id = "TAILLE-FICHIER"
+fichiers = {{ (python_files + java_files + front_files) | tojson }}
+suffixes = [".py", {{ '".java", ' if java_files }}".ts", ".tsx", ".vue", ".astro", ".css", ".mjs"]
+budget = 0
+{%- if backend in ['django', 'fastapi'] %}
+
+[cliquets.routes-longues]
+id = "VUE-15"
+{%- if backend == 'django' %}
+decorateur = '\s*@\w*(api|router)\.(get|post|put|patch|delete)'
+fichiers = ["backend/**/api.py", "backend/**/api/*.py"]
+{%- else %}
+decorateur = '\s*@\w*(app|router)\.(get|post|put|patch|delete)'
+fichiers = ["backend/app/**/*.py"]
+{%- endif %}
+budget = 0
+{%- endif %}
+{%- if backend in ['django', 'fastapi'] %}
+
+# Horloge réelle dans un test : il passe aujourd'hui et casse à minuit ou un dimanche.
+[cliquets.horloge-tests]
+regle = "occurrences"
+id = "HORLOGE"
+{%- if backend == 'django' %}
+fichiers = ["backend/tests/*.py", "backend/**/tests/*.py"]
+motif = "timezone.now()"
+{%- else %}
+fichiers = ["backend/tests/*.py", "backend/tests/**/*.py"]
+motif = "datetime.now("
+{%- endif %}
+budget = 0
+{%- endif %}
+{%- if java_files %}
+
+# Java : le logger du JDK, jamais la console ni la trace brute ; l'horloge est injectée.
+[cliquets.journalisation-console]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "System.out.print"
+budget = 0
+
+[cliquets.journalisation-erreurs]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "System.err.print"
+budget = 0
+
+[cliquets.journalisation-trace]
+regle = "occurrences"
+id = "JOURNALISATION"
+fichiers = ["backend/src/**/*.java"]
+motif = "printStackTrace("
+budget = 0
+
+[cliquets.horloge-instant]
+regle = "occurrences"
+id = "HORLOGE"
+fichiers = ["backend/src/**/*.java"]
+motif = "Instant.now()"
+budget = 0
+
+[cliquets.horloge-date]
+regle = "occurrences"
+id = "HORLOGE"
+fichiers = ["backend/src/**/*.java"]
+motif = "LocalDate.now()"
+budget = 0
+
+[cliquets.temps-constant-java]
+regle = "occurrences"
+id = "TEMPS-CONSTANT"
+fichiers = ["backend/src/main/**/*.java"]
+motif = "Token.equals("
+budget = 0
+{%- endif %}
+{%- if front_files %}
+
+# Le front est là où les tests manquent d'abord : sa densité ne fait que monter.
+[planchers.densite-tests-front]
+regle = "densite-tests"
+id = "DENSITE-TESTS"
+fichiers = {{ front_files | tojson }}
+{%- if frontend == 'next' %}
+suffixes = [".ts", ".tsx", ".mjs"]
+suffixes_tests = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"]
+{%- elif frontend == 'astro' %}
+suffixes = [".ts", ".astro", ".mjs"]
+suffixes_tests = [".test.ts", ".spec.ts"]
+{%- endif %}
+plancher = 0
+{%- endif %}
+{%- if backend == 'django' %}
+
+[cliquets.verrous-django]
+id = "VERROUS"
+budget = 0
+
+# Lus par le workflow django.yml (`charte types`, `charte couverture`) ; les autres projets Python
+# lancent mypy et pytest --cov-fail-under directement (workflow python.yml, `kiln check`).
+[types]
+dossier = "backend"
+paquets = ["config", "tests"]
+budget = 0
+env = { DJANGO_SECRET_KEY = "charte-types" }
+
+[couverture]
+rapport = "backend/coverage.xml"
+planchers = { TOTAL = 80 }
+# Le socle généré est couvert à 100 % : ne suggérer de relever le plancher qu'au-delà.
+marge = 25
+{%- endif %}

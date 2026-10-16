@@ -1,0 +1,44 @@
+{% from "macros.jinja" import py_str -%}
+"""Point d'entrée de l'API Django Ninja ([NINJA])."""
+
+from django.conf import settings
+from django.http import HttpRequest
+from ninja import NinjaAPI, Router, Schema
+
+from config.health import is_database_reachable
+
+HEALTH_STATUS_OK = "ok"
+HEALTH_STATUS_UNAVAILABLE = "unavailable"
+HTTP_OK = 200
+HTTP_SERVICE_UNAVAILABLE = 503
+
+api = NinjaAPI(title={{ py_str(titre ~ " API") }}, version="1.0.0")
+health_router = Router(tags=["health"])
+
+
+class HealthResponse(Schema):
+    status: str
+    # Commit en service : la bascule de production vérifie que la nouvelle version répond.
+    version: str
+
+
+# [PERMISSIONS] : route publique, sans donnée, utilisée comme sonde de vivacité ([SANTE]).
+@health_router.get("/health", response=HealthResponse, auth=None)
+def get_health(request: HttpRequest) -> HealthResponse:
+    return HealthResponse(status=HEALTH_STATUS_OK, version=settings.APP_VERSION)
+
+
+# [PERMISSIONS] : route publique, sans donnée ; sonde de disponibilité, qui vérifie la base.
+@health_router.get(
+    "/ready",
+    response={HTTP_OK: HealthResponse, HTTP_SERVICE_UNAVAILABLE: HealthResponse},
+    auth=None,
+)
+def get_readiness(request: HttpRequest) -> tuple[int, HealthResponse]:
+    if not is_database_reachable():
+        unavailable = HealthResponse(status=HEALTH_STATUS_UNAVAILABLE, version=settings.APP_VERSION)
+        return HTTP_SERVICE_UNAVAILABLE, unavailable
+    return HTTP_OK, HealthResponse(status=HEALTH_STATUS_OK, version=settings.APP_VERSION)
+
+
+api.add_router("/", health_router)

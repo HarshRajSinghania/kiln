@@ -1,0 +1,6 @@
+{
+  "name": "serena",
+  "version": "0.1.0",
+  "description": "MCP Serena en lecture seule : naviguer par symboles (définition, références, plan d'un fichier) au lieu de lire des fichiers entiers",
+  "author": { "name": "antoine-tena" }
+}

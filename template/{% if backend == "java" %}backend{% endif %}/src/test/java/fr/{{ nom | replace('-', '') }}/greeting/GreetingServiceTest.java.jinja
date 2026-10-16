@@ -1,0 +1,26 @@
+package fr.{{ nom | replace('-', '') }}.greeting;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.Test;
+
+class GreetingServiceTest {
+
+    private final GreetingService greetingService = new GreetingService();
+
+    @Test
+    void greetsGivenName() {
+        assertEquals("Bonjour, Ada !", greetingService.greet("  Ada "));
+    }
+
+    @Test
+    void blankNameFallsBackToDefault() {
+        assertEquals("Bonjour, monde !", greetingService.greet("  "));
+    }
+
+    @Test
+    void nullNameIsRejected() {
+        assertThrows(NullPointerException.class, () -> greetingService.greet(null));
+    }
+}

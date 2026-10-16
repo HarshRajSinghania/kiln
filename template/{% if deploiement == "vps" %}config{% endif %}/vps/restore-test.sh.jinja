@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Test de restauration, en root, chaque semaine (timer {{ nom }}-restore-test) : une sauvegarde
+# jamais restaurée n'existe pas ([SAUVEGARDE-TESTEE]). La dernière sauvegarde est restaurée dans un
+# PostgreSQL jetable, puis on vérifie que ses tables sont là. Le temps de restauration est
+# journalisé : `journalctl -u {{ nom }}-restore-test`.
+set -euo pipefail
+
+NAME={{ nom }}
+DB_USER={{ nom | replace('-', '_') }}
+{% raw -%}
+CONTAINER="$NAME-restore-test"
+LATEST="$(find /root/backups -maxdepth 1 -name "$NAME-*.dump" -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)"
+[ -n "$LATEST" ] || { echo "ÉCHEC : aucune sauvegarde dans /root/backups." >&2; exit 1; }
+
+cleanup() { podman rm -f "$CONTAINER" > /dev/null 2>&1 || true; }
+trap cleanup EXIT
+cleanup
+START=$SECONDS
+podman run -d --name "$CONTAINER" -e POSTGRES_USER="$DB_USER" -e POSTGRES_DB="$DB_USER" \
+  -e POSTGRES_HOST_AUTH_METHOD=trust docker.io/library/postgres:16-alpine > /dev/null
+for _ in $(seq 1 30); do
+  podman exec "$CONTAINER" pg_isready -U "$DB_USER" > /dev/null 2>&1 && break
+  sleep 2
+done
+podman exec -i "$CONTAINER" pg_restore -U "$DB_USER" -d "$DB_USER" --no-owner < "$LATEST"
+TABLES="$(podman exec "$CONTAINER" psql -U "$DB_USER" -d "$DB_USER" -tAc \
+  "select count(*) from information_schema.tables where table_schema = 'public'")"
+[ "$TABLES" -gt 0 ] || { echo "ÉCHEC : $LATEST restaurée sans aucune table." >&2; exit 1; }
+echo "Restauration de $LATEST : $TABLES tables en $((SECONDS - START)) s."
+{%- endraw %}
