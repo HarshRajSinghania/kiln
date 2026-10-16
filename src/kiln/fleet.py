@@ -195,6 +195,12 @@ def update_one(root: Path, *, allow_major: bool) -> str:
             )
         _merge_into_integration(worktree, branch, integration)
     except KilnError as error:
+        try:
+            cleared = _clear_stale_worktree(root, worktree, branch, integration)
+        except KilnError:
+            cleared = False
+        if cleared:
+            return f"échec : {error}"
         return f"échec : {error} (worktree laissé dans {worktree})"
     _remove_worktree(root, worktree, branch=branch)
     return f"fusionné dans {integration}"
@@ -251,8 +257,37 @@ def integration_branch(root: Path) -> str:
     return head.removeprefix("origin/") if completed.returncode == 0 else DEFAULT_INTEGRATION_BRANCH
 
 
+def _clear_stale_worktree(root: Path, worktree: Path, branch: str, integration: str) -> bool:
+    """Retire le worktree et la branche d'une mise à jour qui n'a rien laissé (aucune
+    modification, aucun commit propre), pour que la suivante reparte de zéro ; jamais un
+    worktree modifié. Renvoie vrai s'il ne reste rien."""
+    if worktree.exists():
+        if capture(["git", "status", "--porcelain"], worktree):
+            return False
+        run(["git", "worktree", "remove", str(worktree)], root)
+    run(["git", "worktree", "prune"], root)
+    exists = subprocess.run(
+        ["git", "rev-parse", "-q", "--verify", f"refs/heads/{branch}"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+    )
+    if exists.returncode != 0:
+        return True
+    own_commits = capture(["git", "rev-list", f"origin/{integration}..{branch}"], root)
+    if own_commits:
+        return False
+    run(["git", "branch", "-q", "-D", branch], root)
+    return True
+
+
 def _create_worktree(root: Path, worktree: Path, branch: str, integration: str) -> None:
     run(["git", "fetch", "-q", "origin", integration], root)
+    if not _clear_stale_worktree(root, worktree, branch, integration):
+        raise KilnError(
+            f"une mise à jour précédente a laissé du travail dans {worktree} (branche {branch}) :"
+            " le fusionner ou le retirer, puis relancer"
+        )
     ignored = subprocess.run(
         ["git", "check-ignore", "-q", str(WORKTREES_DIR / "x")], cwd=root, check=False
     )
