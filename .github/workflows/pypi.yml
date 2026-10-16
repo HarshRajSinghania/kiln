@@ -1,8 +1,9 @@
 name: pypi
 
 # Publication de kiln sur PyPI (paquet kiln-cli) au tag d'une version promue, `vX.Y.Z` ; jamais
-# une candidate `-rc.N`, que seul le canal `interne` suit, par GitHub. Sans jeton : PyPI fait
-# confiance à ce workflow (trusted publishing), déclaré pour l'environnement `pypi`.
+# une candidate `-rc.N`, que seul le canal `interne` suit, par GitHub. Jeton PyPI dans le secret
+# `PYPI_TOKEN` de l'environnement `pypi` (posé depuis `.pypi/token`) ; sans lui, trusted
+# publishing si PyPI fait confiance à ce workflow.
 on:
   push:
     tags: [ "v[0-9]+.[0-9]+.[0-9]+" ]
@@ -29,4 +30,6 @@ jobs:
       - name: Construction
         run: uv build
       - name: Publication
-        run: uv publish --trusted-publishing always
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish --trusted-publishing automatic
