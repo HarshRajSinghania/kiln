@@ -4,6 +4,7 @@ import datetime
 import subprocess
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,8 +22,11 @@ def repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def entries(repo: Path) -> list[dict]:
-    return tomllib.loads((repo / "kiln-waivers.toml").read_text())["waiver"]
+def entries(repo: Path) -> list[dict[str, Any]]:
+    waivers: list[dict[str, Any]] = tomllib.loads((repo / "kiln-waivers.toml").read_text())[
+        "waiver"
+    ]
+    return waivers
 
 
 def test_first_waiver_lasts_one_week(repo: Path) -> None:

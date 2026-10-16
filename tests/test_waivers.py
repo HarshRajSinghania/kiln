@@ -6,6 +6,7 @@ import json
 import subprocess
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import copier
 import pytest
@@ -110,7 +111,7 @@ def test_permanent_waiver_is_always_shown(tmp_path: Path) -> None:
         ({"motif": "x"}, "clé inconnue"),
     ],
 )
-def test_malformed_waiver_is_refused(tmp_path: Path, fields: dict, message: str) -> None:
+def test_malformed_waiver_is_refused(tmp_path: Path, fields: dict[str, Any], message: str) -> None:
     write(tmp_path, waiver(**fields))
 
     assert message in load(tmp_path, TODAY).errors[0]
@@ -146,7 +147,7 @@ def test_waiver_of_an_unknown_rule_fails(repo: Path, capsys: pytest.CaptureFixtu
     assert "règle inconnue" in capsys.readouterr().out
 
 
-def _config(repo: Path) -> dict:
+def _config(repo: Path) -> dict[str, Any]:
     return tomllib.loads((repo / "charte.toml").read_text())
 
 
