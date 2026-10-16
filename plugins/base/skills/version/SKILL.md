@@ -28,6 +28,9 @@ Ne jamais changer la branche de l'arbre principal : chaque branche dans
 - Changements : `git log --first-parent --format='%h %s' <précédente>..<candidat>`. Si
   l'utilisateur écarte un chantier, prendre un candidat plus ancien plutôt que de défaire du
   code sur la release.
+- Relire le dépôt (`base:relecture --depot`) : commits publiés depuis la version précédente,
+  branches distantes laissées sur GitHub, tags. La note de version dit clairement ce qu'un
+  sujet de commit raté cache.
 
 ## 2. Tirer la release
 `git worktree add .claude/worktrees/release-vN -b release/vN <candidat>`, puis
