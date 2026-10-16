@@ -22,7 +22,7 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
     Why, what to do (as a `- [ ]` checklist when there are several steps), where to look.
 
 - **ID** `T-NN`: stable, never reused, quoted as is in commits and branches (tickets opened
-  before 16 October 2026 were `AF-NN`, same number). **Next free: T-14.**
+  before 16 October 2026 were `AF-NN`, same number). **Next free: T-17.**
 - **Type**, one of: `bug` (something is broken); `improvement` (it works, it could work
   better); `idea` (nothing exists yet, to be explored); `task` (work that is neither: a release,
   a decision, a check).
@@ -41,24 +41,22 @@ North star: **kiln v0.3.0 public, adopted by every generated repo**.
 
 ## 🔴 Critical
 
-### T-01 · Promote v0.3.0, the first public release
+### T-14 · Promote v0.3.1, the first release on PyPI
 - **Type**: task
-- **Status**: blocked — waiting for a next candidate (no waiting period, antoine 2026-10-16)
-- **Opened**: 2026-10-15
+- **Status**: blocked — waiting for `v0.3.2-rc.1`
+- **Opened**: 2026-10-16
 - **Effort**: S · **Owner**: Claude · **Due**: —
-- **Origin**: move to semver and release candidates, 15 October 2026
+- **Origin**: promotion of v0.3.0, 16 October 2026
 
-`v0.3.0-rc.1` (branch `release/v0.3.0`) is adopted by annway, sweep and vision. The rule
-(CLAUDE.md, "Versions") requires a next candidate ready, nothing more.
-`kiln version` says when it is ready.
-- [ ] Cut `v0.3.1-rc.1` from `develop` (gitleaks in CI, the `status` column, the `doctor` fix
-  are already there), then `kiln update --all`: annway must no longer conflict on `ci.yml`
-  (its gitleaks job is now in the template, identical). Its `CHANGELOG.md` entry credits the
-  first outside contribution: `kiln --version` (#39, thanks @SakarPaisen).
-- [ ] As soon as `v0.3.1-rc.1` is out: tag `v0.3.0` on the commit of `v0.3.0-rc.1`, merge
-  `release/v0.3.0` into `main`, merge back into `develop`, then `kiln update --all`.
-- [ ] Check the public install: `uv tool install git+https://github.com/antoine-tena/kiln@main`
-  (the default branch stays `develop`, so install docs quote `@main`).
+`v0.3.0` has no PyPI workflow: `kiln-cli` is first published when `v0.3.1` is promoted. The
+`PYPI_TOKEN` secret (environment `pypi`, account-wide token in `.pypi/token`) is set.
+- [ ] Cut `v0.3.2-rc.1` from `develop`; its `CHANGELOG.md` entry credits the first outside
+  contribution: `kiln --version` (#39, thanks @SakarPaisen). Then `kiln update --all`.
+- [ ] Promote `v0.3.1` (tag on the commit of `v0.3.1-rc.1`, merge into `main`, back into
+  `develop`), check the `pypi` run, then `uv tool install kiln-cli` on a clean machine.
+- [ ] Replace the account-wide token with one scoped to `kiln-cli`
+  (https://pypi.org/manage/project/kiln-cli/settings/), update the secret, delete the old one.
+- [ ] README (English and French): `uv tool install kiln-cli` as the main install.
 
 ## 🟠 Important
 
@@ -168,6 +166,32 @@ kiln itself is all English; a generated repo is written in its team's language. 
 
 ## 🟡 Normal
 
+### T-15 · `kiln update --all` crashes with a Python traceback when GitHub is unreachable
+- **Type**: bug
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: XS · **Owner**: Claude · **Due**: —
+- **Origin**: `kiln update --all` of v0.3.1-rc.1, flaky DNS, 16 October 2026
+
+Copier's `git ls-remote --tags` (latest tag lookup) raises `ProcessExecutionError`, printed as
+a full traceback. Expected: one clear line per repo ("GitHub unreachable: check the network,
+then run it again") in the summary, like the other failures, and the other repos still
+processed. Look at `src/kiln/fleet.py` and `update.py` (where Copier is called); test with a
+fake URL.
+
+### T-16 · A failed `kiln update --all` leaves a worktree that blocks the next run
+- **Type**: bug
+- **Status**: todo
+- **Opened**: 2026-10-16
+- **Effort**: S · **Owner**: Claude · **Due**: —
+- **Origin**: `kiln update --all` of v0.3.1-rc.1, 16 October 2026
+
+After the crash of T-15, annway kept `.claude/worktrees/chore-kiln-update-<date>` (branch at
+`develop`, no change); the next run failed on `git worktree add … -b …` (code 255). Expected:
+reuse the worktree when it is clean and its branch has no commit of its own, or remove it
+first; never touch one that has changes. Same for a fetch that fails before the worktree is
+used (vision).
+
 ### T-05 · Check the first real run of the workflows on GitHub
 - **Type**: task
 - **Status**: blocked — waiting for GitHub billing (CI stopped)
@@ -228,6 +252,9 @@ the tree's state.
 
 ## ✅ Done
 
+- **2026-10-16** · T-01 · Promote v0.3.0, the first public release — `v0.3.1-rc.1` cut, then
+  `v0.3.0` tagged on the commit of `v0.3.0-rc.1`, merged into `main`, back into `develop`;
+  annway, sweep and vision moved to `v0.3.1-rc.1` (`kiln update --all`) · opened 2026-10-15
 - **2026-10-16** · T-02 · Review PR #39 (`kiln --version`) from an outside contributor —
   reviewed with the new skill `base:contribution`, version computed only on demand (commit
   pushed on top of the contributor's), merged (`b71f91a`), issue #35 closed; credit to add to
